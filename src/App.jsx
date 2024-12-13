@@ -3,8 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AuthForm from './components/auth/AuthForm'
-import AdminLayout from './components/layout/AdminLayout'
+import { AdminLayout } from './components/layout'
 import Dashboard from './pages/admin/Dashboard'
+import Users from './pages/admin/Users'
 import UserDashboard from './pages/user/Dashboard'
 import UnauthorizedPage from './pages/error/UnauthorizedPage'
 import SuspendedPage from './pages/error/SuspendedPage'
@@ -21,7 +22,12 @@ function App() {
           {/* Protected routes - Admin only */}
           <Route path="/admin/*" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout />
+              <AdminLayout>
+                <Routes>
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="users" element={<Users />} />
+                </Routes>
+              </AdminLayout>
             </ProtectedRoute>
           } />
           
