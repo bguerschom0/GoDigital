@@ -11,41 +11,23 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export const authApi = {
   async login(username, password) {
-    // First get the user
-    const { data: userData, error: userError } = await supabase
+    const { data: user, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, username, fullname, role, status')
       .eq('username', username)
+      .eq('password', password)
       .single()
 
-    if (userError) throw new Error('Invalid credentials')
-    if (!userData) throw new Error('User not found')
+    if (error || !user) throw new Error('Invalid credentials')
+    if (user.status !== 'active') throw new Error('Account is not active')
 
-    // Verify password using direct SQL query
-    const { data: verifyData, error: verifyError } = await supabase
-      .rpc('check_password', {
-        input_username: username,
-        input_password: password
-      })
-
-    if (verifyError || !verifyData) {
-      throw new Error('Invalid credentials')
-    }
-
-    // If we get here, password is correct
-    if (userData.status !== 'active') {
-      throw new Error('Account is not active')
-    }
-
-    // Update last login
+    // Update last_login
     await supabase
       .from('users')
       .update({ last_login: new Date().toISOString() })
-      .eq('id', userData.id)
+      .eq('id', user.id)
 
-    // Return user data without sensitive information
-    const { password: _, ...userDataWithoutPassword } = userData
-    return userDataWithoutPassword
+    return user
   },
 
   async getCurrentUser() {
