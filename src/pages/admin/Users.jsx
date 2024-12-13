@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { supabase } from '@/config/supabase'
-import { AdminLayout } from '@/components/layout'
+import { AdminLayout } from '@/components/layout/index.js'
 
 const UsersPage = () => {
   const [users, setUsers] = useState([])
