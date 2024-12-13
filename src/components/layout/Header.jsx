@@ -17,15 +17,15 @@ const Header = ({ onMenuClick, showMenuButton = true }) => {
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm fixed top-0 w-full z-50">
       <div className="flex h-16">
-        {/* Logo Section */}
+        {/* Logo Section - Removed width constraint and padding */}
         <div 
-          className="w-16 border-r dark:border-gray-700 flex items-center justify-center px-4 cursor-pointer transition-all duration-300"
+          className="flex items-center cursor-pointer transition-all duration-300"
           onClick={() => navigate('/admin/dashboard')}
         >
           <img 
             src="/logo.png" 
             alt="SSS Portal" 
-            className="h-10 w-auto"
+            className="h-16 w-auto" // Increased logo size to match header height
           />
         </div>
 
@@ -43,7 +43,6 @@ const Header = ({ onMenuClick, showMenuButton = true }) => {
           )}
 
           <div className="flex items-center space-x-4 ml-auto">
-            {/* Theme Toggle */}
             <Button
               variant="ghost"
               size="icon"
@@ -57,12 +56,10 @@ const Header = ({ onMenuClick, showMenuButton = true }) => {
               )}
             </Button>
 
-            {/* User Name */}
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {user?.fullname}
             </span>
 
-            {/* Logout Button */}
             <Button
               variant="ghost"
               size="icon"
