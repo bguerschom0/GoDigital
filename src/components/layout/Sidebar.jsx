@@ -2,10 +2,12 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Users, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation()
   const navigate = useNavigate()
+  const [isHovered, setIsHovered] = useState(false)
 
   const handleNavigation = (path) => {
     navigate(path)
@@ -25,7 +27,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <div 
-      className={`fixed left-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-all duration-300 ease-in-out h-[calc(100vh-4rem)] top-16 ${
+      className={`fixed left-0 z-40 bg-white dark:bg-gray-800 shadow-lg transform transition-all duration-300 ease-in-out h-[calc(100vh-4rem)] top-16 ${
         isOpen ? (isHovered ? 'w-64' : 'w-16') : '-translate-x-full w-64'
       }`}
       onMouseEnter={() => setIsHovered(true)}
