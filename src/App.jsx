@@ -3,7 +3,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AuthForm from './components/auth/AuthForm'
+import { AdminLayout } from './components/layout'
+import Dashboard from './pages/admin/Dashboard'
 import Users from './pages/admin/Users'
+import UserDashboard from './pages/user/Dashboard'
 import UnauthorizedPage from './pages/error/UnauthorizedPage'
 import SuspendedPage from './pages/error/SuspendedPage'
 import NotFoundPage from './pages/error/NotFoundPage'
@@ -16,16 +19,27 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<AuthForm />} />
           
-          {/* Admin routes */}
-          <Route path="/admin/users" element={
+          {/* Protected routes - Admin only */}
+          <Route path="/admin/*" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <Users />
+              <AdminLayout>
+                <Routes>
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="users" element={<Users />} />
+                </Routes>
+              </AdminLayout>
             </ProtectedRoute>
           } />
           
-          {/* Redirect root to users for now */}
-          <Route path="/" element={<Navigate to="/admin/users" replace />} />
-          <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
+          {/* Protected routes - All authenticated users */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <UserDashboard />
+            </ProtectedRoute>
+          } />
+          
+          {/* Redirect root to dashboard */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           
           {/* Error pages */}
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
