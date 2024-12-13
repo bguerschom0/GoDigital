@@ -4,8 +4,8 @@ import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AuthForm from './components/auth/AuthForm'
 import { AdminLayout } from './components/layout'
-import Dashboard from './pages/admin/Dashboard'
-import Users from './pages/admin/Users'
+import AdminDashboard from './pages/admin/Dashboard'
+import AdminUsers from './pages/admin/Users'
 import UserDashboard from './pages/user/Dashboard'
 import UnauthorizedPage from './pages/error/UnauthorizedPage'
 import SuspendedPage from './pages/error/SuspendedPage'
@@ -24,8 +24,8 @@ function App() {
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminLayout>
                 <Routes>
-                  <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="users" element={<Users />} />
+                  <Route path="AdminDashboard" element={<AdminDashboard />} />
+                  <Route path="AdminUsers" element={<AdminUsers />} />
                 </Routes>
               </AdminLayout>
             </ProtectedRoute>
