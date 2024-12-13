@@ -16,7 +16,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     {
       title: 'Users',
       icon: <Users className="w-5 h-5" />,
-      href: '/admin/users'
+      href: '/admin/users',
+      path: '/users'
     },
     {
       title: 'Settings',
