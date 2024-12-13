@@ -1,7 +1,7 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useContext } from 'react'
-import { AuthProvider, AuthContext } from './context/AuthContext'
+import { AuthProvider } from './context/AuthContext'
 import AuthForm from './components/auth/AuthForm'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminUsers from './pages/admin/Users'
