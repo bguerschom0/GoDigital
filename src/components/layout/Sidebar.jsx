@@ -8,21 +8,17 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [isHovered, setIsHovered] = useState(false)
 
   const navItems = [
-    {
-      title: 'Dashboard',
-      icon: <LayoutDashboard className="w-5 h-5" />,
-      href: '/admin/dashboard'
-    },
-    {
-      title: 'Users',
-      icon: <Users className="w-5 h-5" />,
-      href: '/users',
-      path: '/users'
-    },
-    {
-      title: 'Settings',
-      icon: <Settings className="w-5 h-5" />,
-      href: '/admin/settings'
+  {
+    title: 'Dashboard',
+    icon: <LayoutDashboard className="w-5 h-5" />,
+    href: '/admin/dashboard',
+    roles: ['admin']
+  },
+  {
+    title: 'Users',
+    icon: <Users className="w-5 h-5" />,
+    href: '/admin/users',
+    roles: ['admin']
     }
   ]
 
