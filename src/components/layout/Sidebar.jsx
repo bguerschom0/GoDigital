@@ -2,8 +2,8 @@
 import { Link } from 'react-router-dom'
 import { Users, LayoutDashboard, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useState, useContext } from 'react'
-import { AuthContext } from '@/context/AuthContext'
+import { useState } from 'react'
+
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user } = useContext(AuthContext) // Access user context
