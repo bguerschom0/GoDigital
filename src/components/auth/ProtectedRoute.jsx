@@ -2,7 +2,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 
-const ProtectedRoute = ({ children, allowedRoles = ['user', 'supervisor', 'admin'] }) => {
+const ProtectedRoute = ({ children }) => {
   const { user } = useAuth()
   const location = useLocation()
 
@@ -10,12 +10,8 @@ const ProtectedRoute = ({ children, allowedRoles = ['user', 'supervisor', 'admin
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  if (!allowedRoles.includes(user.role)) {
+  if (user.role !== 'admin') {
     return <Navigate to="/unauthorized" replace />
-  }
-
-  if (user.status !== 'active') {
-    return <Navigate to="/account-suspended" replace />
   }
 
   return children
