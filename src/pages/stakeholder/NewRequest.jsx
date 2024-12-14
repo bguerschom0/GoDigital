@@ -43,6 +43,18 @@ const NewRequest = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
+  const SuccessPopup = ({ message }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 50 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: 50 }}
+    className="fixed bottom-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 z-50"
+  >
+    <CheckCircle2 className="h-5 w-5" />
+    <p>{message}</p>
+  </motion.div>
+)
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -436,6 +448,12 @@ const { data, error } = await supabase
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <AnimatePresence>
+  {message?.type === 'success' && (
+    <SuccessPopup message={message.text} />
+  )}
+</AnimatePresence>
 
             <div className="flex justify-between mt-8">
               <button
