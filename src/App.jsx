@@ -9,6 +9,7 @@ import NewRequest from './pages/stakeholder/NewRequest'
 import PendingRequests from './pages/stakeholder/PendingRequests'
 import UpdateRequest from './pages/stakeholder/UpdateRequest'
 import { AdminLayout } from './components/layout'
+import StakeholderReport from './pages/reports/StakeholderReport'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="stakeholder/new" element={<NewRequest />} />
             <Route path="stakeholder/pending" element={<PendingRequests />} />
             <Route path="stakeholder/update" element={<UpdateRequest />} />
+            <Route path="reports/stakeholder" element={<StakeholderReport />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
