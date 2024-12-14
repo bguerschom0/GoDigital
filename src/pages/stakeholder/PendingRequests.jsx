@@ -1,116 +1,140 @@
 // src/pages/stakeholder/PendingRequests.jsx
 import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Loader } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Loader, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/config/supabase'
+import { format } from 'date-fns'
+
+const SuccessPopup = ({ message }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 50 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: 50 }}
+    className="fixed bottom-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2"
+  >
+    <CheckCircle2 className="h-5 w-5" />
+    <p>{message}</p>
+  </motion.div>
+)
 
 const PendingRequests = () => {
-    const [pendingRequests, setPendingRequests] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [pendingRequests, setPendingRequests] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState(null)
+  const [selectedRequest, setSelectedRequest] = useState(null)
 
   useEffect(() => {
-    fetchPendingRequests();
-  }, []);
+    fetchPendingRequests()
+  }, [])
 
   const fetchPendingRequests = async () => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      const q = query(
-        collection(db, 'stakeholder_requests'),
-        where('status', '==', 'Pending')
-      );
-      const querySnapshot = await getDocs(q);
-      const requests = [];
-      querySnapshot.forEach((doc) => {
-        requests.push({ id: doc.id, ...doc.data() });
-      });
-      setPendingRequests(requests);
+      const { data, error } = await supabase
+        .from('stakeholder_requests')
+        .select('*')
+        .eq('status', 'Pending')
+        .order('date_received', { ascending: false })
+
+      if (error) throw error
+      setPendingRequests(data)
     } catch (error) {
-      console.error('Error fetching pending requests:', error);
-      setMessage({ type: 'error', text: 'Error loading pending requests' });
+      console.error('Error fetching pending requests:', error)
+      setMessage({ type: 'error', text: 'Error loading pending requests' })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
+
+  const showSuccessMessage = (text) => {
+    setMessage({ type: 'success', text })
+    setTimeout(() => setMessage(null), 3000) // Hide after 3 seconds
+  }
 
   return (
     <AdminLayout>
-       <div className="max-w-7xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800">Pending Requests</h2>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Reference Number
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date Received
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sender
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subject
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+      <div className="flex justify-center">
+        <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col space-y-8">
+            <div className="flex justify-between items-center pt-8">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pending Requests</h1>
+                <p className="text-gray-500 dark:text-gray-400">Manage and track pending stakeholder requests</p>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
               {isLoading ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center">
-                    <Loader className="h-5 w-5 text-emerald-500 mx-auto animate-spin" />
-                  </td>
-                </tr>
+                <div className="flex justify-center items-center h-48">
+                  <Loader className="h-8 w-8 animate-spin text-blue-600" />
+                </div>
               ) : pendingRequests.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                    No pending requests found
-                  </td>
-                </tr>
+                <div className="text-center py-12">
+                  <p className="text-gray-500 dark:text-gray-400">No pending requests found</p>
+                </div>
               ) : (
-                pendingRequests.map((request, index) => (
-                  <motion.tr 
-                    key={request.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="hover:bg-gray-50"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {request.referenceNumber}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(request.dateReceived).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {request.sender}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {request.subject}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {request.description}
-                    </td>
-                  </motion.tr>
-                ))
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Reference Number
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Date Received
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Sender
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Subject
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Description
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {pendingRequests.map((request) => (
+                        <tr 
+                          key={request.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                          onClick={() => setSelectedRequest(request)}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {request.reference_number}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {format(new Date(request.date_received), 'MMM d, yyyy')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {request.sender}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {request.subject}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                            {request.description}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-          </AdminLayout>
-  );
-};
+
+      <AnimatePresence>
+        {message?.type === 'success' && (
+          <SuccessPopup message={message.text} />
+        )}
+      </AnimatePresence>
+    </AdminLayout>
+  )
+}
 
 export default PendingRequests
