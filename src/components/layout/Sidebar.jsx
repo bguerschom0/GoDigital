@@ -1,69 +1,120 @@
 // src/components/layout/Sidebar.jsx
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Users, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { Users, FileText, Clock, Edit, ChevronDown, ChevronRight, FileStack } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const location = useLocation()
-  const navigate = useNavigate()
   const [isHovered, setIsHovered] = useState(false)
+  const [expandedMenus, setExpandedMenus] = useState(['stakeholder']) // Default expanded
+  const location = useLocation()
 
-  const handleNavigation = (path) => {
-    navigate(path)
-    if (window.innerWidth < 1024) { // Close sidebar on mobile after navigation
-      onClose()
-    }
+  const toggleMenu = (menu) => {
+    setExpandedMenus(prev => 
+      prev.includes(menu) 
+        ? prev.filter(item => item !== menu)
+        : [...prev, menu]
+    )
   }
 
   const navItems = [
     {
       title: 'Users Management',
       icon: <Users className="w-5 h-5" />,
-      href: '/admin/users',
-      onClick: () => handleNavigation('/admin/users')
+      href: '/admin/users'
+    },
+    {
+      title: 'Stakeholder Requests',
+      icon: <FileStack className="w-5 h-5" />,
+      id: 'stakeholder',
+      children: [
+        {
+          title: 'New Request',
+          icon: <FileText className="w-5 h-5" />,
+          href: '/admin/stakeholder/new'
+        },
+        {
+          title: 'Pending Requests',
+          icon: <Clock className="w-5 h-5" />,
+          href: '/admin/stakeholder/pending'
+        },
+        {
+          title: 'Update Request',
+          icon: <Edit className="w-5 h-5" />,
+          href: '/admin/stakeholder/update'
+        }
+      ]
     }
   ]
 
   return (
     <div 
-      className={`fixed left-0 z-40 bg-white dark:bg-gray-800 shadow-lg transform transition-all duration-300 ease-in-out h-[calc(100vh-4rem)] top-16 ${
+      className={`fixed left-0 z-40 bg-white dark:bg-gray-800 shadow-lg transition-all duration-300 ease-in-out h-[calc(100vh-4rem)] top-16 ${
         isOpen ? (isHovered ? 'w-64' : 'w-16') : '-translate-x-full w-64'
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="flex flex-col h-full">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="lg:hidden self-end mr-4 mt-2"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-
-        <nav className="mt-5 px-2">
-          {navItems.map((item) => (
-            <div
-              key={item.href}
-              onClick={item.onClick}
-              className={`flex items-center px-3 py-2 my-1 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-all duration-300 ${
-                location.pathname === item.href ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : ''
-              }`}
-            >
-              <div className="flex items-center">
+      <nav className="mt-5 px-2">
+        {navItems.map((item) => (
+          <div key={item.href || item.id}>
+            {item.children ? (
+              <>
+                <div
+                  onClick={() => toggleMenu(item.id)}
+                  className="flex items-center px-3 py-2 my-1 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                >
+                  {item.icon}
+                  <span className={`ml-3 flex-1 whitespace-nowrap transition-all duration-300 ${
+                    isHovered ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+                  }`}>
+                    {item.title}
+                  </span>
+                  {isHovered && (
+                    expandedMenus.includes(item.id) ? 
+                      <ChevronDown className="w-4 h-4" /> : 
+                      <ChevronRight className="w-4 h-4" />
+                  )}
+                </div>
+                {expandedMenus.includes(item.id) && isHovered && (
+                  <div className="ml-4 mt-2 space-y-1">
+                    {item.children.map((child) => (
+                      <Link
+                        key={child.href}
+                        to={child.href}
+                        className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                          location.pathname === child.href
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {child.icon}
+                        <span className="ml-3">{child.title}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <Link
+                to={item.href}
+                className={`flex items-center px-3 py-2 my-1 rounded-lg transition-colors ${
+                  location.pathname === item.href
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
                 {item.icon}
                 <span className={`ml-3 whitespace-nowrap transition-all duration-300 ${
                   isHovered ? 'opacity-100 w-auto' : 'opacity-0 w-0'
                 }`}>
                   {item.title}
                 </span>
-              </div>
-            </div>
-          ))}
-        </nav>
-      </div>
+              </Link>
+            )}
+          </div>
+        ))}
+      </nav>
     </div>
   )
 }
