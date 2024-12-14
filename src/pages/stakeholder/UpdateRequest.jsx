@@ -47,15 +47,16 @@ const SuccessPopup = ({ message, onClose }) => (
       exit={{ opacity: 0, scale: 0.9 }}
       className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4 relative"
     >
-      <div className="flex items-center space-x-4">
-        <div className="bg-green-100 dark:bg-green-900 p-2 rounded-full">
-          <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Success</h3>
-          <p className="text-gray-500 dark:text-gray-400">{message}</p>
-        </div>
-      </div>
+      
+<div className="flex items-center space-x-4">
+  <div className="bg-[#0A2647]/10 dark:bg-[#0A2647]/30 p-2 rounded-full">
+    <CheckCircle className="h-6 w-6 text-[#0A2647] dark:text-[#0A2647]" />
+  </div>
+  <div className="flex-1">
+    <h3 className="text-lg font-medium text-[#0A2647] dark:text-[#0A2647]">Success</h3>
+    <p className="text-[#0A2647]/70 dark:text-[#0A2647]/90">{message}</p>
+  </div>
+</div>
       <div className="mt-6 flex justify-end">
         <Button
           onClick={() => {
