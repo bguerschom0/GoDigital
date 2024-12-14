@@ -133,13 +133,16 @@ const UpdateRequest = () => {
     })
   }
 
+// In UpdateRequest.jsx, update the handleUpdate function
 const handleUpdate = async (e) => {
   e.preventDefault()
   setIsUpdating(true)
   try {
     const updateData = {
       ...formData,
-      updated_by: username,
+      sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
+      subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
+      updated_by: user.username,
       updated_at: new Date().toISOString()
     }
 
@@ -150,16 +153,9 @@ const handleUpdate = async (e) => {
 
     if (error) throw error
 
-    setMessage({ 
-      type: 'success', 
-      text: 'Request has been updated successfully' 
-    })
-    // Page will be reset when closing the success message
+    setMessage({ type: 'success', text: 'Request updated successfully' })
   } catch (error) {
-    setMessage({ 
-      type: 'error', 
-      text: 'Error updating request. Please try again.' 
-    })
+    setMessage({ type: 'error', text: 'Error updating request' })
   } finally {
     setIsUpdating(false)
   }
