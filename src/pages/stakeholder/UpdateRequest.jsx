@@ -8,7 +8,8 @@ import {
   Loader, 
   AlertCircle, 
   Calendar,
-  X
+  X,
+  CheckCircle
 } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,25 @@ import { useAuth } from '@/context/AuthContext'
 
 const statusOptions = ["Pending", "Answered"]
 const answeredByOptions = ["bigirig", "isimbie", "niragit", "nkomatm", "tuyisec"]
+const senderOptions = [
+  "NPPA", 
+  "RIB", 
+  "MPG", 
+  "Private Advocate", 
+  "Other"
+]
+
+const subjectOptions = [
+  "Account Unblock",
+  "MoMo Transaction",
+  "Call History",
+  "Reversal",
+  "MoMo Transaction & Call History",
+  "Account Information",
+  "Account Status",
+  "Balance",
+  "Other"
+]
 
 const SuccessPopup = ({ message, onClose }) => (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -29,7 +49,7 @@ const SuccessPopup = ({ message, onClose }) => (
     >
       <div className="flex items-center space-x-4">
         <div className="bg-green-100 dark:bg-green-900 p-2 rounded-full">
-          <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+          <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Success</h3>
@@ -221,7 +241,7 @@ const handleUpdate = async (e) => {
 <div className={`text-sm px-3 py-1 rounded-full ${
   result.status === 'Pending'
     ? 'bg-[#0A2647]/10 text-[#0A2647]'
-    : 'bg-green-100 text-green-800'
+    : 'bg-[#0A2647]/10 text-[#0A2647]'
 }`}>
   {result.status}
 </div>
@@ -277,6 +297,68 @@ const handleUpdate = async (e) => {
                               />
                             </div>
 
+    <div className="space-y-2">
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Sender
+  </label>
+  <select
+    value={formData.sender}
+    onChange={(e) => setFormData(prev => ({ ...prev, sender: e.target.value }))}
+    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+  >
+    <option value="">Select Sender</option>
+    {senderOptions.map(option => (
+      <option key={option} value={option}>{option}</option>
+    ))}
+  </select>
+</div>
+
+{formData.sender === 'Other' && (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Other Sender
+    </label>
+    <input
+      type="text"
+      value={formData.otherSender || ''}
+      onChange={(e) => setFormData(prev => ({ ...prev, otherSender: e.target.value }))}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+      placeholder="Specify sender"
+    />
+  </div>
+)}
+
+<div className="space-y-2">
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Subject
+  </label>
+  <select
+    value={formData.subject}
+    onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+  >
+    <option value="">Select Subject</option>
+    {subjectOptions.map(option => (
+      <option key={option} value={option}>{option}</option>
+    ))}
+  </select>
+</div>
+
+{formData.subject === 'Other' && (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Other Subject
+    </label>
+    <input
+      type="text"
+      value={formData.otherSubject || ''}
+      onChange={(e) => setFormData(prev => ({ ...prev, otherSubject: e.target.value }))}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+      placeholder="Specify subject"
+    />
+  </div>
+)}
+
                             <div className="space-y-2">
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Status
@@ -307,29 +389,7 @@ const handleUpdate = async (e) => {
                               </div>
                             </div>
 
-<div className="space-y-2">
-  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-    Sender
-  </label>
-  <input
-    type="text"
-    value={formData.sender}
-    onChange={(e) => setFormData(prev => ({ ...prev, sender: e.target.value }))}
-    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-  />
-</div>
 
-<div className="space-y-2">
-  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-    Subject
-  </label>
-  <input
-    type="text"
-    value={formData.subject}
-    onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-  />
-</div>
 
 
                             <div className="space-y-2">
