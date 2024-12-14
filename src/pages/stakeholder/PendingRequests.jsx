@@ -116,7 +116,73 @@ const PendingRequests = () => {
                 <>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      {/* ... table header and body remain the same ... */}
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                          onClick={() => handleSort('reference_number')}
+                        >
+                          <div className="flex items-center space-x-1">
+                            <span>Reference Number</span>
+                            <SortIcon field="reference_number" />
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                          onClick={() => handleSort('date_received')}
+                        >
+                          <div className="flex items-center space-x-1">
+                            <span>Date Received</span>
+                            <SortIcon field="date_received" />
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                          onClick={() => handleSort('sender')}
+                        >
+                          <div className="flex items-center space-x-1">
+                            <span>Sender</span>
+                            <SortIcon field="sender" />
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                          onClick={() => handleSort('subject')}
+                        >
+                          <div className="flex items-center space-x-1">
+                            <span>Subject</span>
+                            <SortIcon field="subject" />
+                          </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Description
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {pendingRequests.map((request) => (
+                        <tr 
+                          key={request.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {request.reference_number}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {format(new Date(request.date_received), 'MMM d, yyyy')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {request.sender}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {request.subject}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
+                            {request.description}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
                     </table>
                   </div>
 
