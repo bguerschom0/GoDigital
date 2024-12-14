@@ -99,30 +99,42 @@ const NewRequest = () => {
       return;
     }
 
-    setIsLoading(true);
+setIsLoading(true)
     try {
-      await addDoc(collection(db, 'stakeholder_requests'), {
-        ...formData,
+      const requestData = {
+        reference_number: formData.referenceNumber,
+        date_received: formData.dateReceived,
         sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
         subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
-        createdAt: new Date()
-      });
+        description: formData.description,
+        status: formData.status,
+        response_date: formData.responseDate || null,
+        answered_by: formData.answeredBy || null,
+        created_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase
+        .from('stakeholder_requests')
+        .insert([requestData])
+
+      if (error) throw error
 
       setMessage({
         type: 'success',
         text: 'Request saved successfully!'
-      });
+      })
       
-      handleReset();
+      handleReset()
     } catch (error) {
+      console.error('Submission error:', error)
       setMessage({
         type: 'error',
-        text: 'Error saving request. Please try again.'
-      });
+        text: `Error: ${error.message || 'Failed to save request'}`
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleReset = () => {
     setFormData({
