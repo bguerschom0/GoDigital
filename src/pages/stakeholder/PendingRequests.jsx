@@ -1,8 +1,96 @@
 // src/pages/stakeholder/PendingRequests.jsx
-// ... previous imports remain the same ...
+import { AdminLayout } from '@/components/layout'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Loader, 
+  CheckCircle2, 
+  ChevronDown, 
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react'
+import { supabase } from '@/config/supabase'
+import { format } from 'date-fns'
+import { Button } from '@/components/ui/button'
+
+const SuccessPopup = ({ message }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 50 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: 50 }}
+    className="fixed bottom-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2"
+  >
+    <CheckCircle2 className="h-5 w-5" />
+    <p>{message}</p>
+  </motion.div>
+)
+
+const ITEMS_PER_PAGE = 10;
 
 const PendingRequests = () => {
-  // ... previous state and functions remain the same ...
+  const [pendingRequests, setPendingRequests] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState(null)
+  const [sortField, setSortField] = useState('date_received')
+  const [sortDirection, setSortDirection] = useState('desc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+
+  useEffect(() => {
+    fetchPendingRequests()
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(fetchPendingRequests, 30000)
+    return () => clearInterval(interval)
+  }, [sortField, sortDirection, currentPage])
+
+  const fetchPendingRequests = async () => {
+    setIsLoading(true)
+    try {
+      // First get total count
+      const { count } = await supabase
+        .from('stakeholder_requests')
+        .select('*', { count: 'exact' })
+        .eq('status', 'Pending')
+
+      setTotalCount(count)
+
+      // Then get paginated data
+      const { data, error } = await supabase
+        .from('stakeholder_requests')
+        .select('*')
+        .eq('status', 'Pending')
+        .order(sortField, { ascending: sortDirection === 'asc' })
+        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1)
+
+      if (error) throw error
+      setPendingRequests(data)
+    } catch (error) {
+      console.error('Error fetching pending requests:', error)
+      setMessage({ type: 'error', text: 'Error loading pending requests' })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+    setCurrentPage(1)
+  }
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronDown className="w-4 h-4 opacity-30" />
+    return sortDirection === 'asc' ? 
+      <ChevronUp className="w-4 h-4" /> : 
+      <ChevronDown className="w-4 h-4" />
+  }
+
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
   return (
     <AdminLayout>
