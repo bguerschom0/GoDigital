@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/config/supabase'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import DatePicker from 'react-datepicker'
+import "react-datepicker/dist/react-datepicker.css"
 import { 
   Loader, 
   Download, 
@@ -12,12 +14,13 @@ import {
   RefreshCcw,
   FileDown,
   Printer,
-  Mail,
   BarChart2,
   PieChart as PieChartIcon,
   TrendingUp
 } from 'lucide-react'
 import {
+  AreaChart,
+  Area,
   LineChart,
   Line,
   BarChart,
@@ -39,7 +42,7 @@ const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D']
 const StakeholderReport = () => {
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
-    dateRange: 'all', // all, last7days, last30days, last3months, custom
+    dateRange: 'all',
     startDate: '',
     endDate: '',
     sender: 'all',
@@ -61,16 +64,46 @@ const StakeholderReport = () => {
     fetchData()
   }, [filters])
 
+  const getDateRangeStart = (range) => {
+    const today = new Date()
+    switch (range) {
+      case 'last7days':
+        return new Date(today.setDate(today.getDate() - 7))
+      case 'last30days':
+        return new Date(today.setDate(today.getDate() - 30))
+      case 'last3months':
+        return new Date(today.setMonth(today.getMonth() - 3))
+      case 'custom':
+        return filters.startDate ? new Date(filters.startDate) : null
+      default:
+        return null
+    }
+  }
+
+  const getDateRangeEnd = () => {
+    return filters.dateRange === 'custom' && filters.endDate 
+      ? new Date(filters.endDate) 
+      : new Date()
+  }
+
   const fetchData = async () => {
     setLoading(true)
     try {
       let query = supabase.from('stakeholder_requests').select('*')
 
-      // Apply filters
+      // Apply date filters
       if (filters.dateRange !== 'all') {
         const startDate = getDateRangeStart(filters.dateRange)
-        query = query.gte('date_received', startDate.toISOString())
+        const endDate = getDateRangeEnd()
+        if (startDate) {
+          query = query.gte('date_received', startDate.toISOString())
+        }
+        if (endDate) {
+          query = query.lte('date_received', endDate.toISOString())
+        }
       }
+
+      // Apply other filters
       if (filters.sender !== 'all') {
         query = query.eq('sender', filters.sender)
       }
@@ -81,7 +114,7 @@ const StakeholderReport = () => {
         query = query.eq('subject', filters.subject)
       }
 
-      const { data, error } = await query
+      const { data, error } = await query.order('date_received', { ascending: true })
 
       if (error) throw error
 
@@ -94,61 +127,61 @@ const StakeholderReport = () => {
   }
 
   const processData = (data) => {
-    // Process statistics
+    // Process basic stats
     const totalRequests = data.length
     const pendingRequests = data.filter(r => r.status === 'Pending').length
     const answeredRequests = data.filter(r => r.status === 'Answered').length
 
-    // Calculate average response time for answered requests
+    // Calculate average response time
     const responseTimes = data
       .filter(r => r.status === 'Answered' && r.response_date)
       .map(r => {
         const received = new Date(r.date_received)
         const responded = new Date(r.response_date)
-        return (responded - received) / (1000 * 60 * 60 * 24) // Days
+        return (responded - received) / (1000 * 60 * 60 * 24) // Convert to days
       })
+
     const averageResponseTime = responseTimes.length 
       ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
       : 0
 
-    setStats({ totalRequests, pendingRequests, answeredRequests, averageResponseTime })
+    setStats({
+      totalRequests,
+      pendingRequests,
+      answeredRequests,
+      averageResponseTime
+    })
 
     // Process timeline data
-    const timeline = processTimelineData(data)
+    const timeline = Object.entries(
+      data.reduce((acc, item) => {
+        const date = item.date_received.split('T')[0]
+        acc[date] = (acc[date] || 0) + 1
+        return acc
+      }, {})
+    ).map(([date, count]) => ({ date, count }))
+
     setTimelineData(timeline)
 
-    // Process distributions
-    const senders = processDistributionData(data, 'sender')
+    // Process sender distribution
+    const senders = Object.entries(
+      data.reduce((acc, item) => {
+        acc[item.sender] = (acc[item.sender] || 0) + 1
+        return acc
+      }, {})
+    ).map(([name, value]) => ({ name, value }))
+
     setSenderDistribution(senders)
 
-    const subjects = processDistributionData(data, 'subject')
+    // Process subject distribution
+    const subjects = Object.entries(
+      data.reduce((acc, item) => {
+        acc[item.subject] = (acc[item.subject] || 0) + 1
+        return acc
+      }, {})
+    ).map(([name, value]) => ({ name, value }))
+
     setSubjectDistribution(subjects)
-  }
-
-  const processTimelineData = (data) => {
-    // Group by date and count
-    const grouped = data.reduce((acc, item) => {
-      const date = item.date_received.split('T')[0]
-      acc[date] = (acc[date] || 0) + 1
-      return acc
-    }, {})
-
-    // Convert to array and sort
-    return Object.entries(grouped)
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
-  }
-
-  const processDistributionData = (data, field) => {
-    const distribution = data.reduce((acc, item) => {
-      const value = item[field]
-      acc[value] = (acc[value] || 0) + 1
-      return acc
-    }, {})
-
-    return Object.entries(distribution)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
   }
 
   const exportToExcel = async () => {
@@ -157,19 +190,29 @@ const StakeholderReport = () => {
       const { data, error } = await supabase
         .from('stakeholder_requests')
         .select('*')
-        // Apply current filters...
+        .order('date_received', { ascending: false })
 
       if (error) throw error
 
       const ws = XLSX.utils.json_to_sheet(data)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Stakeholder Requests')
-      XLSX.writeFile(wb, 'stakeholder_report.xlsx')
+      XLSX.writeFile(wb, `stakeholder_report_${new Date().toISOString().split('T')[0]}.xlsx`)
     } catch (error) {
       console.error('Error exporting data:', error)
     } finally {
       setExportLoading(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-screen">
+          <Loader className="w-8 h-8 animate-spin text-[#0A2647]" />
+        </div>
+      </AdminLayout>
+    )
   }
 
   return (
@@ -233,7 +276,15 @@ const StakeholderReport = () => {
                   </label>
                   <select
                     value={filters.dateRange}
-                    onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                    onChange={(e) => {
+                      const newValue = e.target.value
+                      setFilters(prev => ({
+                        ...prev,
+                        dateRange: newValue,
+                        startDate: newValue === 'custom' ? prev.startDate : '',
+                        endDate: newValue === 'custom' ? prev.endDate : ''
+                      }))
+                    }}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
                   >
                     <option value="all">All Time</option>
@@ -243,6 +294,38 @@ const StakeholderReport = () => {
                     <option value="custom">Custom Range</option>
                   </select>
                 </div>
+
+                {filters.dateRange === 'custom' && (
+                  <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Start Date
+                      </label>
+                      <DatePicker
+                        selected={filters.startDate ? new Date(filters.startDate) : null}
+                        onChange={date => setFilters(prev => ({ ...prev, startDate: date }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                        dateFormat="yyyy-MM-dd"
+                        placeholderText="Select start date"
+                        maxDate={new Date()}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        End Date
+                      </label>
+                      <DatePicker
+                        selected={filters.endDate ? new Date(filters.endDate) : null}
+                        onChange={date => setFilters(prev => ({ ...prev, endDate: date }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                        dateFormat="yyyy-MM-dd"
+                        placeholderText="Select end date"
+                        maxDate={new Date()}
+                        minDate={filters.startDate ? new Date(filters.startDate) : null}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -273,23 +356,6 @@ const StakeholderReport = () => {
                     <option value="all">All Status</option>
                     <option value="Pending">Pending</option>
                     <option value="Answered">Answered</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Subject
-                  </label>
-                  <select
-                    value={filters.subject}
-                    onChange={(e) => setFilters(prev => ({ ...prev, subject: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  >
-                    <option value="all">All Subjects</option>
-                    <option value="Account Unblock">Account Unblock</option>
-                    <option value="MoMo Transaction">MoMo Transaction</option>
-                    <option value="Call History">Call History</option>
-                    {/* Add other subject options */}
                   </select>
                 </div>
               </div>
@@ -352,7 +418,95 @@ const StakeholderReport = () => {
           </div>
 
           {/* Charts */}
-          {/* ... Your existing charts code ... */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Timeline Chart */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Request Timeline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={timelineData}>
+                      <defs>
+                        <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#0A2647" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#0A2647" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Area 
+                        type="monotone" 
+                        dataKey="count" 
+                        stroke="#0A2647" 
+                        fillOpacity={1} 
+                        fill="url(#colorRequests)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Status Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Request Status Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Pending', value: stats.pendingRequests },
+                          { name: 'Answered', value: stats.answeredRequests }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        <Cell fill="#0A2647" />
+                        <Cell fill="#2C74B3" />
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sender Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Requests by Sender</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={senderDistribution}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value">
+                        {senderDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </AdminLayout>
