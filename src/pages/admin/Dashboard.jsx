@@ -1,44 +1,63 @@
 // src/pages/admin/Dashboard.jsx
-import { Card } from '@/components/ui/card'
-import { Users, FileText, Activity } from 'lucide-react'
+import { AdminLayout } from '@/components/layout'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Users, FileText, Clock, BarChart } from 'lucide-react'
 
 const Dashboard = () => {
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-      
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="p-6">
-          <div className="flex items-center space-x-4">
-            <Users className="w-8 h-8 text-blue-500" />
-            <div>
-              <h3 className="text-sm font-medium text-gray-600">Total Users</h3>
-              <p className="text-2xl font-bold">123</p>
-            </div>
-          </div>
-        </Card>
+    <AdminLayout>
+      <div className="space-y-6">
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
 
-        <Card className="p-6">
-          <div className="flex items-center space-x-4">
-            <Activity className="w-8 h-8 text-green-500" />
-            <div>
-              <h3 className="text-sm font-medium text-gray-600">Active Users</h3>
-              <p className="text-2xl font-bold">98</p>
-            </div>
-          </div>
-        </Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">120</div>
+              <p className="text-xs text-muted-foreground">Active users in system</p>
+            </CardContent>
+          </Card>
 
-        <Card className="p-6">
-          <div className="flex items-center space-x-4">
-            <FileText className="w-8 h-8 text-purple-500" />
-            <div>
-              <h3 className="text-sm font-medium text-gray-600">Total Reports</h3>
-              <p className="text-2xl font-bold">45</p>
-            </div>
-          </div>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">New Requests</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">24</div>
+              <p className="text-xs text-muted-foreground">Last 24 hours</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">15</div>
+              <p className="text-xs text-muted-foreground">Awaiting response</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Response Rate</CardTitle>
+              <BarChart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">92%</div>
+              <p className="text-xs text-muted-foreground">Last 30 days</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Add more dashboard content as needed */}
       </div>
-    </div>
+    </AdminLayout>
   )
 }
 
