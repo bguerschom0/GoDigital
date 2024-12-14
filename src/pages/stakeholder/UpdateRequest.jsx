@@ -139,7 +139,7 @@ const handleUpdate = async (e) => {
   try {
     const updateData = {
       ...formData,
-      updated_by: user.email,
+      updated_by: username,
       updated_at: new Date().toISOString()
     }
 
