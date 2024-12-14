@@ -26,7 +26,8 @@
     "react-chartjs-2": "^5.2.0",
     "date-fns": "^2.29.3",
     "recharts": "^2.10.3",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "react-datepicker": "^4.25.0"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.7",
