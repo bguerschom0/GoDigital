@@ -9,7 +9,8 @@ import {
   ChevronDown, 
   ChevronRight, 
   FileStack,
-  LayoutDashboard 
+  LayoutDashboard,
+  BarChart
 } from 'lucide-react'
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -55,6 +56,16 @@ const Sidebar = ({ isOpen, onClose }) => {
           title: 'Update Request',
           icon: <Edit className="w-5 h-5" />,
           href: '/admin/stakeholder/update'
+        },
+            {
+      title: 'Reports',
+      icon: <BarChart className="w-5 h-5" />,
+      id: 'reports',
+      children: [
+        {
+          title: 'Stakeholder Analysis',
+          icon: <FileText className="w-5 h-5" />,
+          href: '/admin/reports/stakeholder'
         }
       ]
     }
