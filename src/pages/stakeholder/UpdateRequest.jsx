@@ -20,20 +20,35 @@ const statusOptions = ["Pending", "Answered"]
 const answeredByOptions = ["bigirig", "isimbie", "niragit", "nkomatm", "tuyisec"]
 
 const SuccessPopup = ({ message, onClose }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 50 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: 50 }}
-    className="fixed bottom-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center justify-between min-w-[300px] z-50"
-  >
-    <div className="flex items-center space-x-2">
-      <AlertCircle className="h-5 w-5" />
-      <p>{message}</p>
-    </div>
-    <button onClick={onClose} className="text-green-700 hover:text-green-900">
-      <X className="h-5 w-5" />
-    </button>
-  </motion.div>
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4 relative"
+    >
+      <div className="flex items-center space-x-4">
+        <div className="bg-green-100 dark:bg-green-900 p-2 rounded-full">
+          <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Success</h3>
+          <p className="text-gray-500 dark:text-gray-400">{message}</p>
+        </div>
+      </div>
+      <div className="mt-6 flex justify-end">
+        <Button
+          onClick={() => {
+            onClose();
+            window.location.reload(); // Reset page
+          }}
+          className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+        >
+          Close
+        </Button>
+      </div>
+    </motion.div>
+  </div>
 )
 
 const UpdateRequest = () => {
@@ -97,31 +112,37 @@ const UpdateRequest = () => {
     })
   }
 
-  const handleUpdate = async (e) => {
-    e.preventDefault()
-    setIsUpdating(true)
-    try {
-      const updateData = {
-        ...formData,
-        updated_by: user.email,
-        updated_at: new Date().toISOString()
-      }
-
-      const { error } = await supabase
-        .from('stakeholder_requests')
-        .update(updateData)
-        .eq('id', selectedRequest.id)
-
-      if (error) throw error
-
-      setMessage({ type: 'success', text: 'Request updated successfully' })
-      handleSearch() // Refresh the search results
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Error updating request' })
-    } finally {
-      setIsUpdating(false)
+const handleUpdate = async (e) => {
+  e.preventDefault()
+  setIsUpdating(true)
+  try {
+    const updateData = {
+      ...formData,
+      updated_by: user.email,
+      updated_at: new Date().toISOString()
     }
+
+    const { error } = await supabase
+      .from('stakeholder_requests')
+      .update(updateData)
+      .eq('id', selectedRequest.id)
+
+    if (error) throw error
+
+    setMessage({ 
+      type: 'success', 
+      text: 'Request has been updated successfully' 
+    })
+    // Page will be reset when closing the success message
+  } catch (error) {
+    setMessage({ 
+      type: 'error', 
+      text: 'Error updating request. Please try again.' 
+    })
+  } finally {
+    setIsUpdating(false)
   }
+}
 
   const clearMessage = () => setMessage({ type: '', text: '' })
 
@@ -144,19 +165,19 @@ const UpdateRequest = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex space-x-4">
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                        placeholder="Enter Reference Number"
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                      />
-                      {isLoading && (
-                        <Loader className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 animate-spin text-[#0A2647]" />
-                      )}
-                    </div>
+<div className="flex-1 relative">
+  <input
+    type="text"
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+    placeholder="Enter Reference Number"
+    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+  />
+  {isLoading && (
+    <Loader className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 animate-spin text-[#0A2647]" />
+  )}
+</div>
                     <Button
                       onClick={handleSearch}
                       disabled={isLoading}
@@ -197,13 +218,13 @@ const UpdateRequest = () => {
                                   {format(new Date(result.date_received), 'MMM d, yyyy')}
                                 </p>
                               </div>
-                              <div className={`text-sm px-2 py-1 rounded-full ${
-                                result.status === 'Pending'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
-                                {result.status}
-                              </div>
+<div className={`text-sm px-3 py-1 rounded-full ${
+  result.status === 'Pending'
+    ? 'bg-[#0A2647]/10 text-[#0A2647]'
+    : 'bg-green-100 text-green-800'
+}`}>
+  {result.status}
+</div>
                             </div>
                           </motion.div>
                         ))}
@@ -286,17 +307,30 @@ const UpdateRequest = () => {
                               </div>
                             </div>
 
-                            <div className="space-y-2">
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Sender
-                              </label>
-                              <input
-                                type="text"
-                                value={formData.sender}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed dark:bg-gray-700 dark:border-gray-600"
-                                readOnly
-                              />
-                            </div>
+<div className="space-y-2">
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Sender
+  </label>
+  <input
+    type="text"
+    value={formData.sender}
+    onChange={(e) => setFormData(prev => ({ ...prev, sender: e.target.value }))}
+    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+  />
+</div>
+
+<div className="space-y-2">
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Subject
+  </label>
+  <input
+    type="text"
+    value={formData.subject}
+    onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+  />
+</div>
+
 
                             <div className="space-y-2">
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
