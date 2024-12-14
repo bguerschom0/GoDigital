@@ -97,12 +97,12 @@ const PendingRequests = () => {
       <div className="flex justify-center">
         <div className="w-full max-w-[90%] px-4">
           {/* Header moved to top of page */}
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-4 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-4 mb-4">
             Pending Requests
           </h1>
 
           {/* Main content area with reduced top spacing */}
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
               {isLoading ? (
                 <div className="flex justify-center items-center h-48">
