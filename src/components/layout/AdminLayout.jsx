@@ -1,41 +1,34 @@
 // src/components/layout/AdminLayout.jsx
-import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
 import Sidebar from './Sidebar'
+import { useState } from 'react'
 
-const AdminLayout = () => {
+const AdminLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header 
         onMenuClick={() => setIsSidebarOpen(true)}
         showMenuButton={!isSidebarOpen}
       />
 
-      {/* Sidebar */}
       <Sidebar 
         isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)} 
+        onClose={() => setIsSidebarOpen(false)}
       />
 
-      {/* Main Content */}
-      <div 
-        className={`pt-16 flex flex-col ${
-          isSidebarOpen ? 'lg:ml-16' : ''
-        } transition-all duration-300 ease-in-out pb-16`} // Added padding bottom for footer
-      >
-        {/* Page Content */}
-        <main className="flex-grow p-6">
-          <Outlet />
+      <div className={`pt-16 min-h-screen ${
+        isSidebarOpen ? 'lg:ml-64' : ''
+      } transition-all duration-200 ease-in-out`}>
+        <main className="p-6">
+          {children || <Outlet />}
         </main>
-      </div>
 
-      {/* Footer */}
-      <Footer />
+        <Footer />
+      </div>
     </div>
   )
 }
