@@ -49,3 +49,30 @@ export const authApi = {
     return data
   }
 }
+
+
+
+// Replace Firebase references with Supabase
+export const addRequest = async (data) => {
+  const { error } = await supabase
+    .from('stakeholder_requests')
+    .insert([data])
+  if (error) throw error
+}
+
+export const updateRequest = async (id, data) => {
+  const { error } = await supabase
+    .from('stakeholder_requests')
+    .update(data)
+    .eq('id', id)
+  if (error) throw error
+}
+
+export const getPendingRequests = async () => {
+  const { data, error } = await supabase
+    .from('stakeholder_requests')
+    .select('*')
+    .eq('status', 'Pending')
+  if (error) throw error
+  return data
+}
