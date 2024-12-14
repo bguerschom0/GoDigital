@@ -1,36 +1,25 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
-import AuthForm from './components/auth/AuthForm'
+import NewRequest from './pages/stakeholder/NewRequest'
+import PendingRequests from './pages/stakeholder/PendingRequests'
+import UpdateRequest from './pages/stakeholder/UpdateRequest'
 import Users from './pages/admin/Users'
-import UnauthorizedPage from './pages/error/UnauthorizedPage'
-import SuspendedPage from './pages/error/SuspendedPage'
-import NotFoundPage from './pages/error/NotFoundPage'
 
 function App() {
   return (
     <Router>
       <AuthProvider>
         <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<AuthForm />} />
-          
-          {/* Admin routes */}
-          <Route path="/admin/users" element={
+          <Route path="/admin/*" element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <Users />
+              <Route path="users" element={<Users />} />
+              <Route path="stakeholder/new" element={<NewRequest />} />
+              <Route path="stakeholder/pending" element={<PendingRequests />} />
+              <Route path="stakeholder/update" element={<UpdateRequest />} />
             </ProtectedRoute>
           } />
-          
-          {/* Redirect root to users for now */}
-          <Route path="/" element={<Navigate to="/admin/users" replace />} />
-          <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
-          
-          {/* Error pages */}
-          <Route path="/unauthorized" element={<UnauthorizedPage />} />
-          <Route path="/account-suspended" element={<SuspendedPage />} />
-          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </Router>
