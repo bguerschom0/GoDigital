@@ -94,10 +94,10 @@ const PendingRequests = () => {
 
   return (
     <AdminLayout>
-      <div className="flex justify-center">
+      <div className="flex justify-center" -mt-6>
         <div className="w-full max-w-[90%] px-4">
           {/* Header moved to top of page */}
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-4 mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-4">
             Pending Requests
           </h1>
 
