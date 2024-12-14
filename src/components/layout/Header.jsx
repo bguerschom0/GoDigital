@@ -6,7 +6,7 @@ import { Menu, LogOut, Moon, Sun } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
 const Header = ({ onMenuClick, showMenuButton = true }) => {
-    console.log('Header rendering', new Error().stack)
+   console.log('Header rendering with props:', { showMenuButton, onMenuClick: !!onMenuClick })
   const { theme, setTheme } = useTheme()
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
