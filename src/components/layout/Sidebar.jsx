@@ -1,12 +1,20 @@
 // src/components/layout/Sidebar.jsx
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Users, FileText, Clock, Edit, ChevronDown, ChevronRight, FileStack } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { 
+  Users, 
+  FileText, 
+  Clock, 
+  Edit, 
+  ChevronDown, 
+  ChevronRight, 
+  FileStack,
+  LayoutDashboard 
+} from 'lucide-react'
 
 const Sidebar = ({ isOpen, onClose }) => {
   const [isHovered, setIsHovered] = useState(false)
-  const [expandedMenus, setExpandedMenus] = useState(['stakeholder']) // Default expanded
+  const [expandedMenus, setExpandedMenus] = useState(['stakeholder'])
   const location = useLocation()
 
   const toggleMenu = (menu) => {
@@ -18,6 +26,11 @@ const Sidebar = ({ isOpen, onClose }) => {
   }
 
   const navItems = [
+    {
+      title: 'Dashboard',
+      icon: <LayoutDashboard className="w-5 h-5" />,
+      href: '/admin/dashboard'
+    },
     {
       title: 'Users Management',
       icon: <Users className="w-5 h-5" />,
