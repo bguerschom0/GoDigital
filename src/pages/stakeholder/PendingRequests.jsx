@@ -97,7 +97,7 @@ const PendingRequests = () => {
       <div className="flex justify-center">
         <div className="w-full max-w-[90%] px-4">
           {/* Header moved to top of page */}
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-4 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-4 mb-2">
             Pending Requests
           </h1>
 
