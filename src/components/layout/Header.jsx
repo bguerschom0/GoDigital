@@ -22,6 +22,11 @@ const Header = ({ onMenuClick, showMenuButton = true }) => {
           className="flex items-center cursor-pointer transition-all duration-300"
           onClick={() => navigate('/admin/dashboard')}
         >
+          <img 
+            src="/logo.png" 
+            alt="SSS Portal" 
+            className="h-16 w-auto"
+          />
         </div>
 
         {/* Header Controls Section */}
