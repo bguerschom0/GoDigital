@@ -129,7 +129,7 @@ const UpdateRequest = () => {
                 </div>
                 <Button
                   onClick={handleSearch}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
                 >
                   <Search className="h-5 w-5 mr-2" />
                   Search
@@ -152,8 +152,8 @@ const UpdateRequest = () => {
                         animate={{ opacity: 1, x: 0 }}
                         className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                           selectedRequest?.id === result.id
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                            : 'border-gray-200 hover:border-blue-300 dark:border-gray-700'
+                              ? 'border-[#0A2647] bg-[#0A2647]/10'
+                              : 'border-gray-200 hover:border-[#0A2647]/30'}
                         }`}
                         onClick={() => handleSelect(result)}
                       >
@@ -192,7 +192,140 @@ const UpdateRequest = () => {
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleUpdate} className="space-y-6">
-                      {/* Form fields go here - I can provide the complete form layout if needed */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Date Received
+    </label>
+    <div className="relative">
+      <input
+        type="date"
+        name="date_received"
+        value={formData.date_received}
+        onChange={(e) => setFormData(prev => ({ ...prev, date_received: e.target.value }))}
+        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+      />
+      <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+    </div>
+  </div>
+
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Reference Number
+    </label>
+    <input
+      type="text"
+      name="reference_number"
+      value={formData.reference_number}
+      onChange={(e) => setFormData(prev => ({ ...prev, reference_number: e.target.value }))}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+    />
+  </div>
+
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Status
+    </label>
+    <select
+      name="status"
+      value={formData.status}
+      onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+    >
+      {statusOptions.map(option => (
+        <option key={option} value={option}>{option}</option>
+      ))}
+    </select>
+  </div>
+
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Response Date
+    </label>
+    <div className="relative">
+      <input
+        type="date"
+        name="response_date"
+        value={formData.response_date}
+        onChange={(e) => setFormData(prev => ({ ...prev, response_date: e.target.value }))}
+        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+      />
+      <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+    </div>
+  </div>
+
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Sender
+    </label>
+    <input
+      type="text"
+      name="sender"
+      value={formData.sender}
+      onChange={(e) => setFormData(prev => ({ ...prev, sender: e.target.value }))}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+      readOnly
+    />
+  </div>
+
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Answered By
+    </label>
+    <select
+      name="answered_by"
+      value={formData.answered_by}
+      onChange={(e) => setFormData(prev => ({ ...prev, answered_by: e.target.value }))}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+    >
+      <option value="">Select Person</option>
+      {answeredByOptions.map(option => (
+        <option key={option} value={option}>{option}</option>
+      ))}
+    </select>
+  </div>
+
+  <div className="space-y-2 md:col-span-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Description
+    </label>
+    <textarea
+      name="description"
+      value={formData.description}
+      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+      rows={6}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+    />
+  </div>
+
+  <div className="md:col-span-2 flex justify-end space-x-4">
+    <Button
+      type="button"
+      onClick={() => setSelectedRequest(null)}
+      variant="outline"
+      className="border-[#0A2647] text-[#0A2647] hover:bg-[#0A2647]/10"
+    >
+      Cancel
+    </Button>
+    <Button
+      type="submit"
+      disabled={isUpdating}
+      className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+    >
+      {isUpdating ? (
+        <>
+          <Loader className="w-4 h-4 mr-2 animate-spin" />
+          Updating...
+        </>
+      ) : (
+        <>
+          <Save className="w-4 h-4 mr-2" />
+          Update Request
+        </>
+      )}
+    </Button>
+  </div>
+</div>
                     </form>
                   </CardContent>
                 </Card>
