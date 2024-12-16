@@ -175,6 +175,9 @@ const [formData, setFormData] = useState({
               <option value="Reversal">Reversal</option>
               <option value="Account Information">Account Information</option>
               <option value="Account Status">Account Status</option>
+              <option value="Sim Registration Information">Sim Registration Information</option>
+              <option value="Sim Swap Information">Sim Swap Information</option>
+              <option value="Sim Card Information">Sim Card Information</option>
               <option value="Balance">Balance</option>
               <option value="Other">Other</option>
             </select>
