@@ -61,19 +61,6 @@ const UpdateRequest = () => {
   const [availableUsers, setAvailableUsers] = useState([])
   const [currentAnswerer, setCurrentAnswerer] = useState(null)
 
-  const [availableSenders, setAvailableSenders] = useState([])
-  const [availableSubjects, setAvailableSubjects] = useState([])
-  const [formData, setFormData] = useState({
-    date_received: '',
-    reference_number: '',
-    sender: '',
-    subject: '',
-    status: '',
-    response_date: '',
-    answered_by: '',
-    description: ''
-  })
-
   useEffect(() => {
     fetchAvailableUsers()
   }, [])
@@ -144,40 +131,6 @@ const UpdateRequest = () => {
       description: request.description
     })
   }
-    const fetchAvailableSendersAndSubjects = async () => {
-    try {
-      // Fetch all requests to get unique senders and subjects
-      const { data: requests, error } = await supabase
-        .from('stakeholder_requests')
-        .select('sender, subject')
-
-      if (error) throw error
-
-      // Get unique senders
-      const uniqueSenders = [...new Set(requests.map(req => req.sender))]
-        .filter(Boolean)
-        .sort()
-      setAvailableSenders(['NPPA', 'RIB', 'MPG', 'Private Advocate', 'Other', ...uniqueSenders])
-
-      // Get unique subjects
-      const uniqueSubjects = [...new Set(requests.map(req => req.subject))]
-        .filter(Boolean)
-        .sort()
-      setAvailableSubjects([
-        'Account Unblock',
-        'MoMo Transaction',
-        'Call History',
-        'Reversal',
-        'Account Information',
-        'Account Status',
-        'Balance',
-        'Other',
-        ...uniqueSubjects
-      ])
-    } catch (error) {
-      console.error('Error fetching senders and subjects:', error)
-    }
-  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -198,46 +151,63 @@ const UpdateRequest = () => {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
   }
+  
+  const [formData, setFormData] = useState({
+  date_received: '',
+  reference_number: '',
+  sender: '',
+  subject: '',
+  status: '',
+  response_date: '',
+  answered_by: '',
+  description: '',
+  otherSender: '',   // Add this
+  otherSubject: ''   // Add this
+})
 
-  const handleUpdate = async (e) => {
-    e.preventDefault()
-    setIsUpdating(true)
-    try {
-      const updateData = {
-        date_received: formData.date_received,
-        reference_number: formData.reference_number,
-        sender: formData.sender,
-        subject: formData.subject,
-        status: formData.status,
-        response_date: formData.status === 'Answered' ? formData.response_date : null,
-        answered_by: formData.status === 'Answered' ? formData.answered_by : null,
-        description: formData.description,
-        updated_by: user.username,
-        updated_at: new Date().toISOString()
-      }
-
-      const { error } = await supabase
-        .from('stakeholder_requests')
-        .update(updateData)
-        .eq('id', selectedRequest.id)
-
-      if (error) throw error
-
-      setMessage({ type: 'success', text: 'Request updated successfully!' })
-      handleSearch() // Refresh the search results
-    } catch (error) {
-      console.error('Error:', error)
-      setMessage({ type: 'error', text: 'Error updating request. Please try again.' })
-    } finally {
-      setIsUpdating(false)
+const handleUpdate = async (e) => {
+  e.preventDefault()
+  setIsUpdating(true)
+  try {
+    const updateData = {
+      date_received: formData.date_received,
+      reference_number: formData.reference_number,
+      sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
+      subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
+      status: formData.status,
+      response_date: formData.status === 'Answered' ? formData.response_date : null,
+      answered_by: formData.status === 'Answered' ? formData.answered_by : null,
+      description: formData.description,
+      updated_by: user.username,
+      updated_at: new Date().toISOString()
     }
+
+    const { error } = await supabase
+      .from('stakeholder_requests')
+      .update(updateData)
+      .eq('id', selectedRequest.id)
+
+    if (error) throw error
+
+    setMessage({ type: 'success', text: 'Request updated successfully!' })
+    handleSearch() // Refresh the search results
+  } catch (error) {
+    console.error('Error:', error)
+    setMessage({ type: 'error', text: 'Error updating request. Please try again.' })
+  } finally {
+    setIsUpdating(false)
   }
+}
 
   const clearMessage = () => setMessage({ type: '', text: '' })
 
+
+
   return (
     <AdminLayout>
-      <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))] -mt-6">
+
+  <AdminLayout>
+    <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))] -mt-6 bg-white dark:bg-gray-900">
         <div className="flex-1 flex justify-center">
           <div className="w-full max-w-[90%] px-4 pb-8">
             {/* Header */}
@@ -289,11 +259,15 @@ const UpdateRequest = () => {
                           key={result.id}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
+                        
+
+                      
+                          
                           className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                             selectedRequest?.id === result.id
-                              ? 'border-[#0A2647] bg-[#0A2647]/10'
-                              : 'border-gray-200 hover:border-[#0A2647]/30'
-                          }`}
+                              ? 'border-[#0A2647] bg-[#0A2647]/10 dark:bg-[#0A2647]/20'
+                              : 'border-gray-200 dark:border-gray-700 hover:border-[#0A2647]/30 dark:hover:border-[#0A2647]/50'
+                          } dark:text-white`}
                           onClick={() => handleSelect(result)}
                         >
                           <div className="flex justify-between items-center">
@@ -308,7 +282,7 @@ const UpdateRequest = () => {
                             <div className={`text-sm px-3 py-1 rounded-full ${
                               result.status === 'Pending'
                                 ? 'bg-[#0A2647]/10 text-[#0A2647]'
-                                : 'bg-[#0A2647]/10 text-[#0A2647]'
+                                : 'bg-green-100 text-green-800'
                             }`}>
                               {result.status}
                             </div>
@@ -367,23 +341,24 @@ const UpdateRequest = () => {
                             />
                           </div>
 
-
 <div className="space-y-2">
-    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-      Sender
-    </label>
-    <select
-      name="sender"
-      value={formData.sender}
-      onChange={handleInputChange}
-      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-    >
-      <option value="">Select Sender</option>
-      {availableSenders.map((sender) => (
-        <option key={sender} value={sender}>{sender}</option>
-      ))}
-    </select>
-  </div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Sender
+  </label>
+  <select
+    name="sender"
+    value={formData.sender}
+    onChange={handleInputChange}
+    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+  >
+    <option value="">Select Sender</option>
+    <option value="NPPA">NPPA</option>
+    <option value="RIB">RIB</option>
+    <option value="MPG">MPG</option>
+    <option value="Private Advocate">Private Advocate</option>
+    <option value="Other">Other</option>
+  </select>
+</div>
 
 {formData.sender === 'Other' && (
   <div className="space-y-2">
@@ -392,30 +367,37 @@ const UpdateRequest = () => {
     </label>
     <input
       type="text"
-      value={formData.otherSender || ''}
-      onChange={(e) => setFormData(prev => ({ ...prev, otherSender: e.target.value }))}
-      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+      name="otherSender"
+      value={formData.otherSender}
+      onChange={handleInputChange}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700 dark:text-white"
       placeholder="Specify sender"
     />
   </div>
 )}
 
 <div className="space-y-2">
-    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-      Subject
-    </label>
-    <select
-      name="subject"
-      value={formData.subject}
-      onChange={handleInputChange}
-      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-    >
-      <option value="">Select Subject</option>
-      {availableSubjects.map((subject) => (
-        <option key={subject} value={subject}>{subject}</option>
-      ))}
-    </select>
-  </div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    Subject
+  </label>
+  <select
+    name="subject"
+    value={formData.subject}
+    onChange={handleInputChange}
+    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+  >
+    <option value="">Select Subject</option>
+    <option value="Account Unblock">Account Unblock</option>
+    <option value="MoMo Transaction">MoMo Transaction</option>
+    <option value="Call History">Call History</option>
+    <option value="Reversal">Reversal</option>
+    <option value="MoMo Transaction & Call History">MoMo Transaction & Call History</option>
+    <option value="Account Information">Account Information</option>
+    <option value="Account Status">Account Status</option>
+    <option value="Balance">Balance</option>
+    <option value="Other">Other</option>
+  </select>
+</div>
 
 {formData.subject === 'Other' && (
   <div className="space-y-2">
@@ -424,14 +406,14 @@ const UpdateRequest = () => {
     </label>
     <input
       type="text"
-      value={formData.otherSubject || ''}
-      onChange={(e) => setFormData(prev => ({ ...prev, otherSubject: e.target.value }))}
-      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+      name="otherSubject"
+      value={formData.otherSubject}
+      onChange={handleInputChange}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700 dark:text-white"
       placeholder="Specify subject"
     />
   </div>
 )}
-
                           
 
                           <div className="space-y-2">
@@ -553,4 +535,3 @@ const UpdateRequest = () => {
 }
 
 export default UpdateRequest
- 
