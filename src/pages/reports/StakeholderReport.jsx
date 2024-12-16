@@ -516,67 +516,73 @@ const fetchFilterOptions = async () => {
               </div>
 
 
-                {/* Sender Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Sender Distribution</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px] w-[50%] mx-auto">
-                      <ResponsiveContainer width="50%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={senderDistribution}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            fill="#0A2647"
-                            label={({ value, percentage }) => `${value} (${percentage}%)`}
-                          >
-                            {senderDistribution.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+{/* Wrapper container for both cards */}
+<div className="flex justify-between space-x-4">
 
-                {/* Status Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Status Distribution</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px] w-[50%] mx-auto">
-                      <ResponsiveContainer width="50%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={statusDistribution}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            fill="#0A2647"
-                            label={({ value, percentage }) => `${value} (${percentage}%)`}
-                          >
-                            {statusDistribution.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+  {/* Sender Distribution */}
+  <Card className="w-1/2">
+    <CardHeader>
+      <CardTitle>Sender Distribution</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="h-[300px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={senderDistribution}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              fill="#0A2647"
+              label={({ value, percentage }) => `${value} (${percentage}%)`}
+            >
+              {senderDistribution.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </CardContent>
+  </Card>
+
+  {/* Status Distribution */}
+  <Card className="w-1/2">
+    <CardHeader>
+      <CardTitle>Status Distribution</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="h-[300px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={statusDistribution}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              fill="#0A2647"
+              label={({ value, percentage }) => `${value} (${percentage}%)`}
+            >
+              {statusDistribution.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </CardContent>
+  </Card>
+
+</div>
+
 
                 {/* Timeline Chart */}
                 <Card className="col-span-2">
