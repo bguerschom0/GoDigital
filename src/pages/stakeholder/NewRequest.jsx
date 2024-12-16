@@ -25,16 +25,18 @@ const formatDate = (date) => {
 
 const NewRequest = () => {
   const [currentSection, setCurrentSection] = useState(0)
-  const [formData, setFormData] = useState({
-    dateReceived: '',
-    referenceNumber: '',
-    sender: '',
-    otherSender: '',
-    subject: '',
-    otherSubject: '',
-    status: 'Pending',
-    description: ''
-  })
+const [formData, setFormData] = useState({
+  dateReceived: '',
+  referenceNumber: '',
+  sender: '',
+  otherSender: '',
+  subject: '',
+  otherSubject: '',
+  status: 'Pending',
+  responseDate: '',
+  answeredBy: '',
+  description: ''
+})
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -187,7 +189,77 @@ const NewRequest = () => {
           )}
         </div>
       )
-    }
+    },
+    // Add to the sections array
+{
+  title: 'Response',
+  description: 'Status and response details',
+  fields: () => (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Status
+        </label>
+        <select
+          name="status"
+          value={formData.status}
+          onChange={handleInputChange}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+        >
+          <option value="Pending">Pending</option>
+          <option value="Answered">Answered</option>
+        </select>
+      </div>
+
+      {formData.status === 'Answered' && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Response Date
+            </label>
+            <div className="relative">
+              <DatePicker
+                selected={formData.responseDate ? new Date(formData.responseDate) : null}
+                onChange={(date) => handleDateChange('responseDate', date)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+                dateFormat="yyyy-MM-dd"
+                placeholderText="Select response date"
+                maxDate={new Date()}
+                minDate={formData.dateReceived ? new Date(formData.dateReceived) : null}
+              />
+              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            {errors.responseDate && (
+              <p className="mt-1 text-sm text-red-500">{errors.responseDate}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Answered By
+            </label>
+            <select
+              name="answeredBy"
+              value={formData.answeredBy}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+            >
+              <option value="">Select Person</option>
+              <option value="bigirig">bigirig</option>
+              <option value="isimbie">isimbie</option>
+              <option value="niragit">niragit</option>
+              <option value="nkomatm">nkomatm</option>
+              <option value="tuyisec">tuyisec</option>
+            </select>
+            {errors.answeredBy && (
+              <p className="mt-1 text-sm text-red-500">{errors.answeredBy}</p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
   ]
 
   const handleInputChange = (e) => {
@@ -224,56 +296,69 @@ const NewRequest = () => {
       if (!formData.description) newErrors.description = 'Description is required'
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = async () => {
-    if (!validateSection(currentSection)) return
-
-    if (currentSection < sections.length - 1) {
-      setCurrentSection(prev => prev + 1)
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      const requestData = {
-        ...formData,
-        sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
-        subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
-        created_at: new Date().toISOString()
-      }
-
-      const { error } = await supabase
-        .from('stakeholder_requests')
-        .insert([requestData])
-
-      if (error) throw error
-
-      setMessage({ type: 'success', text: 'Request saved successfully!' })
-      handleReset()
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Error saving request. Please try again.' })
-    } finally {
-      setIsLoading(false)
+  else if (section === 3) { // Response section
+    if (formData.status === 'Answered') {
+      if (!formData.responseDate) newErrors.responseDate = 'Response date is required'
+      if (!formData.answeredBy) newErrors.answeredBy = 'Please select who answered'
     }
   }
 
-  const handleReset = () => {
-    setFormData({
-      dateReceived: '',
-      referenceNumber: '',
-      sender: '',
-      otherSender: '',
-      subject: '',
-      otherSubject: '',
-      status: 'Pending',
-      description: ''
-    })
-    setCurrentSection(0)
-    setErrors({})
+  setErrors(newErrors)
+  return Object.keys(newErrors).length === 0
+}
+
+const handleSubmit = async () => {
+  if (!validateSection(currentSection)) return
+
+  if (currentSection < sections.length - 1) {
+    setCurrentSection(prev => prev + 1)
+    return
   }
+
+  setIsLoading(true)
+  try {
+    const { user } = await supabase.auth.getUser()
+    
+    const requestData = {
+      ...formData,
+      sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
+      subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
+      created_by: user.username,
+      created_at: new Date().toISOString()
+    }
+
+    const { error } = await supabase
+      .from('stakeholder_requests')
+      .insert([requestData])
+
+    if (error) throw error
+
+    setMessage({ type: 'success', text: 'Request saved successfully!' })
+    handleReset()
+  } catch (error) {
+    console.error('Error:', error)
+    setMessage({ type: 'error', text: 'Error saving request. Please try again.' })
+  } finally {
+    setIsLoading(false)
+  }
+}
+
+const handleReset = () => {
+  setFormData({
+    dateReceived: '',
+    referenceNumber: '',
+    sender: '',
+    otherSender: '',
+    subject: '',
+    otherSubject: '',
+    status: 'Pending',
+    responseDate: '',
+    answeredBy: '',
+    description: ''
+  })
+  setCurrentSection(0)
+  setErrors({})
+}
 
   return (
     <AdminLayout>
