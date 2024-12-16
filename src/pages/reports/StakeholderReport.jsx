@@ -1,4 +1,4 @@
-```jsx
+
 // src/pages/reports/StakeholderReport.jsx
 import { AdminLayout } from '@/components/layout'
 import { useState, useEffect, useRef } from 'react'
@@ -474,7 +474,7 @@ const StakeholderReport = () => {
                             fill="#0A2647"
                           >
                             {senderDistribution.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              <Cell key={`slice-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                           </Pie>
                           <Tooltip />
