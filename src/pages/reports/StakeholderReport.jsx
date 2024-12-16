@@ -594,7 +594,7 @@ const fetchFilterOptions = async () => {
 
 </div>
 
-<div style={{ marginBottom: '20px' }}>
+<div style={{ marginTop: '20px' }}>
                 {/* Timeline Chart */}
                 <Card className="col-span-2">
                   <CardHeader>
