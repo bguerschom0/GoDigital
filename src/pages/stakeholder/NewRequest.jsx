@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/card'
 import { supabase } from '@/config/supabase'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
+import { auth } from '@/config/firebase' // Add this import
 
 const formatDate = (date) => {
   if (!date) return '';
@@ -317,10 +318,9 @@ const handleSubmit = async () => {
 
   setIsLoading(true)
   try {
-    // Get current user from useAuth hook
-    const { user } = useAuth() // Add this hook at the top with other imports
+    const currentUser = auth.currentUser // Get current Firebase user
     
-    if (!user) {
+    if (!currentUser) {
       throw new Error('No user found. Please login again.')
     }
 
@@ -328,7 +328,7 @@ const handleSubmit = async () => {
       ...formData,
       sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
       subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
-      created_by: user.username, // We'll use username from our auth context
+      created_by: currentUser.email,
       created_at: new Date().toISOString()
     }
 
@@ -492,23 +492,57 @@ return (
       </div>
     </div>
 
-    {/* Success/Error Message */}
-    <AnimatePresence>
-      {message.text && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg ${
-            message.type === 'success' 
-              ? 'bg-[#0A2647] text-white' 
-              : 'bg-red-500 text-white'
-          }`}
-        >
-          {message.text}
-        </motion.div>
-      )}
-    </AnimatePresence>
+{/* Success/Error Message */}
+<AnimatePresence>
+  {message.text && (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className={`
+          mx-4 p-6 rounded-lg shadow-xl max-w-md w-full
+          ${message.type === 'success' 
+            ? 'bg-white text-[#0A2647]' 
+            : 'bg-white text-red-600'
+          }
+        `}
+      >
+        <div className="flex items-center space-x-4">
+          <div className={`
+            p-2 rounded-full 
+            ${message.type === 'success' 
+              ? 'bg-[#0A2647]/10 text-[#0A2647]' 
+              : 'bg-red-100 text-red-600'
+            }
+          `}>
+            {message.type === 'success' ? (
+              <Check className="w-6 h-6" />
+            ) : (
+              <AlertCircle className="w-6 h-6" />
+            )}
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-medium">
+              {message.type === 'success' ? 'Success' : 'Error'}
+            </h3>
+            <p className="text-gray-600">
+              {message.text}
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end">
+          <Button
+            onClick={() => setMessage({ type: '', text: '' })}
+            className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+          >
+            Close
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
   </AdminLayout>
 )
 }
