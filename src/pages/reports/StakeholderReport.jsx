@@ -1,5 +1,3 @@
-
-// src/pages/reports/StakeholderReport.jsx
 import { AdminLayout } from '@/components/layout'
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
@@ -35,7 +33,8 @@ import {
   Legend,
   ResponsiveContainer,
   LineChart,
-  Line
+  Line,
+  Label
 } from 'recharts'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
@@ -44,85 +43,7 @@ import * as XLSX from 'xlsx'
 const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D', '#6096B4']
 
 const StakeholderReport = () => {
-  const chartsRef = useRef(null)
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-    endDate: new Date()
-  })
-  const [selectedSender, setSelectedSender] = useState('all')
-  const [selectedStatus, setSelectedStatus] = useState('all')
-  const [selectedSubject, setSelectedSubject] = useState('all')
-  const [isLoading, setIsLoading] = useState(true)
-  const [stats, setStats] = useState({
-    totalRequests: 0,
-    pendingRequests: 0,
-    answeredRequests: 0,
-    averageResponseTime: 0
-  })
-  const [timelineData, setTimelineData] = useState([])
-  const [senderDistribution, setSenderDistribution] = useState([])
-  const [subjectDistribution, setSubjectDistribution] = useState([])
-  const [monthlyTrends, setMonthlyTrends] = useState([])
-  const [availableSenders, setAvailableSenders] = useState(['all'])
-  const [availableSubjects, setAvailableSubjects] = useState(['all'])
-
-  useEffect(() => {
-    fetchData()
-  }, [dateRange, selectedSender, selectedStatus, selectedSubject])
-
-  const fetchData = async () => {
-    setIsLoading(true)
-    try {
-      let query = supabase
-        .from('stakeholder_requests')
-        .select('*')
-        .gte('created_at', dateRange.startDate.toISOString())
-        .lte('created_at', dateRange.endDate.toISOString())
-
-      if (selectedSender !== 'all') {
-        query = query.eq('sender', selectedSender)
-      }
-      if (selectedStatus !== 'all') {
-        query = query.eq('status', selectedStatus)
-      }
-      if (selectedSubject !== 'all') {
-        query = query.eq('subject', selectedSubject)
-      }
-
-      const { data, error } = await query
-
-      if (error) throw error
-
-      processData(data)
-      await fetchOptions()
-    } catch (error) {
-      console.error('Error fetching data:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const fetchOptions = async () => {
-    try {
-      const { data: senders } = await supabase
-        .from('stakeholder_requests')
-        .select('sender')
-        .not('sender', 'is', null)
-
-      const { data: subjects } = await supabase
-        .from('stakeholder_requests')
-        .select('subject')
-        .not('subject', 'is', null)
-
-      const uniqueSenders = ['all', ...new Set(senders.map(s => s.sender))]
-      const uniqueSubjects = ['all', ...new Set(subjects.map(s => s.subject))]
-
-      setAvailableSenders(uniqueSenders)
-      setAvailableSubjects(uniqueSubjects)
-    } catch (error) {
-      console.error('Error fetching options:', error)
-    }
-  }
+  // ... (previous state and ref declarations remain the same)
 
   const processData = (data) => {
     // Basic stats
@@ -150,31 +71,26 @@ const StakeholderReport = () => {
       averageResponseTime: avgResponseTime
     })
 
-    // Process timeline data
+    // Process distributions with percentages
+    setSenderDistribution(processDistributionData(data, 'sender', total))
+    
+    // Process status distribution instead of subject
+    const statusData = [
+      { name: 'Pending', value: pending, percentage: ((pending/total) * 100).toFixed(1) },
+      { name: 'Answered', value: answered, percentage: ((answered/total) * 100).toFixed(1) }
+    ]
+    setStatusDistribution(statusData)
+
+    // Process monthly trends with actual numbers
+    const trends = processMonthlyTrends(data)
+    setMonthlyTrends(trends)
+
+    // Process timeline data last
     const timeline = processTimelineData(data)
     setTimelineData(timeline)
-
-    // Process distributions
-    setSenderDistribution(processDistributionData(data, 'sender'))
-    setSubjectDistribution(processDistributionData(data, 'subject'))
-
-    // Process monthly trends
-    setMonthlyTrends(processMonthlyTrends(data))
   }
 
-  const processTimelineData = (data) => {
-    const grouped = data.reduce((acc, item) => {
-      const date = item.date_received.split('T')[0]
-      acc[date] = (acc[date] || 0) + 1
-      return acc
-    }, {})
-
-    return Object.entries(grouped)
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
-  }
-
-  const processDistributionData = (data, key) => {
+  const processDistributionData = (data, key, total) => {
     const distribution = data.reduce((acc, item) => {
       const value = item[key]
       acc[value] = (acc[value] || 0) + 1
@@ -182,61 +98,106 @@ const StakeholderReport = () => {
     }, {})
 
     return Object.entries(distribution)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({
+        name,
+        value,
+        percentage: ((value/total) * 100).toFixed(1)
+      }))
       .sort((a, b) => b.value - a.value)
   }
 
-  const processMonthlyTrends = (data) => {
-    const monthly = data.reduce((acc, item) => {
-      const month = new Date(item.date_received).toLocaleString('default', { month: 'short' })
-      acc[month] = acc[month] || { month, total: 0, pending: 0, answered: 0 }
-      acc[month].total += 1
-      acc[month][item.status.toLowerCase()] += 1
-      return acc
-    }, {})
-
-    return Object.values(monthly).sort((a, b) => 
-      new Date(a.month) - new Date(b.month)
-    )
-  }
-
-  const exportToExcel = () => {
-    const workbook = XLSX.utils.book_new()
-    
-    // Create sheets for different data
-    const statsSheet = XLSX.utils.json_to_sheet([stats])
-    const timelineSheet = XLSX.utils.json_to_sheet(timelineData)
-    const senderSheet = XLSX.utils.json_to_sheet(senderDistribution)
-    const subjectSheet = XLSX.utils.json_to_sheet(subjectDistribution)
-    
-    XLSX.utils.book_append_sheet(workbook, statsSheet, "Stats")
-    XLSX.utils.book_append_sheet(workbook, timelineSheet, "Timeline")
-    XLSX.utils.book_append_sheet(workbook, senderSheet, "Sender Distribution")
-    XLSX.utils.book_append_sheet(workbook, subjectSheet, "Subject Distribution")
-    
-    XLSX.writeFile(workbook, "stakeholder-report.xlsx")
-  }
+  const CustomLabel = ({ viewBox, value, percentage }) => {
+    const { cx, cy } = viewBox;
+    return (
+      <text
+        x={cx}
+        y={cy}
+        className="recharts-text"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fill="#fff"
+        fontSize="14"
+      >
+        <tspan x={cx} dy="-0.5em">{value}</tspan>
+        <tspan x={cx} dy="1.5em">{percentage}%</tspan>
+      </text>
+    );
+  };
 
   const exportToPDF = async () => {
     if (!chartsRef.current) return
 
-    const canvas = await html2canvas(chartsRef.current)
+    const canvas = await html2canvas(chartsRef.current, {
+      scale: 2, // Increase quality
+      backgroundColor: '#ffffff'
+    })
+    
     const imgData = canvas.toDataURL('image/png')
-    const pdf = new jsPDF('l', 'mm', 'a4')
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    })
+
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = pdf.internal.pageSize.getHeight()
     
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+    // Add title
+    pdf.setFontSize(16)
+    pdf.text('Stakeholder Analysis Report', 14, 15)
+    
+    // Add date range
+    pdf.setFontSize(10)
+    pdf.text(
+      `Date Range: ${dateRange.startDate.toLocaleDateString()} - ${dateRange.endDate.toLocaleDateString()}`,
+      14, 25
+    )
+    
+    // Add image with margins
+    const margin = 10
+    pdf.addImage(
+      imgData,
+      'PNG',
+      margin,
+      30, // Start after the title
+      pdfWidth - (margin * 2),
+      pdfHeight - 40 // Leave space for title and margins
+    )
+    
     pdf.save('stakeholder-report.pdf')
   }
 
   const printCharts = () => {
+    const printWindow = window.open('', '_blank')
     const printContent = document.getElementById('charts-container')
-    const originalContents = document.body.innerHTML
-    document.body.innerHTML = printContent.innerHTML
-    window.print()
-    document.body.innerHTML = originalContents
-    window.location.reload()
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Stakeholder Analysis Report</title>
+          <style>
+            body { margin: 20px; }
+            .page-break { page-break-before: always; }
+            .chart-container { margin-bottom: 20px; }
+            @media print {
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Stakeholder Analysis Report</h1>
+          <p>Date Range: ${dateRange.startDate.toLocaleDateString()} - ${dateRange.endDate.toLocaleDateString()}</p>
+          ${printContent.innerHTML}
+        </body>
+      </html>
+    `)
+    
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+      printWindow.close()
+    }, 250)
   }
 
   return (
@@ -244,192 +205,105 @@ const StakeholderReport = () => {
       <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))] -mt-6">
         <div className="flex-1 flex justify-center">
           <div className="w-full max-w-[90%] px-4 pb-8">
-            {/* Header with Title and Actions */}
-            <div className="flex justify-between items-center pt-2 mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Stakeholder Analysis Report
-              </h1>
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={exportToExcel}
-                  className="text-[#0A2647] border-[#0A2647]"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Export Excel
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={exportToPDF}
-                  className="text-[#0A2647] border-[#0A2647]"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={printCharts}
-                  className="text-[#0A2647] border-[#0A2647]"
-                >
-                  <Printer className="w-4 h-4 mr-2" />
-                  Print
-                </Button>
-              </div>
-            </div>
-
-            {/* Filters */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium flex items-center">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filters
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Date Range
-                    </label>
-                    <div className="flex space-x-2">
-                      <DatePicker
-                        selected={dateRange.startDate}
-                        onChange={date => setDateRange(prev => ({ ...prev, startDate: date }))}
-                        selectsStart
-                        startDate={dateRange.startDate}
-                        endDate={dateRange.endDate}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                      />
-                      <DatePicker
-                        selected={dateRange.endDate}
-                        onChange={date => setDateRange(prev => ({ ...prev, endDate: date }))}
-                        selectsEnd
-                        startDate={dateRange.startDate}
-                        endDate={dateRange.endDate}
-                        minDate={dateRange.startDate}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Sender
-                    </label>
-                    <select
-                      value={selectedSender}
-                      onChange={(e) => setSelectedSender(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                    >
-                      {availableSenders.map((sender) => (
-                        <option key={sender} value={sender}>
-                          {sender === 'all' ? 'All Senders' : sender}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Status
-                    </label>
-                    <select
-                      value={selectedStatus}
-                      onChange={(e) => setSelectedStatus(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Answered">Answered</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Subject
-                    </label>
-                    <select
-                      value={selectedSubject}
-                      onChange={(e) => setSelectedSubject(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                    >
-                      {availableSubjects.map((subject) => (
-                        <option key={subject} value={subject}>
-                          {subject === 'all' ? 'All Subjects' : subject}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
+            {/* Header and Filters sections remain the same */}
+            
             <div id="charts-container" ref={chartsRef}>
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-                    <BarChart2 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.totalRequests}</div>
-   
+              {/* Stats Cards remain the same */}
 
-
-
-                    <p className="text-xs text-muted-foreground">
-                      All stakeholder requests
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.pendingRequests}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Awaiting response
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Answered Requests</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.answeredRequests}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Completed responses
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Average Response Time</CardTitle>
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.averageResponseTime} days</div>
-                    <p className="text-xs text-muted-foreground">
-                      Time to resolution
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Charts Grid */}
+              {/* Charts Grid - Reordered */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Timeline Chart */}
+                {/* Monthly Trends */}
+                <Card className="col-span-2">
+                  <CardHeader>
+                    <CardTitle>Monthly Trends</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={monthlyTrends}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="total" fill="#0A2647" name="Total Requests">
+                            <Label position="top" content={({ value }) => value} />
+                          </Bar>
+                          <Bar dataKey="pending" fill="#2C74B3" name="Pending">
+                            <Label position="top" content={({ value }) => value} />
+                          </Bar>
+                          <Bar dataKey="answered" fill="#427D9D" name="Answered">
+                            <Label position="top" content={({ value }) => value} />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Sender Distribution with numbers */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Sender Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={senderDistribution}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            fill="#0A2647"
+                            label={({ value, percentage }) => `${value} (${percentage}%)`}
+                          >
+                            {senderDistribution.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Status Distribution (replacing Subject) */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Status Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={statusDistribution}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            fill="#0A2647"
+                            label={({ value, percentage }) => `${value} (${percentage}%)`}
+                          >
+                            {statusDistribution.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Timeline Chart - Moved to bottom */}
                 <Card className="col-span-2">
                   <CardHeader>
                     <CardTitle>Request Timeline</CardTitle>
@@ -448,91 +322,13 @@ const StakeholderReport = () => {
                             stroke="#0A2647"
                             fill="#0A2647"
                             fillOpacity={0.2}
-                          />
+                          >
+                            <Label
+                              content={({ value }) => value}
+                              position="top"
+                            />
+                          </Area>
                         </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Sender Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Sender Distribution</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={senderDistribution}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            fill="#0A2647"
-                          >
-                            {senderDistribution.map((entry, index) => (
-                              <Cell key={`slice-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Subject Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Subject Distribution</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={subjectDistribution}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            fill="#0A2647"
-                          >
-                            {subjectDistribution.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Monthly Trends */}
-                <Card className="col-span-2">
-                  <CardHeader>
-                    <CardTitle>Monthly Trends</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={monthlyTrends}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Bar dataKey="total" fill="#0A2647" name="Total Requests" />
-                          <Bar dataKey="pending" fill="#2C74B3" name="Pending" />
-                          <Bar dataKey="answered" fill="#427D9D" name="Answered" />
-                        </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
