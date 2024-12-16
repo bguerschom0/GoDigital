@@ -144,6 +144,40 @@ const UpdateRequest = () => {
       description: request.description
     })
   }
+    const fetchAvailableSendersAndSubjects = async () => {
+    try {
+      // Fetch all requests to get unique senders and subjects
+      const { data: requests, error } = await supabase
+        .from('stakeholder_requests')
+        .select('sender, subject')
+
+      if (error) throw error
+
+      // Get unique senders
+      const uniqueSenders = [...new Set(requests.map(req => req.sender))]
+        .filter(Boolean)
+        .sort()
+      setAvailableSenders(['NPPA', 'RIB', 'MPG', 'Private Advocate', 'Other', ...uniqueSenders])
+
+      // Get unique subjects
+      const uniqueSubjects = [...new Set(requests.map(req => req.subject))]
+        .filter(Boolean)
+        .sort()
+      setAvailableSubjects([
+        'Account Unblock',
+        'MoMo Transaction',
+        'Call History',
+        'Reversal',
+        'Account Information',
+        'Account Status',
+        'Balance',
+        'Other',
+        ...uniqueSubjects
+      ])
+    } catch (error) {
+      console.error('Error fetching senders and subjects:', error)
+    }
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -274,7 +308,7 @@ const UpdateRequest = () => {
                             <div className={`text-sm px-3 py-1 rounded-full ${
                               result.status === 'Pending'
                                 ? 'bg-[#0A2647]/10 text-[#0A2647]'
-                                : 'bg-green-100 text-green-800'
+                                : 'bg-[#0A2647]/10 text-[#0A2647]'
                             }`}>
                               {result.status}
                             </div>
@@ -332,6 +366,73 @@ const UpdateRequest = () => {
                               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
                             />
                           </div>
+
+
+<div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      Sender
+    </label>
+    <select
+      name="sender"
+      value={formData.sender}
+      onChange={handleInputChange}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+    >
+      <option value="">Select Sender</option>
+      {availableSenders.map((sender) => (
+        <option key={sender} value={sender}>{sender}</option>
+      ))}
+    </select>
+  </div>
+
+{formData.sender === 'Other' && (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Other Sender
+    </label>
+    <input
+      type="text"
+      value={formData.otherSender || ''}
+      onChange={(e) => setFormData(prev => ({ ...prev, otherSender: e.target.value }))}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+      placeholder="Specify sender"
+    />
+  </div>
+)}
+
+<div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      Subject
+    </label>
+    <select
+      name="subject"
+      value={formData.subject}
+      onChange={handleInputChange}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+    >
+      <option value="">Select Subject</option>
+      {availableSubjects.map((subject) => (
+        <option key={subject} value={subject}>{subject}</option>
+      ))}
+    </select>
+  </div>
+
+{formData.subject === 'Other' && (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Other Subject
+    </label>
+    <input
+      type="text"
+      value={formData.otherSubject || ''}
+      onChange={(e) => setFormData(prev => ({ ...prev, otherSubject: e.target.value }))}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+      placeholder="Specify subject"
+    />
+  </div>
+)}
+
+                          
 
                           <div className="space-y-2">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
