@@ -43,7 +43,85 @@ import * as XLSX from 'xlsx'
 const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D', '#6096B4']
 
 const StakeholderReport = () => {
-  // ... (previous state and ref declarations remain the same)
+  const chartsRef = useRef(null)
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)),
+    endDate: new Date()
+  })
+  const [selectedSender, setSelectedSender] = useState('all')
+  const [selectedStatus, setSelectedStatus] = useState('all')
+  const [selectedSubject, setSelectedSubject] = useState('all')
+  const [isLoading, setIsLoading] = useState(true)
+  const [stats, setStats] = useState({
+    totalRequests: 0,
+    pendingRequests: 0,
+    answeredRequests: 0,
+    averageResponseTime: 0
+  })
+  const [timelineData, setTimelineData] = useState([])
+  const [senderDistribution, setSenderDistribution] = useState([])
+  const [statusDistribution, setStatusDistribution] = useState([]) // Changed from subjectDistribution
+  const [monthlyTrends, setMonthlyTrends] = useState([])
+  const [availableSenders, setAvailableSenders] = useState(['all'])
+  const [availableSubjects, setAvailableSubjects] = useState(['all'])
+
+  useEffect(() => {
+    fetchData()
+  }, [dateRange, selectedSender, selectedStatus, selectedSubject])
+
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      let query = supabase
+        .from('stakeholder_requests')
+        .select('*')
+        .gte('created_at', dateRange.startDate.toISOString())
+        .lte('created_at', dateRange.endDate.toISOString())
+
+      if (selectedSender !== 'all') {
+        query = query.eq('sender', selectedSender)
+      }
+      if (selectedStatus !== 'all') {
+        query = query.eq('status', selectedStatus)
+      }
+      if (selectedSubject !== 'all') {
+        query = query.eq('subject', selectedSubject)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      processData(data)
+      await fetchOptions()
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchOptions = async () => {
+    try {
+      const { data: senders } = await supabase
+        .from('stakeholder_requests')
+        .select('sender')
+        .not('sender', 'is', null)
+
+      const { data: subjects } = await supabase
+        .from('stakeholder_requests')
+        .select('subject')
+        .not('subject', 'is', null)
+
+      const uniqueSenders = ['all', ...new Set(senders.map(s => s.sender))]
+      const uniqueSubjects = ['all', ...new Set(subjects.map(s => s.subject))]
+
+      setAvailableSenders(uniqueSenders)
+      setAvailableSubjects(uniqueSubjects)
+    } catch (error) {
+      console.error('Error fetching options:', error)
+    }
+  }
 
   const processData = (data) => {
     // Basic stats
