@@ -531,7 +531,8 @@ const handleUpdate = async (e) => {
         )}
       </AnimatePresence>
     </AdminLayout>
-  )
+  );
+      }
 }
 
 export default UpdateRequest
