@@ -81,6 +81,7 @@ const UpdateRequest = () => {
   const [isUpdating, setIsUpdating] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [availableUsers, setAvailableUsers] = useState([])
+  const [currentAnswerer, setCurrentAnswerer] = useState(null)
   const [availableSenders, setAvailableSenders] = useState([])
   const [availableSubjects, setAvailableSubjects] = useState([])
   const [formData, setFormData] = useState({
@@ -98,6 +99,17 @@ const UpdateRequest = () => {
     fetchAvailableUsers()
     fetchAvailableSendersAndSubjects()
   }, [])
+
+    // When a request is selected or status changes
+  useEffect(() => {
+    if (selectedRequest) {
+      if (selectedRequest.status === 'Answered') {
+        setCurrentAnswerer(selectedRequest.answered_by)
+      } else {
+        setCurrentAnswerer(null)
+      }
+    }
+  }, [selectedRequest])
 
 
   const fetchAvailableUsers = async () => {
@@ -165,6 +177,18 @@ const UpdateRequest = () => {
       if (name === 'status' && value !== 'Answered') {
         newData.responseDate = '';
         newData.answeredBy = '';
+      }
+
+           // Handle status change
+      if (name === 'status') {
+        if (value === 'Pending') {
+          newData.answeredBy = '';
+          newData.responseDate = '';
+        }
+        // If changing from Pending to Answered, keep answeredBy empty to force selection
+        if (value === 'Answered' && prev.status === 'Pending') {
+          newData.answeredBy = '';
+        }
       }
 
       return newData;
@@ -258,6 +282,12 @@ const UpdateRequest = () => {
       setIsUpdating(false)
     }
   }
+
+   // Render the answeredBy select based on conditions
+  const renderAnsweredBySelect = () => {
+    if (formData.status !== 'Answered') {
+      return null;
+    }
 
   const clearMessage = () => setMessage({ type: '', text: '' })
 
@@ -491,23 +521,36 @@ const UpdateRequest = () => {
 
     <div className="space-y-2">
 
-    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-      Answered By
-    </label>
-    <select
-      name="answeredBy"
-      value={formData.answeredBy}
-      onChange={handleInputChange}
-      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-    >
-      <option value="">Select Person</option>
-      {availableUsers.map((user) => (
-        <option key={user.username} value={user.username}>
-          {user.fullname}
-        </option>
-      ))}
-    </select>
-  </div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Answered By
+        </label>
+        <select
+          name="answeredBy"
+          value={formData.answeredBy}
+          onChange={handleInputChange}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+        >
+          <option value="">Select Person</option>
+          {/* If there's a current answerer, show it first */}
+          {currentAnswerer && (
+            <option key={currentAnswerer} value={currentAnswerer}>
+              {currentAnswerer} (Current)
+            </option>
+          )}
+          {/* Show all available users */}
+          {availableUsers.map((user) => (
+            user.username !== currentAnswerer && (
+              <option key={user.username} value={user.username}>
+                {user.fullname} ({user.username})
+              </option>
+            )
+          ))}
+        </select>
+        {errors.answeredBy && (
+          <p className="mt-1 text-sm text-red-500">{errors.answeredBy}</p>
+        )}
+      </div>
+
 
                             <div className="space-y-2 md:col-span-2">
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
