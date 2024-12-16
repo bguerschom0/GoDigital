@@ -61,6 +61,19 @@ const UpdateRequest = () => {
   const [availableUsers, setAvailableUsers] = useState([])
   const [currentAnswerer, setCurrentAnswerer] = useState(null)
 
+  const [availableSenders, setAvailableSenders] = useState([])
+  const [availableSubjects, setAvailableSubjects] = useState([])
+  const [formData, setFormData] = useState({
+    date_received: '',
+    reference_number: '',
+    sender: '',
+    subject: '',
+    status: '',
+    response_date: '',
+    answered_by: '',
+    description: ''
+  })
+
   useEffect(() => {
     fetchAvailableUsers()
   }, [])
