@@ -99,7 +99,7 @@ const UpdateRequest = () => {
     fetchAvailableSendersAndSubjects()
   }, [])
 
-  // Add these new functions
+
   const fetchAvailableUsers = async () => {
     try {
       const { data, error } = await supabase
@@ -149,7 +149,40 @@ const UpdateRequest = () => {
       console.error('Error fetching senders and subjects:', error)
     }
   }
-  
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+
+      // Reset related fields when certain values change
+      if (name === 'sender' && value !== 'Other') {
+        newData.otherSender = '';
+      }
+      if (name === 'subject' && value !== 'Other') {
+        newData.otherSubject = '';
+      }
+      if (name === 'status' && value !== 'Answered') {
+        newData.responseDate = '';
+        newData.answeredBy = '';
+      }
+
+      return newData;
+    });
+
+    // Clear any errors for the changed field
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  // For date picker changes
+  const handleDateChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
   
 
 
