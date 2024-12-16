@@ -17,6 +17,12 @@ import { supabase } from '@/config/supabase'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 
+const formatDate = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toISOString().split('T')[0];
+};
+
 const NewRequest = () => {
   const [currentSection, setCurrentSection] = useState(0)
   const [formData, setFormData] = useState({
@@ -33,17 +39,11 @@ const NewRequest = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
-  const formatDate = (date) => {
-  if (!date) return '';
-  const d = new Date(date);
-  return d.toISOString().split('T')[0];
-};
-
   const sections = [
     {
       title: 'Basic Information',
       description: 'Reference and date details',
-      fields: (
+      fields: () => (
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -86,7 +86,7 @@ const NewRequest = () => {
     {
       title: 'Request Details',
       description: 'Sender and subject information',
-      fields: (
+      fields: () => (
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -170,7 +170,7 @@ const NewRequest = () => {
     {
       title: 'Description',
       description: 'Detailed request information',
-      fields: (
+      fields: () => (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Description
@@ -199,7 +199,7 @@ const NewRequest = () => {
   }
 
   const handleDateChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData(prev => ({ ...prev, [name]: formatDate(value) }))
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -207,7 +207,6 @@ const NewRequest = () => {
 
   const validateSection = (section) => {
     const newErrors = {}
-    const currentFields = sections[section].fields.props.children
 
     if (section === 0) {
       if (!formData.dateReceived) newErrors.dateReceived = 'Date is required'
@@ -295,7 +294,7 @@ const NewRequest = () => {
                     ${index <= currentSection ? 'bg-[#0A2647] text-white' : 'bg-gray-200 text-gray-500'}
                   `}>
                     {index < currentSection ? (
-                      <CheckCircle className="w-5 h-5" />
+                      <Check className="w-5 h-5" />
                     ) : (
                       <span>{index + 1}</span>
                     )}
@@ -315,7 +314,7 @@ const NewRequest = () => {
             {/* Form Content */}
             <div className="flex-1">
               <Card className="p-6">
-                {sections[currentSection].fields}
+                {sections[currentSection].fields()}
 
                 <div className="mt-6 flex justify-between">
                   <Button
