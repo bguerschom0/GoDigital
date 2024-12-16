@@ -272,7 +272,7 @@ const [formData, setFormData] = useState({
     <option value="">Select Person</option>
     {availableUsers.map((user) => (
       <option key={user.username} value={user.username}>
-        {user.fullname} ({user.username})
+        {user.fullname}
       </option>
     ))}
   </select>
