@@ -63,21 +63,70 @@ const StakeholderReport = () => {
   const [senderDistribution, setSenderDistribution] = useState([])
   const [statusDistribution, setStatusDistribution] = useState([])
   const [monthlyTrends, setMonthlyTrends] = useState([])
-  const [availableSenders, setAvailableSenders] = useState(['all'])
-  const [availableSubjects, setAvailableSubjects] = useState(['all'])
+  const [senderOptions, setSenderOptions] = useState([])
+  const [subjectOptions, setSubjectOptions] = useState([])
+  const [rawData, setRawData] = useState([])
 
   useEffect(() => {
-    fetchData()
-  }, [dateRange, selectedSender, selectedStatus, selectedSubject])
+    fetchInitialData()
+    fetchFilterOptions()
+  }, [])
 
-  const fetchData = async () => {
+  useEffect(() => {
+    if (dateRange.startDate && dateRange.endDate) {
+      fetchData()
+    }
+  }, [dateRange.startDate, dateRange.endDate, selectedSender, selectedStatus, selectedSubject])
+
+  const fetchInitialData = async () => {
+    const startDate = new Date(new Date().setMonth(new Date().getMonth() - 1))
+    const endDate = new Date()
+    await fetchDataForRange(startDate, endDate)
+  }
+
+  const fetchFilterOptions = async () => {
+    try {
+      const { data: senders } = await supabase
+        .from('stakeholder_requests')
+        .select('DISTINCT sender')
+        .not('sender', 'is', null)
+        .order('sender')
+
+      const { data: subjects } = await supabase
+        .from('stakeholder_requests')
+        .select('DISTINCT subject')
+        .not('subject', 'is', null)
+        .order('subject')
+
+      setSenderOptions(['all', ...(senders?.map(s => s.sender) || [])])
+      setSubjectOptions(['all', ...(subjects?.map(s => s.subject) || [])])
+    } catch (error) {
+      console.error('Error fetching filter options:', error)
+    }
+  }
+
+  const handleStartDateChange = (date) => {
+    setDateRange({
+      startDate: date,
+      endDate: null
+    })
+  }
+
+  const handleEndDateChange = (date) => {
+    setDateRange(prev => ({
+      ...prev,
+      endDate: date
+    }))
+  }
+
+  const fetchDataForRange = async (startDate, endDate) => {
     setIsLoading(true)
     try {
       let query = supabase
         .from('stakeholder_requests')
         .select('*')
-        .gte('created_at', dateRange.startDate.toISOString())
-        .lte('created_at', dateRange.endDate.toISOString())
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
 
       if (selectedSender !== 'all') {
         query = query.eq('sender', selectedSender)
@@ -93,8 +142,8 @@ const StakeholderReport = () => {
 
       if (error) throw error
 
+      setRawData(data)
       processData(data)
-      await fetchOptions()
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -102,35 +151,17 @@ const StakeholderReport = () => {
     }
   }
 
-  const fetchOptions = async () => {
-    try {
-      const { data: senders } = await supabase
-        .from('stakeholder_requests')
-        .select('sender')
-        .not('sender', 'is', null)
-
-      const { data: subjects } = await supabase
-        .from('stakeholder_requests')
-        .select('subject')
-        .not('subject', 'is', null)
-
-      const uniqueSenders = ['all', ...new Set(senders.map(s => s.sender))]
-      const uniqueSubjects = ['all', ...new Set(subjects.map(s => s.subject))]
-
-      setAvailableSenders(uniqueSenders)
-      setAvailableSubjects(uniqueSubjects)
-    } catch (error) {
-      console.error('Error fetching options:', error)
+  const fetchData = () => {
+    if (dateRange.startDate && dateRange.endDate) {
+      fetchDataForRange(dateRange.startDate, dateRange.endDate)
     }
   }
 
   const processData = (data) => {
-    // Basic stats
     const total = data.length
     const pending = data.filter(r => r.status === 'Pending').length
     const answered = data.filter(r => r.status === 'Answered').length
 
-    // Calculate average response time
     const responseTimesInDays = data
       .filter(r => r.status === 'Answered' && r.response_date)
       .map(r => {
@@ -150,20 +181,15 @@ const StakeholderReport = () => {
       averageResponseTime: avgResponseTime
     })
 
-    // Process distributions
     setSenderDistribution(processDistributionData(data, 'sender', total))
     
-    // Process status distribution
     const statusData = [
       { name: 'Pending', value: pending, percentage: ((pending/total) * 100).toFixed(1) },
       { name: 'Answered', value: answered, percentage: ((answered/total) * 100).toFixed(1) }
     ]
     setStatusDistribution(statusData)
 
-    // Process monthly trends
     setMonthlyTrends(processMonthlyTrends(data))
-
-    // Process timeline data
     setTimelineData(processTimelineData(data))
   }
 
@@ -209,23 +235,24 @@ const StakeholderReport = () => {
     )
   }
 
-  const exportToExcel = () => {
-    const workbook = XLSX.utils.book_new()
-    
-    // Create sheets for different data
-    const statsSheet = XLSX.utils.json_to_sheet([stats])
-    const timelineSheet = XLSX.utils.json_to_sheet(timelineData)
-    const senderSheet = XLSX.utils.json_to_sheet(senderDistribution)
-    const statusSheet = XLSX.utils.json_to_sheet(statusDistribution)
-    const trendsSheet = XLSX.utils.json_to_sheet(monthlyTrends)
-    
-    XLSX.utils.book_append_sheet(workbook, statsSheet, "Stats")
-    XLSX.utils.book_append_sheet(workbook, timelineSheet, "Timeline")
-    XLSX.utils.book_append_sheet(workbook, senderSheet, "Sender Distribution")
-    XLSX.utils.book_append_sheet(workbook, statusSheet, "Status Distribution")
-    XLSX.utils.book_append_sheet(workbook, trendsSheet, "Monthly Trends")
-    
-    XLSX.writeFile(workbook, "stakeholder-report.xlsx")
+  const exportToExcel = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stakeholder_requests')
+        .select('*')
+        .gte('created_at', dateRange.startDate.toISOString())
+        .lte('created_at', dateRange.endDate.toISOString())
+
+      if (error) throw error
+
+      const workbook = XLSX.utils.book_new()
+      const worksheet = XLSX.utils.json_to_sheet(data)
+      
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Raw Data")
+      XLSX.writeFile(workbook, `stakeholder-data-${dateRange.startDate.toISOString().split('T')[0]}-to-${dateRange.endDate.toISOString().split('T')[0]}.xlsx`)
+    } catch (error) {
+      console.error('Error exporting to Excel:', error)
+    }
   }
 
   const exportToPDF = async () => {
@@ -238,70 +265,46 @@ const StakeholderReport = () => {
     
     const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF({
-      orientation: 'landscape',
+      orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
     })
 
-    const pdfWidth = pdf.internal.pageSize.getWidth()
-    const pdfHeight = pdf.internal.pageSize.getHeight()
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+    const margin = 10
     
-    // Add title
     pdf.setFontSize(16)
-    pdf.text('Stakeholder Analysis Report', 14, 15)
+    pdf.text('Stakeholder Analysis Report', margin, margin + 5)
     
-    // Add date range
     pdf.setFontSize(10)
     pdf.text(
       `Date Range: ${dateRange.startDate.toLocaleDateString()} - ${dateRange.endDate.toLocaleDateString()}`,
-      14, 25
+      margin, margin + 15
     )
     
-    // Add image with margins
-    const margin = 10
+    const imgWidth = pageWidth - (margin * 2)
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    
     pdf.addImage(
       imgData,
       'PNG',
       margin,
-      30,
-      pdfWidth - (margin * 2),
-      pdfHeight - 40
+      margin + 20,
+      imgWidth,
+      imgHeight
     )
     
     pdf.save('stakeholder-report.pdf')
   }
 
   const printCharts = () => {
-    const printWindow = window.open('', '_blank')
     const printContent = document.getElementById('charts-container')
-    
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Stakeholder Analysis Report</title>
-          <style>
-            body { margin: 20px; }
-            .page-break { page-break-before: always; }
-            .chart-container { margin-bottom: 20px; }
-            @media print {
-              .no-print { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Stakeholder Analysis Report</h1>
-          <p>Date Range: ${dateRange.startDate.toLocaleDateString()} - ${dateRange.endDate.toLocaleDateString()}</p>
-          ${printContent.innerHTML}
-        </body>
-      </html>
-    `)
-    
-    printWindow.document.close()
-    printWindow.focus()
-    setTimeout(() => {
-      printWindow.print()
-      printWindow.close()
-    }, 250)
+    const originalContents = document.body.innerHTML
+    document.body.innerHTML = printContent.innerHTML
+    window.print()
+    document.body.innerHTML = originalContents
+    window.location.reload()
   }
 
   return (
@@ -362,20 +365,23 @@ const StakeholderReport = () => {
                     <div className="flex space-x-2">
                       <DatePicker
                         selected={dateRange.startDate}
-                        onChange={date => setDateRange(prev => ({ ...prev, startDate: date }))}
+                        onChange={handleStartDateChange}
                         selectsStart
                         startDate={dateRange.startDate}
                         endDate={dateRange.endDate}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                        placeholderText="Select start date"
                       />
                       <DatePicker
                         selected={dateRange.endDate}
-                        onChange={date => setDateRange(prev => ({ ...prev, endDate: date }))}
+                        onChange={handleEndDateChange}
                         selectsEnd
                         startDate={dateRange.startDate}
                         endDate={dateRange.endDate}
                         minDate={dateRange.startDate}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                        placeholderText="Select end date"
+                        disabled={!dateRange.startDate}
                       />
                     </div>
                   </div>
@@ -389,7 +395,7 @@ const StakeholderReport = () => {
                       onChange={(e) => setSelectedSender(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg"
                     >
-                      {availableSenders.map((sender) => (
+                      {senderOptions.map((sender) => (
                         <option key={sender} value={sender}>
                           {sender === 'all' ? 'All Senders' : sender}
                         </option>
@@ -421,7 +427,7 @@ const StakeholderReport = () => {
                       onChange={(e) => setSelectedSubject(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg"
                     >
-                      {availableSubjects.map((subject) => (
+                      {subjectOptions.map((subject) => (
                         <option key={subject} value={subject}>
                           {subject === 'all' ? 'All Subjects' : subject}
                         </option>
