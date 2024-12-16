@@ -56,8 +56,7 @@ const StakeholderReport = () => {
   const [stats, setStats] = useState({
     totalRequests: 0,
     pendingRequests: 0,
-    answeredRequests: 0,
-    averageResponseTime: 0
+    answeredRequests: 0
   })
   const [timelineData, setTimelineData] = useState([])
   const [senderDistribution, setSenderDistribution] = useState([])
@@ -84,26 +83,105 @@ const StakeholderReport = () => {
     await fetchDataForRange(startDate, endDate)
   }
 
-  const fetchFilterOptions = async () => {
+  const [filterOptions, setFilterOptions] = useState({
+  senders: ['all'],
+  subjects: ['all'],
+  error: null,
+  isLoading: false
+});
+
+const fetchFilterOptions = async () => {
+  console.log('Starting to fetch filter options...');
+  setFilterOptions(prev => ({ ...prev, isLoading: true, error: null }));
+
+  try {
+    // First attempt - fetch all senders
+    const sendersResult = await supabase
+      .from('stakeholder_requests')
+      .select('sender')
+      .not('sender', 'is', null);
+
+    if (sendersResult.error) {
+      console.error('Error fetching senders:', {
+        error: sendersResult.error,
+        details: sendersResult.error.details,
+        message: sendersResult.error.message,
+        hint: sendersResult.error.hint
+      });
+      throw new Error(`Failed to fetch senders: ${sendersResult.error.message}`);
+    }
+
+    console.log('Senders data received:', sendersResult.data);
+
+    // Second attempt - fetch all subjects
+    const subjectsResult = await supabase
+      .from('stakeholder_requests')
+      .select('subject')
+      .not('subject', 'is', null);
+
+    if (subjectsResult.error) {
+      console.error('Error fetching subjects:', {
+        error: subjectsResult.error,
+        details: subjectsResult.error.details,
+        message: subjectsResult.error.message,
+        hint: subjectsResult.error.hint
+      });
+      throw new Error(`Failed to fetch subjects: ${subjectsResult.error.message}`);
+    }
+
+    console.log('Subjects data received:', subjectsResult.data);
+
+    // Process unique values
+    const uniqueSenders = ['all', ...new Set(sendersResult.data.map(s => s.sender))];
+    const uniqueSubjects = ['all', ...new Set(subjectsResult.data.map(s => s.subject))];
+
+    console.log('Processed unique senders:', uniqueSenders);
+    console.log('Processed unique subjects:', uniqueSubjects);
+
+    setFilterOptions({
+      senders: uniqueSenders,
+      subjects: uniqueSubjects,
+      error: null,
+      isLoading: false
+    });
+
+  } catch (error) {
+    console.error('Failed to fetch filter options:', {
+      error,
+      stack: error.stack,
+      message: error.message
+    });
+
+    // Fallback to direct query if first attempt fails
     try {
-      const { data: senders } = await supabase
-        .from('stakeholder_requests')
-        .select('DISTINCT sender')
-        .not('sender', 'is', null)
-        .order('sender')
+      console.log('Attempting fallback query...');
+      const { data, error: fallbackError } = await supabase.rpc('get_filter_options');
+      
+      if (fallbackError) throw fallbackError;
 
-      const { data: subjects } = await supabase
-        .from('stakeholder_requests')
-        .select('DISTINCT subject')
-        .not('subject', 'is', null)
-        .order('subject')
+      console.log('Fallback query successful:', data);
+      setFilterOptions({
+        senders: ['all', ...data.senders],
+        subjects: ['all', ...data.subjects],
+        error: null,
+        isLoading: false
+      });
 
-      setSenderOptions(['all', ...(senders?.map(s => s.sender) || [])])
-      setSubjectOptions(['all', ...(subjects?.map(s => s.subject) || [])])
-    } catch (error) {
-      console.error('Error fetching filter options:', error)
+    } catch (fallbackError) {
+      console.error('Fallback query failed:', {
+        error: fallbackError,
+        stack: fallbackError.stack,
+        message: fallbackError.message
+      });
+
+      setFilterOptions(prev => ({
+        ...prev,
+        error: 'Failed to load filter options. Please try again later.',
+        isLoading: false
+      }));
     }
   }
+};
 
   const handleStartDateChange = (date) => {
     setDateRange({
@@ -162,23 +240,11 @@ const StakeholderReport = () => {
     const pending = data.filter(r => r.status === 'Pending').length
     const answered = data.filter(r => r.status === 'Answered').length
 
-    const responseTimesInDays = data
-      .filter(r => r.status === 'Answered' && r.response_date)
-      .map(r => {
-        const start = new Date(r.date_received)
-        const end = new Date(r.response_date)
-        return Math.ceil((end - start) / (1000 * 60 * 60 * 24))
-      })
-
-    const avgResponseTime = responseTimesInDays.length > 0
-      ? Math.round(responseTimesInDays.reduce((a, b) => a + b, 0) / responseTimesInDays.length)
-      : 0
 
     setStats({
       totalRequests: total,
       pendingRequests: pending,
-      answeredRequests: answered,
-      averageResponseTime: avgResponseTime
+      answeredRequests: answered
     })
 
     setSenderDistribution(processDistributionData(data, 'sender', total))
@@ -189,21 +255,10 @@ const StakeholderReport = () => {
     ]
     setStatusDistribution(statusData)
 
-    setMonthlyTrends(processMonthlyTrends(data))
     setTimelineData(processTimelineData(data))
   }
 
-  const processTimelineData = (data) => {
-    const grouped = data.reduce((acc, item) => {
-      const date = new Date(item.date_received).toISOString().split('T')[0]
-      acc[date] = (acc[date] || 0) + 1
-      return acc
-    }, {})
 
-    return Object.entries(grouped)
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
-  }
 
   const processDistributionData = (data, key, total) => {
     const distribution = data.reduce((acc, item) => {
@@ -221,19 +276,7 @@ const StakeholderReport = () => {
       .sort((a, b) => b.value - a.value)
   }
 
-  const processMonthlyTrends = (data) => {
-    const monthly = data.reduce((acc, item) => {
-      const month = new Date(item.date_received).toLocaleString('default', { month: 'short' })
-      acc[month] = acc[month] || { month, total: 0, pending: 0, answered: 0 }
-      acc[month].total += 1
-      acc[month][item.status.toLowerCase()] += 1
-      return acc
-    }, {})
 
-    return Object.values(monthly).sort((a, b) => 
-      new Date(Date.parse(`1 ${a.month} 2024`)) - new Date(Date.parse(`1 ${b.month} 2024`))
-    )
-  }
 
   const exportToExcel = async () => {
     try {
@@ -348,95 +391,91 @@ const StakeholderReport = () => {
               </div>
             </div>
 
-            {/* Filters */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium flex items-center">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filters
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Date Range
-                    </label>
-                    <div className="flex space-x-2">
-                      <DatePicker
-                        selected={dateRange.startDate}
-                        onChange={handleStartDateChange}
-                        selectsStart
-                        startDate={dateRange.startDate}
-                        endDate={dateRange.endDate}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                        placeholderText="Select start date"
-                      />
-                      <DatePicker
-                        selected={dateRange.endDate}
-                        onChange={handleEndDateChange}
-                        selectsEnd
-                        startDate={dateRange.startDate}
-                        endDate={dateRange.endDate}
-                        minDate={dateRange.startDate}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                        placeholderText="Select end date"
-                        disabled={!dateRange.startDate}
-                      />
-                    </div>
-                  </div>
+{/* Filters */}
+<Card className="mb-6">
+  <CardHeader>
+    <CardTitle className="text-sm font-medium flex items-center">
+      <Filter className="w-4 h-4 mr-2" />
+      Filters
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Date Range */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Date Range
+        </label>
+        <div className="flex space-x-2">
+          <DatePicker
+            selected={dateRange.startDate}
+            onChange={handleStartDateChange}
+            selectsStart
+            startDate={dateRange.startDate}
+            endDate={dateRange.endDate}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+            placeholderText="Select start date"
+          />
+          <DatePicker
+            selected={dateRange.endDate}
+            onChange={handleEndDateChange}
+            selectsEnd
+            startDate={dateRange.startDate}
+            endDate={dateRange.endDate}
+            minDate={dateRange.startDate}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+            placeholderText="Select end date"
+            disabled={!dateRange.startDate}
+          />
+        </div>
+      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Sender
-                    </label>
-                    <select
-                      value={selectedSender}
-                      onChange={(e) => setSelectedSender(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                    >
-                      {senderOptions.map((sender) => (
-                        <option key={sender} value={sender}>
-                          {sender === 'all' ? 'All Senders' : sender}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+      {/* Sender Select */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Sender
+        </label>
+        <select
+          value={selectedSender}
+          onChange={(e) => setSelectedSender(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+          disabled={filterOptions.isLoading}
+        >
+          {filterOptions.senders.map((sender) => (
+            <option key={sender} value={sender}>
+              {sender === 'all' ? 'All Senders' : sender}
+            </option>
+          ))}
+        </select>
+        {filterOptions.error && (
+          <p className="text-xs text-red-500 mt-1">Failed to load senders</p>
+        )}
+      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Status
-                    </label>
-                    <select
-                      value={selectedStatus}
-                      onChange={(e) => setSelectedStatus(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Answered">Answered</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Subject
-                    </label>
-                    <select
-                      value={selectedSubject}
-                      onChange={(e) => setSelectedSubject(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                    >
-                      {subjectOptions.map((subject) => (
-                        <option key={subject} value={subject}>
-                          {subject === 'all' ? 'All Subjects' : subject}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+      {/* Subject Select */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Subject
+        </label>
+        <select
+          value={selectedSubject}
+          onChange={(e) => setSelectedSubject(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+          disabled={filterOptions.isLoading}
+        >
+          {filterOptions.subjects.map((subject) => (
+            <option key={subject} value={subject}>
+              {subject === 'all' ? 'All Subjects' : subject}
+            </option>
+          ))}
+        </select>
+        {filterOptions.error && (
+          <p className="text-xs text-red-500 mt-1">Failed to load subjects</p>
+        )}
+      </div>
+    </div>
+  </CardContent>
+</Card>
 
             <div id="charts-container" ref={chartsRef}>
               {/* Stats Cards */}
@@ -474,48 +513,8 @@ const StakeholderReport = () => {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Average Response Time</CardTitle>
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.averageResponseTime} days</div>
-                    <p className="text-xs text-muted-foreground">Time to resolution</p>
-                  </CardContent>
-                </Card>
               </div>
 
-              {/* Charts Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Monthly Trends */}
-                <Card className="col-span-2">
-                  <CardHeader>
-                    <CardTitle>Monthly Trends</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={monthlyTrends}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Bar dataKey="total" fill="#0A2647" name="Total Requests">
-                            <Label position="top" content={({ value }) => value} />
-                          </Bar>
-                          <Bar dataKey="pending" fill="#2C74B3" name="Pending">
-                            <Label position="top" content={({ value }) => value} />
-                          </Bar>
-                          <Bar dataKey="answered" fill="#427D9D" name="Answered">
-                            <Label position="top" content={({ value }) => value} />
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
 
                 {/* Sender Distribution */}
                 <Card>
