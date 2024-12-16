@@ -317,13 +317,18 @@ const handleSubmit = async () => {
 
   setIsLoading(true)
   try {
-    const { user } = await supabase.auth.getUser()
+    // Get current user from useAuth hook
+    const { user } = useAuth() // Add this hook at the top with other imports
     
+    if (!user) {
+      throw new Error('No user found. Please login again.')
+    }
+
     const requestData = {
       ...formData,
       sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
       subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
-      created_by: user.username,
+      created_by: user.username, // We'll use username from our auth context
       created_at: new Date().toISOString()
     }
 
@@ -337,7 +342,7 @@ const handleSubmit = async () => {
     handleReset()
   } catch (error) {
     console.error('Error:', error)
-    setMessage({ type: 'error', text: 'Error saving request. Please try again.' })
+    setMessage({ type: 'error', text: error.message || 'Error saving request. Please try again.' })
   } finally {
     setIsLoading(false)
   }
@@ -360,23 +365,62 @@ const handleReset = () => {
   setErrors({})
 }
 
-  return (
-    <AdminLayout>
-      <div className="flex justify-center -mt-6">
-        <div className="w-full max-w-4xl px-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-6">
-            New Request
-          </h1>
+return (
+  <AdminLayout>
+    <div className="flex justify-center -mt-6">
+      <div className="w-full max-w-4xl px-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-6">
+          New Request
+        </h1>
 
-          <div className="flex gap-8">
-            {/* Timeline */}
-            <div className="relative">
-              <div className="absolute top-0 bottom-0 left-4 w-0.5 bg-gray-200" />
+        {/* Mobile view: Stack timeline and form */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Timeline - Hide on small screens */}
+          <div className="hidden lg:block relative">
+            <div className="absolute top-0 bottom-0 left-4 w-0.5 bg-gray-200 dark:bg-gray-700" />
+            {sections.map((section, index) => (
+              <div key={index} className="relative mb-8">
+                <div className={`
+                  absolute left-0 w-8 h-8 rounded-full flex items-center justify-center
+                  ${index <= currentSection 
+                    ? 'bg-[#0A2647] text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}
+                `}>
+                  {index < currentSection ? (
+                    <Check className="w-5 h-5" />
+                  ) : (
+                    <span>{index + 1}</span>
+                  )}
+                </div>
+                <div className="ml-12 pt-1">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    {section.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {section.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Mobile Progress Indicator */}
+          <div className="lg:hidden mb-6">
+            <div className="flex items-center justify-between px-2">
               {sections.map((section, index) => (
-                <div key={index} className="relative mb-8">
+                <div 
+                  key={index} 
+                  className={`flex flex-col items-center ${
+                    index === currentSection 
+                      ? 'text-[#0A2647] dark:text-white' 
+                      : 'text-gray-400 dark:text-gray-500'
+                  }`}
+                >
                   <div className={`
-                    absolute left-0 w-8 h-8 rounded-full flex items-center justify-center
-                    ${index <= currentSection ? 'bg-[#0A2647] text-white' : 'bg-gray-200 text-gray-500'}
+                    w-8 h-8 rounded-full flex items-center justify-center mb-2
+                    ${index <= currentSection 
+                      ? 'bg-[#0A2647] text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700'}
                   `}>
                     {index < currentSection ? (
                       <Check className="w-5 h-5" />
@@ -384,95 +428,89 @@ const handleReset = () => {
                       <span>{index + 1}</span>
                     )}
                   </div>
-                  <div className="ml-12 pt-1">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {section.title}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {section.description}
-                    </p>
-                  </div>
+                  <span className="text-xs text-center">{section.title}</span>
                 </div>
               ))}
             </div>
+          </div>
 
-            {/* Form Content */}
-            <div className="flex-1">
-              <Card className="p-6">
-                {sections[currentSection].fields()}
+          {/* Form Content */}
+          <div className="flex-1">
+            <Card className="p-4 lg:p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+              {sections[currentSection].fields()}
 
-                <div className="mt-6 flex justify-between">
-                  <Button
-                    type="button"
-                    onClick={handleReset}
-                    variant="outline"
-                    className="text-[#0A2647] border-[#0A2647]"
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Reset
-                  </Button>
+              <div className="mt-6 flex flex-col sm:flex-row justify-between gap-4">
+                <Button
+                  type="button"
+                  onClick={handleReset}
+                  variant="outline"
+                  className="text-[#0A2647] dark:text-white border-[#0A2647] dark:border-white"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Reset
+                </Button>
 
-                  <div className="space-x-2">
-                    {currentSection > 0 && (
-                      <Button
-                        type="button"
-                        onClick={() => setCurrentSection(prev => prev - 1)}
-                        variant="outline"
-                        className="text-[#0A2647] border-[#0A2647]"
-                      >
-                        <ChevronUp className="w-4 h-4 mr-2" />
-                        Previous
-                      </Button>
-                    )}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {currentSection > 0 && (
                     <Button
-                      onClick={handleSubmit}
-                      disabled={isLoading}
-                      className="bg-[#0A2647] hover:bg-[#0A2647]/90"
+                      type="button"
+                      onClick={() => setCurrentSection(prev => prev - 1)}
+                      variant="outline"
+                      className="text-[#0A2647] dark:text-white border-[#0A2647] dark:border-white"
                     >
-                      {isLoading ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      ) : currentSection === sections.length - 1 ? (
-                        <>
-                          <Save className="w-4 h-4 mr-2" />
-                          Submit
-                        </>
-                      ) : (
-                        <>
-                          Next
-                          <ChevronDown className="w-4 h-4 ml-2" />
-                        </>
-                      )}
+                      <ChevronUp className="w-4 h-4 mr-2" />
+                      Previous
                     </Button>
-                  </div>
+                  )}
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                    className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+                  >
+                    {isLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : currentSection === sections.length - 1 ? (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Submit
+                      </>
+                    ) : (
+                      <>
+                        Next
+                        <ChevronDown className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
                 </div>
-              </Card>
-            </div>
+              </div>
+            </Card>
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Success/Error Message */}
-      <AnimatePresence>
-        {message.text && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg ${
-              message.type === 'success' 
-                ? 'bg-[#0A2647] text-white' 
-                : 'bg-red-500 text-white'
-            }`}
-          >
-            {message.text}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </AdminLayout>
-  )
+    {/* Success/Error Message */}
+    <AnimatePresence>
+      {message.text && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg ${
+            message.type === 'success' 
+              ? 'bg-[#0A2647] text-white' 
+              : 'bg-red-500 text-white'
+          }`}
+        >
+          {message.text}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </AdminLayout>
+)
 }
 
 export default NewRequest
