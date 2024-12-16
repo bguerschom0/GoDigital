@@ -80,6 +80,9 @@ const UpdateRequest = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [availableUsers, setAvailableUsers] = useState([])
+  const [availableSenders, setAvailableSenders] = useState([])
+  const [availableSubjects, setAvailableSubjects] = useState([])
   const [formData, setFormData] = useState({
     date_received: '',
     reference_number: '',
@@ -90,6 +93,67 @@ const UpdateRequest = () => {
     answered_by: '',
     description: ''
   })
+
+  useEffect(() => {
+    fetchAvailableUsers()
+    fetchAvailableSendersAndSubjects()
+  }, [])
+
+  // Add these new functions
+  const fetchAvailableUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('username, fullname')
+        .eq('status', 'active')
+        .order('username')
+
+      if (error) throw error
+      setAvailableUsers(data || [])
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
+  const fetchAvailableSendersAndSubjects = async () => {
+    try {
+      // Fetch all requests to get unique senders and subjects
+      const { data: requests, error } = await supabase
+        .from('stakeholder_requests')
+        .select('sender, subject')
+
+      if (error) throw error
+
+      // Get unique senders
+      const uniqueSenders = [...new Set(requests.map(req => req.sender))]
+        .filter(Boolean)
+        .sort()
+      setAvailableSenders(['NPPA', 'RIB', 'MPG', 'Private Advocate', 'Other', ...uniqueSenders])
+
+      // Get unique subjects
+      const uniqueSubjects = [...new Set(requests.map(req => req.subject))]
+        .filter(Boolean)
+        .sort()
+      setAvailableSubjects([
+        'Account Unblock',
+        'MoMo Transaction',
+        'Call History',
+        'Reversal',
+        'Account Information',
+        'Account Status',
+        'Balance',
+        'Other',
+        ...uniqueSubjects
+      ])
+    } catch (error) {
+      console.error('Error fetching senders and subjects:', error)
+    }
+  }
+  
+  
+
+
+  
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -133,33 +197,34 @@ const UpdateRequest = () => {
     })
   }
 
-// In UpdateRequest.jsx, update the handleUpdate function
-const handleUpdate = async (e) => {
-  e.preventDefault()
-  setIsUpdating(true)
-  try {
-    const updateData = {
-      ...formData,
-      sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
-      subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
-      updated_by: user.username,
-      updated_at: new Date().toISOString()
+  const handleUpdate = async (e) => {
+    e.preventDefault()
+    setIsUpdating(true)
+    try {
+      const updateData = {
+        ...formData,
+        sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
+        subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
+        updated_by: user.username,
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase
+        .from('stakeholder_requests')
+        .update(updateData)
+        .eq('id', selectedRequest.id)
+
+      if (error) throw error
+
+      setMessage({ type: 'success', text: 'Request updated successfully!' })
+      handleSearch() // Refresh the search results
+    } catch (error) {
+      console.error('Error:', error)
+      setMessage({ type: 'error', text: 'Error updating request. Please try again.' })
+    } finally {
+      setIsUpdating(false)
     }
-
-    const { error } = await supabase
-      .from('stakeholder_requests')
-      .update(updateData)
-      .eq('id', selectedRequest.id)
-
-    if (error) throw error
-
-    setMessage({ type: 'success', text: 'Request updated successfully' })
-  } catch (error) {
-    setMessage({ type: 'error', text: 'Error updating request' })
-  } finally {
-    setIsUpdating(false)
   }
-}
 
   const clearMessage = () => setMessage({ type: '', text: '' })
 
@@ -295,20 +360,21 @@ const handleUpdate = async (e) => {
                             </div>
 
     <div className="space-y-2">
-  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-    Sender
-  </label>
-  <select
-    value={formData.sender}
-    onChange={(e) => setFormData(prev => ({ ...prev, sender: e.target.value }))}
-    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-  >
-    <option value="">Select Sender</option>
-    {senderOptions.map(option => (
-      <option key={option} value={option}>{option}</option>
-    ))}
-  </select>
-</div>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      Sender
+    </label>
+    <select
+      name="sender"
+      value={formData.sender}
+      onChange={handleInputChange}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+    >
+      <option value="">Select Sender</option>
+      {availableSenders.map((sender) => (
+        <option key={sender} value={sender}>{sender}</option>
+      ))}
+    </select>
+  </div>
 
 {formData.sender === 'Other' && (
   <div className="space-y-2">
@@ -326,20 +392,21 @@ const handleUpdate = async (e) => {
 )}
 
 <div className="space-y-2">
-  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-    Subject
-  </label>
-  <select
-    value={formData.subject}
-    onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-  >
-    <option value="">Select Subject</option>
-    {subjectOptions.map(option => (
-      <option key={option} value={option}>{option}</option>
-    ))}
-  </select>
-</div>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      Subject
+    </label>
+    <select
+      name="subject"
+      value={formData.subject}
+      onChange={handleInputChange}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+    >
+      <option value="">Select Subject</option>
+      {availableSubjects.map((subject) => (
+        <option key={subject} value={subject}>{subject}</option>
+      ))}
+    </select>
+  </div>
 
 {formData.subject === 'Other' && (
   <div className="space-y-2">
@@ -389,21 +456,25 @@ const handleUpdate = async (e) => {
 
 
 
-                            <div className="space-y-2">
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Answered By
-                              </label>
-                              <select
-                                value={formData.answered_by}
-                                onChange={(e) => setFormData(prev => ({ ...prev, answered_by: e.target.value }))}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                              >
-                                <option value="">Select Person</option>
-                                {answeredByOptions.map(option => (
-                                  <option key={option} value={option}>{option}</option>
-                                ))}
-                              </select>
-                            </div>
+    <div className="space-y-2">
+
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      Answered By
+    </label>
+    <select
+      name="answeredBy"
+      value={formData.answeredBy}
+      onChange={handleInputChange}
+      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+    >
+      <option value="">Select Person</option>
+      {availableUsers.map((user) => (
+        <option key={user.username} value={user.username}>
+          {user.fullname}
+        </option>
+      ))}
+    </select>
+  </div>
 
                             <div className="space-y-2 md:col-span-2">
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
