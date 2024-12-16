@@ -9,7 +9,8 @@ import {
   Save,
   ChevronDown,
   ChevronUp,
-  RefreshCw 
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -192,7 +193,6 @@ const [formData, setFormData] = useState({
         </div>
       )
     },
-    // Add to the sections array
 {
   title: 'Response',
   description: 'Status and response details',
@@ -324,10 +324,15 @@ const handleSubmit = async () => {
     }
 
     const requestData = {
-      ...formData,
+      date_received: formData.dateReceived,
+      reference_number: formData.referenceNumber,
       sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
       subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
-      created_by: user.username, // Use username from Supabase auth
+      status: formData.status,
+      response_date: formData.responseDate || null,
+      answered_by: formData.answeredBy || null,
+      description: formData.description,
+      created_by: user.username,
       created_at: new Date().toISOString()
     }
 
