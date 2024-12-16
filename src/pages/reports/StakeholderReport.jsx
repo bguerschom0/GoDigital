@@ -258,6 +258,17 @@ const fetchFilterOptions = async () => {
     setTimelineData(processTimelineData(data))
   }
 
+    const processTimelineData = (data) => {
+    const grouped = data.reduce((acc, item) => {
+      const date = new Date(item.date_received).toISOString().split('T')[0]
+      acc[date] = (acc[date] || 0) + 1
+      return acc
+    }, {})
+
+    return Object.entries(grouped)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+  }
 
 
   const processDistributionData = (data, key, total) => {
