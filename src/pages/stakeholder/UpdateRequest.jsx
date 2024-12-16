@@ -204,7 +204,6 @@ const handleUpdate = async (e) => {
 
 
   return (
-    <AdminLayout>
 
   <AdminLayout>
     <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))] -mt-6 bg-white dark:bg-gray-900">
@@ -532,7 +531,6 @@ const handleUpdate = async (e) => {
       </AnimatePresence>
     </AdminLayout>
   );
-      }
 }
 
 export default UpdateRequest
