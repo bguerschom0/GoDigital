@@ -1,6 +1,6 @@
 // src/pages/stakeholder/UpdateRequest.jsx
 import { AdminLayout } from '@/components/layout'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, 
