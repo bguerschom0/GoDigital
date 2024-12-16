@@ -613,7 +613,8 @@ const UpdateRequest = () => {
         )}
       </AnimatePresence>
     </AdminLayout>
-  )
+  );
+}
 }
 
 export default UpdateRequest
