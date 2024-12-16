@@ -1,6 +1,6 @@
 // src/pages/stakeholder/NewRequest.jsx
 import { AdminLayout } from '@/components/layout'
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar,
@@ -26,6 +26,7 @@ const formatDate = (date) => {
 };
 
 const NewRequest = () => {
+  const [availableUsers, setAvailableUsers] = useState([])
   const { user } = useAuth()
   const [currentSection, setCurrentSection] = useState(0)
 const [formData, setFormData] = useState({
@@ -40,9 +41,33 @@ const [formData, setFormData] = useState({
   answeredBy: '',
   description: ''
 })
+  
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+
+
+  useEffect(() => {
+    fetchAvailableUsers()
+  }, [])
+
+  // Add this function with your other functions
+  const fetchAvailableUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('username, fullname')
+        .eq('status', 'active')
+        .order('username')
+
+      if (error) throw error
+      setAvailableUsers(data || [])
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+  
+  
 
   const sections = [
     {
