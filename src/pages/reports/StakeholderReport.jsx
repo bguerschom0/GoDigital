@@ -64,6 +64,38 @@ const StakeholderReport = () => {
     fetchData()
   }, [filters])
 
+
+  const fetchSenderDistribution = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('stakeholder_requests')
+      .select('sender')
+
+    if (error) throw error
+
+    // Process sender data
+    const senderCounts = data.reduce((acc, request) => {
+      const sender = request.sender
+      acc[sender] = (acc[sender] || 0) + 1
+      return acc
+    }, {})
+
+    // Convert to array format for chart
+    const distributionData = Object.entries(senderCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value) // Sort by count descending
+
+    setSenderDistribution(distributionData)
+  } catch (error) {
+    console.error('Error fetching sender distribution:', error)
+  }
+}
+
+// Add to useEffect
+useEffect(() => {
+  fetchSenderDistribution()
+}, [])
+  
   const getDateRangeStart = (range) => {
     const today = new Date()
     switch (range) {
@@ -417,17 +449,21 @@ const StakeholderReport = () => {
             </Card>
           </div>
 
-          {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Timeline Chart */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Request Timeline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={timelineData}>
+
+
+          
+
+{/* Charts */}
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  {/* Timeline Chart - Full width */}
+  <Card className="lg:col-span-3">
+    <CardHeader>
+      <CardTitle>Request Timeline</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="h-[400px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={timelineData}>
                       <defs>
                         <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#0A2647" stopOpacity={0.8}/>
@@ -445,21 +481,23 @@ const StakeholderReport = () => {
                         fillOpacity={1} 
                         fill="url(#colorRequests)"
                       />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Status Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Request Status Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </CardContent>
+  </Card>
+
+  {/* Status Distribution - Smaller width */}
+  <Card className="lg:col-span-1">
+    <CardHeader>
+      <CardTitle>Request Status Distribution</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="h-[250px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+
                       <Pie
                         data={[
                           { name: 'Pending', value: stats.pendingRequests },
@@ -477,36 +515,50 @@ const StakeholderReport = () => {
                       </Pie>
                       <Tooltip />
                       <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+            
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </CardContent>
+  </Card>
 
-            {/* Sender Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Requests by Sender</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={senderDistribution}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value">
-                        {senderDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+  {/* Sender Distribution - Larger width */}
+  <Card className="lg:col-span-2">
+    <CardHeader>
+      <CardTitle>Requests by Sender</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="h-[250px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={senderDistribution}>
+
+
+  <CartesianGrid strokeDasharray="3 3" />
+  <XAxis 
+    dataKey="name" 
+    tick={{ fontSize: 12 }}
+    interval={0}
+    angle={-45}
+    textAnchor="end"
+  />
+  <YAxis />
+  <Tooltip />
+  <Bar dataKey="value">
+    {senderDistribution.map((entry, index) => (
+      <Cell 
+        key={`cell-${index}`} 
+        fill={COLORS[index % COLORS.length]}
+      />
+    ))}
+  </Bar>            
+            
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+          
         </div>
       </div>
     </AdminLayout>
