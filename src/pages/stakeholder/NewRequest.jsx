@@ -16,7 +16,7 @@ import { Card } from '@/components/ui/card'
 import { supabase } from '@/config/supabase'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
-import { auth } from '@/config/firebase' // Add this import
+import { useAuth } from '@/context/AuthContext'
 
 const formatDate = (date) => {
   if (!date) return '';
@@ -25,6 +25,7 @@ const formatDate = (date) => {
 };
 
 const NewRequest = () => {
+  const { user } = useAuth()
   const [currentSection, setCurrentSection] = useState(0)
 const [formData, setFormData] = useState({
   dateReceived: '',
@@ -318,9 +319,7 @@ const handleSubmit = async () => {
 
   setIsLoading(true)
   try {
-    const currentUser = auth.currentUser // Get current Firebase user
-    
-    if (!currentUser) {
+    if (!user) {
       throw new Error('No user found. Please login again.')
     }
 
@@ -328,7 +327,7 @@ const handleSubmit = async () => {
       ...formData,
       sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
       subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
-      created_by: currentUser.email,
+      created_by: user.username, // Use username from Supabase auth
       created_at: new Date().toISOString()
     }
 
