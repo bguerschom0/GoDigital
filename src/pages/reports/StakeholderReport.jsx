@@ -1,3 +1,4 @@
+// src/pages/reports/StakeholderReport.jsx
 import { AdminLayout } from '@/components/layout'
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
@@ -60,7 +61,7 @@ const StakeholderReport = () => {
   })
   const [timelineData, setTimelineData] = useState([])
   const [senderDistribution, setSenderDistribution] = useState([])
-  const [statusDistribution, setStatusDistribution] = useState([]) // Changed from subjectDistribution
+  const [statusDistribution, setStatusDistribution] = useState([])
   const [monthlyTrends, setMonthlyTrends] = useState([])
   const [availableSenders, setAvailableSenders] = useState(['all'])
   const [availableSubjects, setAvailableSubjects] = useState(['all'])
@@ -149,23 +150,33 @@ const StakeholderReport = () => {
       averageResponseTime: avgResponseTime
     })
 
-    // Process distributions with percentages
+    // Process distributions
     setSenderDistribution(processDistributionData(data, 'sender', total))
     
-    // Process status distribution instead of subject
+    // Process status distribution
     const statusData = [
       { name: 'Pending', value: pending, percentage: ((pending/total) * 100).toFixed(1) },
       { name: 'Answered', value: answered, percentage: ((answered/total) * 100).toFixed(1) }
     ]
     setStatusDistribution(statusData)
 
-    // Process monthly trends with actual numbers
-    const trends = processMonthlyTrends(data)
-    setMonthlyTrends(trends)
+    // Process monthly trends
+    setMonthlyTrends(processMonthlyTrends(data))
 
-    // Process timeline data last
-    const timeline = processTimelineData(data)
-    setTimelineData(timeline)
+    // Process timeline data
+    setTimelineData(processTimelineData(data))
+  }
+
+  const processTimelineData = (data) => {
+    const grouped = data.reduce((acc, item) => {
+      const date = new Date(item.date_received).toISOString().split('T')[0]
+      acc[date] = (acc[date] || 0) + 1
+      return acc
+    }, {})
+
+    return Object.entries(grouped)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
   }
 
   const processDistributionData = (data, key, total) => {
@@ -184,29 +195,44 @@ const StakeholderReport = () => {
       .sort((a, b) => b.value - a.value)
   }
 
-  const CustomLabel = ({ viewBox, value, percentage }) => {
-    const { cx, cy } = viewBox;
-    return (
-      <text
-        x={cx}
-        y={cy}
-        className="recharts-text"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fill="#fff"
-        fontSize="14"
-      >
-        <tspan x={cx} dy="-0.5em">{value}</tspan>
-        <tspan x={cx} dy="1.5em">{percentage}%</tspan>
-      </text>
-    );
-  };
+  const processMonthlyTrends = (data) => {
+    const monthly = data.reduce((acc, item) => {
+      const month = new Date(item.date_received).toLocaleString('default', { month: 'short' })
+      acc[month] = acc[month] || { month, total: 0, pending: 0, answered: 0 }
+      acc[month].total += 1
+      acc[month][item.status.toLowerCase()] += 1
+      return acc
+    }, {})
+
+    return Object.values(monthly).sort((a, b) => 
+      new Date(Date.parse(`1 ${a.month} 2024`)) - new Date(Date.parse(`1 ${b.month} 2024`))
+    )
+  }
+
+  const exportToExcel = () => {
+    const workbook = XLSX.utils.book_new()
+    
+    // Create sheets for different data
+    const statsSheet = XLSX.utils.json_to_sheet([stats])
+    const timelineSheet = XLSX.utils.json_to_sheet(timelineData)
+    const senderSheet = XLSX.utils.json_to_sheet(senderDistribution)
+    const statusSheet = XLSX.utils.json_to_sheet(statusDistribution)
+    const trendsSheet = XLSX.utils.json_to_sheet(monthlyTrends)
+    
+    XLSX.utils.book_append_sheet(workbook, statsSheet, "Stats")
+    XLSX.utils.book_append_sheet(workbook, timelineSheet, "Timeline")
+    XLSX.utils.book_append_sheet(workbook, senderSheet, "Sender Distribution")
+    XLSX.utils.book_append_sheet(workbook, statusSheet, "Status Distribution")
+    XLSX.utils.book_append_sheet(workbook, trendsSheet, "Monthly Trends")
+    
+    XLSX.writeFile(workbook, "stakeholder-report.xlsx")
+  }
 
   const exportToPDF = async () => {
     if (!chartsRef.current) return
 
     const canvas = await html2canvas(chartsRef.current, {
-      scale: 2, // Increase quality
+      scale: 2,
       backgroundColor: '#ffffff'
     })
     
@@ -237,9 +263,9 @@ const StakeholderReport = () => {
       imgData,
       'PNG',
       margin,
-      30, // Start after the title
+      30,
       pdfWidth - (margin * 2),
-      pdfHeight - 40 // Leave space for title and margins
+      pdfHeight - 40
     )
     
     pdf.save('stakeholder-report.pdf')
@@ -283,12 +309,178 @@ const StakeholderReport = () => {
       <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))] -mt-6">
         <div className="flex-1 flex justify-center">
           <div className="w-full max-w-[90%] px-4 pb-8">
-            {/* Header and Filters sections remain the same */}
-            
-            <div id="charts-container" ref={chartsRef}>
-              {/* Stats Cards remain the same */}
+            {/* Header with Title and Actions */}
+            <div className="flex justify-between items-center pt-2 mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Stakeholder Analysis Report
+              </h1>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportToExcel}
+                  className="text-[#0A2647] border-[#0A2647]"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportToPDF}
+                  className="text-[#0A2647] border-[#0A2647]"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={printCharts}
+                  className="text-[#0A2647] border-[#0A2647]"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Print
+                </Button>
+              </div>
+            </div>
 
-              {/* Charts Grid - Reordered */}
+            {/* Filters */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium flex items-center">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Filters
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Date Range
+                    </label>
+                    <div className="flex space-x-2">
+                      <DatePicker
+                        selected={dateRange.startDate}
+                        onChange={date => setDateRange(prev => ({ ...prev, startDate: date }))}
+                        selectsStart
+                        startDate={dateRange.startDate}
+                        endDate={dateRange.endDate}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                      />
+                      <DatePicker
+                        selected={dateRange.endDate}
+                        onChange={date => setDateRange(prev => ({ ...prev, endDate: date }))}
+                        selectsEnd
+                        startDate={dateRange.startDate}
+                        endDate={dateRange.endDate}
+                        minDate={dateRange.startDate}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Sender
+                    </label>
+                    <select
+                      value={selectedSender}
+                      onChange={(e) => setSelectedSender(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                    >
+                      {availableSenders.map((sender) => (
+                        <option key={sender} value={sender}>
+                          {sender === 'all' ? 'All Senders' : sender}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Status
+                    </label>
+                    <select
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Answered">Answered</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Subject
+                    </label>
+                    <select
+                      value={selectedSubject}
+                      onChange={(e) => setSelectedSubject(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                    >
+                      {availableSubjects.map((subject) => (
+                        <option key={subject} value={subject}>
+                          {subject === 'all' ? 'All Subjects' : subject}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div id="charts-container" ref={chartsRef}>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+                    <BarChart2 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalRequests}</div>
+                    <p className="text-xs text-muted-foreground">All stakeholder requests</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
+                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.pendingRequests}</div>
+                    <p className="text-xs text-muted-foreground">Awaiting response</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Answered Requests</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.answeredRequests}</div>
+                    <p className="text-xs text-muted-foreground">Completed responses</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Average Response Time</CardTitle>
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.averageResponseTime} days</div>
+                    <p className="text-xs text-muted-foreground">Time to resolution</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Charts Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Monthly Trends */}
                 <Card className="col-span-2">
@@ -319,7 +511,7 @@ const StakeholderReport = () => {
                   </CardContent>
                 </Card>
 
-                {/* Sender Distribution with numbers */}
+                {/* Sender Distribution */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Sender Distribution</CardTitle>
@@ -350,7 +542,7 @@ const StakeholderReport = () => {
                   </CardContent>
                 </Card>
 
-                {/* Status Distribution (replacing Subject) */}
+                {/* Status Distribution */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Status Distribution</CardTitle>
@@ -381,7 +573,7 @@ const StakeholderReport = () => {
                   </CardContent>
                 </Card>
 
-                {/* Timeline Chart - Moved to bottom */}
+                {/* Timeline Chart */}
                 <Card className="col-span-2">
                   <CardHeader>
                     <CardTitle>Request Timeline</CardTitle>
