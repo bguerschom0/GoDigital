@@ -522,7 +522,7 @@ const fetchFilterOptions = async () => {
                     <CardTitle>Sender Distribution</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[300px]">
+                    <div className="h-[300px] w-[50%] mx-auto">
                       <ResponsiveContainer width="50%" height="100%">
                         <PieChart>
                           <Pie
@@ -553,7 +553,7 @@ const fetchFilterOptions = async () => {
                     <CardTitle>Status Distribution</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[300px]">
+                    <div className="h-[300px] w-[50%] mx-auto">
                       <ResponsiveContainer width="50%" height="100%">
                         <PieChart>
                           <Pie
