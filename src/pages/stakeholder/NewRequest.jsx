@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar,
   FileText,
-  CheckCircle,
+  Check,
   Save,
   ChevronDown,
   ChevronUp,
@@ -32,6 +32,12 @@ const NewRequest = () => {
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+
+  const formatDate = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toISOString().split('T')[0];
+};
 
   const sections = [
     {
