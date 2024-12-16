@@ -28,7 +28,8 @@
     "recharts": "^2.10.3",
     "xlsx": "^0.18.5",
     "react-datepicker": "^4.25.0",
-     "html2canvas": "^1.4.1"
+     "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.7",
