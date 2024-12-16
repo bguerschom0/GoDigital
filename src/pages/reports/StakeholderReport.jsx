@@ -611,8 +611,7 @@ const fetchFilterOptions = async () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
+
     </AdminLayout>
   )
 }
