@@ -63,7 +63,6 @@ const [formData, setFormData] = useState({
                 placeholderText="Select date"
                 maxDate={new Date()}
               />
-              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             </div>
             {errors.dateReceived && (
               <p className="mt-1 text-sm text-red-500">{errors.dateReceived}</p>
@@ -229,7 +228,6 @@ const [formData, setFormData] = useState({
                 maxDate={new Date()}
                 minDate={formData.dateReceived ? new Date(formData.dateReceived) : null}
               />
-              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             </div>
             {errors.responseDate && (
               <p className="mt-1 text-sm text-red-500">{errors.responseDate}</p>
