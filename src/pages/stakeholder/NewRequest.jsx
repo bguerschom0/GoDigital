@@ -234,33 +234,36 @@ const [formData, setFormData] = useState({
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Answered By
-            </label>
-            <select
-              name="answeredBy"
-              value={formData.answeredBy}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-            >
-              <option value="">Select Person</option>
-              <option value="bigirig">bigirig</option>
-              <option value="isimbie">isimbie</option>
-              <option value="niragit">niragit</option>
-              <option value="nkomatm">nkomatm</option>
-              <option value="tuyisec">tuyisec</option>
-            </select>
-            {errors.answeredBy && (
-              <p className="mt-1 text-sm text-red-500">{errors.answeredBy}</p>
-            )}
-          </div>
+       <div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+    Answered By
+  </label>
+  <select
+    name="answeredBy"
+    value={formData.answeredBy}
+    onChange={handleInputChange}
+    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+  >
+    <option value="">Select Person</option>
+    {availableUsers.map((user) => (
+      <option key={user.username} value={user.username}>
+        {user.fullname} ({user.username})
+      </option>
+    ))}
+  </select>
+  {errors.answeredBy && (
+    <p className="mt-1 text-sm text-red-500">{errors.answeredBy}</p>
+  )}
+</div>
         </>
       )}
     </div>
   )
 }
   ]
+
+
+  
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
