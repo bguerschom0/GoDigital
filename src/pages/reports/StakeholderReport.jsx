@@ -594,7 +594,7 @@ const fetchFilterOptions = async () => {
 
 </div>
 
-
+<div>
                 {/* Timeline Chart */}
                 <Card className="col-span-2">
                   <CardHeader>
@@ -625,6 +625,7 @@ const fetchFilterOptions = async () => {
                     </div>
                   </CardContent>
                 </Card>
+  </div>
               </div>
             </div>
           </div>
