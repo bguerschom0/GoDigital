@@ -1,45 +1,31 @@
 // src/components/layout/AdminLayout.jsx
 import { useState, useEffect } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 import Header from './Header'
 import Footer from './Footer'
 import Sidebar from './Sidebar'
-import { useAuth } from '@/context/AuthContext'
 import { Loader2 } from 'lucide-react'
 
-const AdminLayout = ({ children }) => {
+const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isHovered, setIsHovered] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const { user, isAdmin } = useAuth()
-  const navigate = useNavigate()
+  const [pageTitle, setPageTitle] = useState('')
+  const location = useLocation()
+  const { user } = useAuth()
 
+  // Set page title based on current route
   useEffect(() => {
-    // Check admin permission
-    if (!isAdmin) {
-      navigate('/dashboard')
-      return
-    }
-    setIsLoading(false)
-  }, [isAdmin, navigate])
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(prev => !prev)
-  }
+    const path = location.pathname.split('/').pop()
+    const title = path.charAt(0).toUpperCase() + path.slice(1)
+    setPageTitle(title === 'Admin' ? 'Dashboard' : title)
+  }, [location])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <Header 
-        onMenuClick={toggleSidebar}
+        onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
         showMenuButton={true}
         user={user}
       />
@@ -66,13 +52,20 @@ const AdminLayout = ({ children }) => {
           transition-all 
           duration-300 
           ease-in-out
-          ${isSidebarOpen ? (isHovered ? 'lg:ml-64' : 'lg:ml-16') : ''}
+          ${isSidebarOpen ? (isHovered ? 'lg:pl-64' : 'lg:pl-16') : ''}
         `}
       >
-        {/* Breadcrumb can be added here */}
-        <div className="p-4 h-full">
-          <div className="mx-auto max-w-7xl h-full">
-            {children || <Outlet />}
+        {/* Page Header */}
+        <div className="px-6 py-4 border-b bg-white dark:bg-gray-800">
+          <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">
+            {pageTitle}
+          </h1>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          <div className="mx-auto max-w-7xl">
+            <Outlet />
           </div>
         </div>
       </main>
