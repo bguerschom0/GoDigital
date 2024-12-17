@@ -10,7 +10,11 @@ import {
   ChevronRight, 
   FileStack,
   LayoutDashboard,
-  BarChart
+  BarChart,
+  UserCheck,
+AlertTriangle,
+Files,
+BarChart2
 } from 'lucide-react'
 
 const Sidebar = ({ isOpen, onClose }) => {
