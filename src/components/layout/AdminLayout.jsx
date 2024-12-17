@@ -5,12 +5,14 @@ import { useAuth } from '@/context/AuthContext'
 import Header from './Header'
 import Footer from './Footer'
 import Sidebar from './Sidebar'
-import { Loader2 } from 'lucide-react'
+// Import Loader2 from lucide-react
+import { Loader2, AlertCircle } from 'lucide-react'
 
 const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isHovered, setIsHovered] = useState(false)
   const [pageTitle, setPageTitle] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const location = useLocation()
   const { user } = useAuth()
 
@@ -20,6 +22,16 @@ const AdminLayout = () => {
     const title = path.charAt(0).toUpperCase() + path.slice(1)
     setPageTitle(title === 'Admin' ? 'Dashboard' : title)
   }, [location])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 text-blue-600">
+          <Loader2 />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
