@@ -1,8 +1,6 @@
-```jsx
 // src/pages/reports/BackgroundCheckReport.jsx
 import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { 
@@ -10,7 +8,12 @@ import {
   Search, 
   RefreshCcw,
   FileDown,
-  Printer
+  Printer,
+  Filter,
+  Users,
+  Clock,
+  Globe,
+  Building2
 } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 import { Button } from '@/components/ui/button'
@@ -33,6 +36,37 @@ import {
 
 const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D']
 
+const citizenshipOptions = [
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Australia',
+  'Germany',
+  'France',
+  'Japan',
+  'Singapore',
+  'India',
+  'Other'
+]
+
+const getDateRangeStart = (range) => {
+  const today = new Date()
+  switch (range) {
+    case 'last7days':
+      return new Date(today.setDate(today.getDate() - 7))
+    case 'last30days':
+      return new Date(today.setDate(today.getDate() - 30))
+    case 'last3months':
+      return new Date(today.setMonth(today.getMonth() - 3))
+    case 'custom':
+      return null
+    default:
+      return null
+  }
+}
+
+const getDateRangeEnd = () => new Date()
+
 const BackgroundCheckReport = () => {
   // States for filters
   const [filters, setFilters] = useState({
@@ -40,11 +74,10 @@ const BackgroundCheckReport = () => {
     startDate: '',
     endDate: '',
     requested_by: '',
-    citizenship: '',
-    submitted_date: '',
+    citizenship: 'all',
     from_company: '',
-    department: '',
-    role_type: ''
+    department: 'all',
+    roleType: 'all'
   })
 
   // States for data
@@ -54,7 +87,9 @@ const BackgroundCheckReport = () => {
   const [stats, setStats] = useState({
     totalChecks: 0,
     pendingChecks: 0,
-    closedChecks: 0
+    closedChecks: 0,
+    uniqueCountries: 0,
+    activeDepartments: 0
   })
   const [operatingCountryData, setOperatingCountryData] = useState([])
   const [statusDistribution, setStatusDistribution] = useState([])
@@ -68,19 +103,21 @@ const BackgroundCheckReport = () => {
   const fetchDepartmentsAndRoles = async () => {
     try {
       // Fetch departments
-      const { data: deptData } = await supabase
+      const { data: deptData, error: deptError } = await supabase
         .from('departments')
         .select('id, name')
         .eq('status', 'active')
 
+      if (deptError) throw deptError
       setDepartments(deptData || [])
 
       // Fetch roles
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('roles')
         .select('id, name, type')
         .eq('status', 'active')
 
+      if (roleError) throw roleError
       setRoles(roleData || [])
     } catch (error) {
       console.error('Error fetching departments and roles:', error)
@@ -93,15 +130,20 @@ const BackgroundCheckReport = () => {
       let query = supabase
         .from('background_checks')
         .select(`
-          *
+          *,
           departments(name),
           roles(name, type)
         `)
 
       // Apply filters
       if (filters.dateRange !== 'all') {
-        const startDate = getDateRangeStart(filters.dateRange)
-        const endDate = getDateRangeEnd()
+        const startDate = filters.dateRange === 'custom' 
+          ? filters.startDate 
+          : getDateRangeStart(filters.dateRange)
+        const endDate = filters.dateRange === 'custom'
+          ? filters.endDate
+          : getDateRangeEnd()
+
         if (startDate) {
           query = query.gte('submitted_date', startDate.toISOString())
         }
@@ -114,7 +156,7 @@ const BackgroundCheckReport = () => {
         query = query.ilike('requested_by', `%${filters.requested_by}%`)
       }
 
-      if (filters.citizenship) {
+      if (filters.citizenship !== 'all') {
         query = query.eq('citizenship', filters.citizenship)
       }
 
@@ -122,20 +164,19 @@ const BackgroundCheckReport = () => {
         query = query.ilike('from_company', `%${filters.from_company}%`)
       }
 
-      if (filters.department) {
+      if (filters.department !== 'all') {
         query = query.eq('department_id', filters.department)
       }
 
-      if (filters.role_type) {
-        query = query.eq('role_id', filters.role_type)
+      if (filters.roleType !== 'all') {
+        query = query.eq('role_type', filters.roleType)
       }
 
       const { data, error } = await query
 
       if (error) throw error
 
-      // Process data for stats and charts
-      processData(data)
+      processData(data || [])
     } catch (error) {
       console.error('Error fetching report data:', error)
     } finally {
@@ -148,8 +189,16 @@ const BackgroundCheckReport = () => {
     const totalChecks = data.length
     const pendingChecks = data.filter(check => check.status === 'Pending').length
     const closedChecks = data.filter(check => check.status === 'Closed').length
+    const uniqueCountries = new Set(data.map(check => check.operating_country)).size
+    const activeDepartments = new Set(data.map(check => check.department_id)).size
 
-    setStats({ totalChecks, pendingChecks, closedChecks })
+    setStats({ 
+      totalChecks, 
+      pendingChecks, 
+      closedChecks,
+      uniqueCountries,
+      activeDepartments
+    })
 
     // Process operating country data
     const countryData = data.reduce((acc, check) => {
@@ -319,164 +368,174 @@ const BackgroundCheckReport = () => {
             </CardContent>
           </Card>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Checks</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalChecks}</div>
-                <p className="text-xs text-muted-foreground">
-                  All time background checks
-                </p>
-              </CardContent>
-            </Card>
+          {loading ? (
+            <div className="flex justify-center items-center h-40">
+              <RefreshCcw className="w-8 h-8 animate-spin" />
+            </div>
+          ) : (
+            <>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Checks</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalChecks}</div>
+                    <p className="text-xs text-muted-foreground">
+                      All time background checks
+                    </p>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Checks</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingChecks}</div>
-                <p className="text-xs text-muted-foreground">
-                  Awaiting completion
-                </p>
-              </CardContent>
-            </Card>
+<Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pending Checks</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.pendingChecks}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Awaiting completion
+                    </p>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Operating Countries</CardTitle>
-                <Globe className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.uniqueCountries}</div>
-                <p className="text-xs text-muted-foreground">
-                  Unique operating locations
-                </p>
-              </CardContent>
-            </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Operating Countries</CardTitle>
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.uniqueCountries}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Unique operating locations
+                    </p>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Departments</CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.activeDepartments}</div>
-                <p className="text-xs text-muted-foreground">
-                  Departments with active checks
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Departments</CardTitle>
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.activeDepartments}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Departments with active checks
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            {/* Operating Countries Timeline - Full width */}
-            <Card className="lg:col-span-3">
-              <CardHeader>
-                <CardTitle>Operating Countries Timeline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={timelineData}>
-                      <defs>
-                        <linearGradient id="colorCountries" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#0A2647" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#0A2647" stopOpacity={0.1}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip />
-                      <Area 
-                        type="monotone" 
-                        dataKey="count" 
-                        stroke="#0A2647" 
-                        fillOpacity={1} 
-                        fill="url(#colorCountries)" 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Status Distribution */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle>Status Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={statusDistribution}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        fill="#0A2647"
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {statusDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Citizenship Distribution */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Citizenship Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={citizenshipDistribution}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="name" 
-                        tick={{ fontSize: 12 }}
-                        interval={0}
-                        angle={-45}
-                        textAnchor="end"
-                      />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value">
-                        {citizenshipDistribution.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={COLORS[index % COLORS.length]} 
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Operating Countries Timeline - Full width */}
+                <Card className="lg:col-span-3">
+                  <CardHeader>
+                    <CardTitle>Operating Countries Timeline</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={operatingCountryData}>
+                          <defs>
+                            <linearGradient id="colorCountries" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#0A2647" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#0A2647" stopOpacity={0.1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Area 
+                            type="monotone" 
+                            dataKey="count" 
+                            stroke="#0A2647" 
+                            fillOpacity={1} 
+                            fill="url(#colorCountries)" 
                           />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Status Distribution */}
+                <Card className="lg:col-span-1">
+                  <CardHeader>
+                    <CardTitle>Status Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={statusDistribution}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            fill="#0A2647"
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {statusDistribution.map((entry, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={COLORS[index % COLORS.length]} 
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Citizenship Distribution */}
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle>Citizenship Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={citizenshipDistribution}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="name" 
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                            angle={-45}
+                            textAnchor="end"
+                          />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="value">
+                            {citizenshipDistribution.map((entry, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={COLORS[index % COLORS.length]} 
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </AdminLayout>
   );
-
 }
 
-export default BackgroundCheckReport
+export default BackgroundCheckReport;
