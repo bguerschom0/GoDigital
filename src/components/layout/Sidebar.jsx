@@ -106,7 +106,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           href: '/admin/reports/stakeholder'
         },
         {
-        title: 'Reports',
+        title: 'Background Check Analytics',
         icon: <BarChart2 className="w-5 h-5" />,
         href: '/admin/reports/BackgroundCheckReport'
       }
