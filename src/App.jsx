@@ -21,12 +21,10 @@ import BackgroundCheckReport from './pages/reports/BackgroundCheckReport'
 import InternshipOverview from './pages/background/InternshipOverview'
 
 // Root component to handle initial redirect
-const Root = () => {
+const RootRedirect = () => {
   const { user, loading } = useAuth()
 
-  if (loading) {
-    return <div>Loading...</div>
-  }
+  if (loading) return null
 
   if (!user) {
     return <Navigate to="/login" replace />
@@ -40,11 +38,9 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
-          {/* Public route */}
+          {/* Public routes */}
           <Route path="/login" element={<AuthForm />} />
-
-          {/* Root redirect */}
-          <Route path="/" element={<Root />} />
+          <Route path="/" element={<RootRedirect />} />
 
           {/* User routes */}
           <Route path="/dashboard" element={
@@ -65,20 +61,24 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<Users />} />
             <Route path="permissions" element={<PagePermissions />} />
-            <Route path="stakeholder/new" element={<NewRequest />} />
-            <Route path="stakeholder/pending" element={<PendingRequests />} />
-            <Route path="stakeholder/update" element={<UpdateRequest />} />
-            <Route path="reports/stakeholder" element={<StakeholderReport />} />
-            <Route path="background/new" element={<NewBackgroundCheck />} />
-            <Route path="background/pending" element={<PendingBackgroundChecks />} />
-            <Route path="background/update" element={<UpdateBackgroundCheck />} />
-            <Route path="background/expired" element={<ExpiredDocuments />} />
-            <Route path="background/all" element={<AllBackgroundChecks />} />
-            <Route path="reports/BackgroundCheckReport" element={<BackgroundCheckReport />} />
-            <Route path="background/InternshipOverview" element={<InternshipOverview />} />
+            <Route path="stakeholder">
+              <Route path="new" element={<NewRequest />} />
+              <Route path="pending" element={<PendingRequests />} />
+              <Route path="update" element={<UpdateRequest />} />
+            </Route>
+            <Route path="background">
+              <Route path="new" element={<NewBackgroundCheck />} />
+              <Route path="pending" element={<PendingBackgroundChecks />} />
+              <Route path="update" element={<UpdateBackgroundCheck />} />
+              <Route path="expired" element={<ExpiredDocuments />} />
+              <Route path="all" element={<AllBackgroundChecks />} />
+              <Route path="InternshipOverview" element={<InternshipOverview />} />
+            </Route>
+            <Route path="reports">
+              <Route path="stakeholder" element={<StakeholderReport />} />
+              <Route path="BackgroundCheckReport" element={<BackgroundCheckReport />} />
+            </Route>
           </Route>
-
-          
 
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />
