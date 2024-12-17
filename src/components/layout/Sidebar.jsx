@@ -18,6 +18,8 @@ BarChart2,
   FaGraduationCap
 } from 'lucide-react'
 
+import { FaGraduationCap } from 'react-icons/fa';
+
 const Sidebar = ({ isOpen, onClose }) => {
   const [isHovered, setIsHovered] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState(['stakeholder'])
