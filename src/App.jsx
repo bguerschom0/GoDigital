@@ -17,6 +17,8 @@ import UpdateBackgroundCheck from './pages/background/UpdateBackgroundCheck'
 import ExpiredDocuments from './pages/background/ExpiredDocuments'
 import AllBackgroundChecks from './pages/background/AllBackgroundChecks'
 import BackgroundCheckReport from './pages/reports/BackgroundCheckReport'
+import InternshipOverview from './pages/background/InternshipOverview'
+
 
 function App() {
   return (
@@ -40,6 +42,7 @@ function App() {
             <Route path="background/expired" element={<ExpiredDocuments />} />
             <Route path="background/all" element={<AllBackgroundChecks />} />
             <Route path="reports/BackgroundCheckReport" element={<BackgroundCheckReport />} />
+            <Route path="background/InternshipOverview" element={<InternshipOverview />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
