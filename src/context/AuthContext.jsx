@@ -9,37 +9,31 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Initialize auth state from localStorage
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Check for stored user data
         const storedUser = localStorage.getItem('sss_user')
         if (storedUser) {
           const userData = JSON.parse(storedUser)
           // Verify the user still exists and is active
-          const { data: currentUser, error: userError } = await supabase
+          const { data: currentUser, error } = await supabase
             .from('users')
             .select('*')
             .eq('id', userData.id)
             .eq('status', 'active')
             .single()
 
-          if (userError || !currentUser) {
-            throw new Error('Session expired or user inactive')
+          if (error || !currentUser) {
+            throw new Error('Session expired')
           }
 
           setUser(currentUser)
-          // Update last_login
-          await supabase
-            .from('users')
-            .update({ last_login: new Date().toISOString() })
-            .eq('id', currentUser.id)
         }
       } catch (error) {
         console.error('Auth initialization error:', error)
-        setError(error.message)
-        setUser(null)
         localStorage.removeItem('sss_user')
+        setUser(null)
       } finally {
         setLoading(false)
       }
@@ -51,8 +45,8 @@ export const AuthProvider = ({ children }) => {
   const signIn = async (username, password) => {
     try {
       setError(null)
-      
-      // Fetch user and verify password
+
+      // Get user by username
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -64,23 +58,23 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Invalid username or password')
       }
 
-      // You should use a proper password verification here
-      // This is just a placeholder - implement actual password checking
-      if (password !== userData.password) {
+      // In a real app, you should hash the password and compare with the hashed version
+      if (userData.password !== password) {
         throw new Error('Invalid username or password')
       }
 
-      // Update last_login
-      const { error: updateError } = await supabase
+      // Update last login
+      await supabase
         .from('users')
-        .update({ last_login: new Date().toISOString() })
+        .update({ 
+          last_login: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
         .eq('id', userData.id)
-
-      if (updateError) throw updateError
 
       setUser(userData)
       localStorage.setItem('sss_user', JSON.stringify(userData))
-      
+
       return userData
     } catch (error) {
       console.error('Sign in error:', error)
@@ -92,18 +86,17 @@ export const AuthProvider = ({ children }) => {
   const signOut = async () => {
     try {
       if (user) {
-        // Update last activity if needed
+        // Update last activity
         await supabase
           .from('users')
           .update({ updated_at: new Date().toISOString() })
           .eq('id', user.id)
       }
-      
+
       setUser(null)
       localStorage.removeItem('sss_user')
     } catch (error) {
       console.error('Sign out error:', error)
-      setError(error.message)
       throw error
     }
   }
@@ -112,14 +105,14 @@ export const AuthProvider = ({ children }) => {
     try {
       if (!user) return
 
-      const { data: userData, error: userError } = await supabase
+      const { data: userData, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', user.id)
         .eq('status', 'active')
         .single()
 
-      if (userError || !userData) {
+      if (error || !userData) {
         throw new Error('User not found or inactive')
       }
 
@@ -127,37 +120,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('sss_user', JSON.stringify(userData))
     } catch (error) {
       console.error('Refresh user error:', error)
-      setError(error.message)
       setUser(null)
       localStorage.removeItem('sss_user')
-      throw error
-    }
-  }
-
-  const updatePassword = async (currentPassword, newPassword) => {
-    try {
-      if (!user) throw new Error('Not authenticated')
-
-      // Verify current password
-      if (currentPassword !== user.password) {
-        throw new Error('Current password is incorrect')
-      }
-
-      // Update password
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ 
-          password: newPassword,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-
-      if (updateError) throw updateError
-
-      await refreshUser()
-    } catch (error) {
-      console.error('Password update error:', error)
-      setError(error.message)
       throw error
     }
   }
@@ -169,11 +133,9 @@ export const AuthProvider = ({ children }) => {
     signIn,
     signOut,
     refreshUser,
-    updatePassword,
     isAdmin: user?.role === 'admin',
-    isSupervisor: user?.role === 'supervisor',
-    isActive: user?.status === 'active',
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    isSupervisor: user?.role === 'supervisor'
   }
 
   return (
