@@ -1,31 +1,28 @@
 // src/pages/admin/Dashboard.jsx
-import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
-import { 
-  Users, 
-  FileText, 
-  Clock,
-  Bell,
-  Calendar,
-  CheckCircle,
-  AlertCircle,
-  BarChart
-} from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { format } from 'date-fns'
+import { supabase } from '@/config/supabase'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { 
+  Users,
+  FileText,
+  AlertCircle,
+  Clock,
+  Activity,
+  BarChart2
+} from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 const Dashboard = () => {
   const { user } = useAuth()
   const [stats, setStats] = useState({
-    totalRequests: 0,
-    pendingRequests: 0,
-    completedRequests: 0,
-    totalBackgroundChecks: 0
+    totalUsers: 0,
+    activeRequests: 0,
+    pendingApprovals: 0,
+    expiringDocuments: 0
   })
   const [recentActivity, setRecentActivity] = useState([])
+  const [chartData, setChartData] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -34,38 +31,61 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch stakeholder requests stats
-      const { data: stakeholderData, error: stakeholderError } = await supabase
-        .from('stakeholder_requests')
-        .select('status')
+      const [
+        usersCount,
+        requestsCount,
+        approvalsCount,
+        expiringCount,
+        activity,
+        monthlyStats
+      ] = await Promise.all([
+        // Get total users
+        supabase
+          .from('users')
+          .select('id', { count: 'exact' }),
 
-      if (stakeholderError) throw stakeholderError
+        // Get active requests
+        supabase
+          .from('stakeholder_requests')
+          .select('id', { count: 'exact' })
+          .eq('status', 'active'),
 
-      // Fetch background checks stats
-      const { data: backgroundData, error: backgroundError } = await supabase
-        .from('background_checks')
-        .select('status')
+        // Get pending approvals
+        supabase
+          .from('background_checks')
+          .select('id', { count: 'exact' })
+          .eq('status', 'pending'),
 
-      if (backgroundError) throw backgroundError
+        // Get expiring documents
+        supabase
+          .from('documents')
+          .select('id', { count: 'exact' })
+          .lt('expiry_date', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()),
 
-      // Calculate stats
+        // Get recent activity
+        supabase
+          .from('activity_log')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5),
+
+        // Get monthly stats
+        supabase
+          .from('monthly_stats')
+          .select('*')
+          .order('month', { ascending: true })
+          .limit(6)
+      ])
+
       setStats({
-        totalRequests: stakeholderData.length,
-        pendingRequests: stakeholderData.filter(r => r.status === 'Pending').length,
-        completedRequests: stakeholderData.filter(r => r.status === 'Answered').length,
-        totalBackgroundChecks: backgroundData?.length || 0
+        totalUsers: usersCount.count || 0,
+        activeRequests: requestsCount.count || 0,
+        pendingApprovals: approvalsCount.count || 0,
+        expiringDocuments: expiringCount.count || 0
       })
 
-      // Fetch recent activity
-      const { data: recentData, error: recentError } = await supabase
-        .from('stakeholder_requests')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      if (recentError) throw recentError
-      setRecentActivity(recentData)
-
+      setRecentActivity(activity.data || [])
+      setChartData(monthlyStats.data || [])
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
@@ -73,179 +93,120 @@ const Dashboard = () => {
     }
   }
 
-  // Get greeting based on time of day
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 18) return 'Good afternoon'
-    return 'Good evening'
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
-    <AdminLayout>
-      <div className="flex justify-center -mt-6">
-        <div className="w-full max-w-[90%] px-4">
-          {/* Welcome Section */}
-          <div className="bg-[#0A2647] text-white rounded-lg p-6 mb-6">
-            <h1 className="text-3xl font-bold mb-2">
-              {getGreeting()}, {user?.fullname}
-            </h1>
-            <p className="text-blue-100">
-              Welcome to your dashboard. Here's what's happening today.
+    <div className="space-y-6">
+      {/* Stats Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <p className="text-xs text-muted-foreground">
+              Registered users in the system
             </p>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Quick Stats */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalRequests}</div>
-                <p className="text-xs text-muted-foreground">
-                  All stakeholder requests
-                </p>
-              </CardContent>
-            </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Active Requests</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.activeRequests}</div>
+            <p className="text-xs text-muted-foreground">
+              Currently active requests
+            </p>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingRequests}</div>
-                <p className="text-xs text-muted-foreground">
-                  Awaiting response
-                </p>
-              </CardContent>
-            </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
+            <p className="text-xs text-muted-foreground">
+              Awaiting approval
+            </p>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Completed Requests</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.completedRequests}</div>
-                <p className="text-xs text-muted-foreground">
-                  Successfully processed
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Background Checks</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalBackgroundChecks}</div>
-                <p className="text-xs text-muted-foreground">
-                  Total background checks
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions & Recent Activity */}
-          <div className="grid gap-6 md:grid-cols-2 mb-6">
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Button 
-                    className="w-full bg-[#0A2647] hover:bg-[#0A2647]/90"
-                    onClick={() => window.location.href = '/admin/stakeholder/new'}
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    New Stakeholder Request
-                  </Button>
-                  <Button 
-                    className="w-full bg-[#0A2647] hover:bg-[#0A2647]/90"
-                    onClick={() => window.location.href = '/admin/background/new'}
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    New Background Check
-                  </Button>
-                  <Button 
-                    className="w-full bg-[#0A2647] hover:bg-[#0A2647]/90"
-                    onClick={() => window.location.href = '/admin/reports'}
-                  >
-                    <BarChart className="w-4 h-4 mr-2" />
-                    View Reports
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentActivity.map((activity) => (
-                    <div 
-                      key={activity.id} 
-                      className="flex items-center space-x-4 border-b border-gray-100 pb-4 last:border-0 last:pb-0"
-                    >
-                      <div className={`p-2 rounded-full ${
-                        activity.status === 'Pending' 
-                          ? 'bg-yellow-100 text-yellow-600'
-                          : 'bg-green-100 text-green-600'
-                      }`}>
-                        {activity.status === 'Pending' ? (
-                          <Clock className="w-4 h-4" />
-                        ) : (
-                          <CheckCircle className="w-4 h-4" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          {activity.reference_number}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')}
-                        </p>
-                      </div>
-                      <div className={`px-2 py-1 rounded text-xs ${
-                        activity.status === 'Pending'
-                          ? 'bg-yellow-100 text-yellow-600'
-                          : 'bg-green-100 text-green-600'
-                      }`}>
-                        {activity.status}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* System Notifications */}
-          <Card>
-            <CardHeader>
-              <CardTitle>System Notifications</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4 text-amber-600 bg-amber-50 p-4 rounded-lg">
-                  <Bell className="w-5 h-5" />
-                  <p className="text-sm">You have {stats.pendingRequests} pending requests that need your attention.</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Expiring Documents</CardTitle>
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.expiringDocuments}</div>
+            <p className="text-xs text-muted-foreground">
+              Expiring in 30 days
+            </p>
+          </CardContent>
+        </Card>
       </div>
-    </AdminLayout>
+
+      {/* Activity and Chart Section */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentActivity.length > 0 ? (
+                recentActivity.map((activity, index) => (
+                  <div key={activity.id} className="flex items-center">
+                    <Activity className="h-4 w-4 text-muted-foreground mr-2" />
+                    <div>
+                      <p className="text-sm font-medium">{activity.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(activity.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No recent activity</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Monthly Trends</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="requests" fill="#0A2647" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }
 
