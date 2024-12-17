@@ -108,7 +108,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {
         title: 'Reports',
         icon: <BarChart2 className="w-5 h-5" />,
-        href: '/admin/reports/report'
+        href: '/admin/reports/BackgroundCheckReport'
       }
       ]
     }
