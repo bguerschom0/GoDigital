@@ -1,17 +1,20 @@
 // src/components/auth/ProtectedRoute.jsx
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 
-const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth()
-  const location = useLocation()
+const ProtectedRoute = ({ children, requireAdmin = false }) => {
+  const { user, loading } = useAuth()
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />
+  if (loading) {
+    return <div>Loading...</div>
   }
 
-  if (user.role !== 'admin') {
-    return <Navigate to="/unauthorized" replace />
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (requireAdmin && user.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />
   }
 
   return children
