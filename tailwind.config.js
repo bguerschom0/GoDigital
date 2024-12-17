@@ -73,39 +73,7 @@ export default {
         "zoom-out": {
           "0%": { transform: "scale(1)" },
           "100%": { transform: "scale(0.95)" },
-        },
-        "slide-in-from-top": {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(0)" },
-        },
-        "slide-in-from-right": {
-          "0%": { transform: "translateX(100%)" },
-          "100%": { transform: "translateX(0)" },
-        },
-        "slide-in-from-bottom": {
-          "0%": { transform: "translateY(100%)" },
-          "100%": { transform: "translateY(0)" },
-        },
-        "slide-in-from-left": {
-          "0%": { transform: "translateX(-100%)" },
-          "100%": { transform: "translateX(0)" },
-        },
-        "slide-out-to-top": {
-          "0%": { transform: "translateY(0)" },
-          "100%": { transform: "translateY(-100%)" },
-        },
-        "slide-out-to-right": {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(100%)" },
-        },
-        "slide-out-to-bottom": {
-          "0%": { transform: "translateY(0)" },
-          "100%": { transform: "translateY(100%)" },
-        },
-        "slide-out-to-left": {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-100%)" },
-        },
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -114,20 +82,11 @@ export default {
         "fade-out": "fade-out 150ms ease-in",
         "zoom-in": "zoom-in 150ms ease-out",
         "zoom-out": "zoom-out 150ms ease-in",
-        "slide-in-from-top": "slide-in-from-top 150ms ease-out",
-        "slide-in-from-right": "slide-in-from-right 150ms ease-out",
-        "slide-in-from-bottom": "slide-in-from-bottom 150ms ease-out",
-        "slide-in-from-left": "slide-in-from-left 150ms ease-out",
-        "slide-out-to-top": "slide-out-to-top 150ms ease-in",
-        "slide-out-to-right": "slide-out-to-right 150ms ease-in",
-        "slide-out-to-bottom": "slide-out-to-bottom 150ms ease-in",
-        "slide-out-to-left": "slide-out-to-left 150ms ease-in",
       },
     },
   },
   plugins: [
     forms,
-    require('@tailwindcss/typography'),
     require('tailwindcss-animate')
   ],
 }
