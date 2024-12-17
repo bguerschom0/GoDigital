@@ -14,7 +14,8 @@ import {
   UserCheck,
 AlertTriangle,
 Files,
-BarChart2
+BarChart2,
+  FaGraduationCap
 } from 'lucide-react'
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -87,6 +88,11 @@ const Sidebar = ({ isOpen, onClose }) => {
         title: 'Expired Documents',
         icon: <AlertTriangle className="w-5 h-5" />,
         href: '/admin/background/expired'
+      },
+      {
+        title: 'Internship Overview',
+        icon: <FaGraduationCap className="w-5 h-5" />,
+        href: '/admin/background/InternshipOverview'
       },
       {
         title: 'All Requests',
