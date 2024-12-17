@@ -1,26 +1,35 @@
+```jsx
 // src/pages/reports/BackgroundCheckReport.jsx
-import { useState, useEffect } from 'react'
 import { AdminLayout } from '@/components/layout'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
+import { 
+  Calendar,
+  Search, 
+  RefreshCcw,
+  FileDown,
+  Printer
+} from 'lucide-react'
+import { supabase } from '@/config/supabase'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
+  AreaChart,
+  Area,
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area
+  ResponsiveContainer
 } from 'recharts'
-import { supabase } from '@/config/supabase'
 
 const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D']
 
@@ -30,42 +39,41 @@ const BackgroundCheckReport = () => {
     dateRange: 'all',
     startDate: '',
     endDate: '',
-    requestedBy: '',
+    requested_by: '',
     citizenship: '',
-    submittedDate: '',
-    fromCompany: '',
-    departmentId: '',
-    roleType: ''
+    submitted_date: '',
+    from_company: '',
+    department: '',
+    role_type: ''
   })
 
   // States for data
+  const [loading, setLoading] = useState(true)
   const [departments, setDepartments] = useState([])
   const [roles, setRoles] = useState([])
-  const [requestedByOptions, setRequestedByOptions] = useState([])
-  const [citizenshipOptions, setCitizenshipOptions] = useState([])
-  const [fromCompanyOptions, setFromCompanyOptions] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  // States for chart data
+  const [stats, setStats] = useState({
+    totalChecks: 0,
+    pendingChecks: 0,
+    closedChecks: 0
+  })
+  const [operatingCountryData, setOperatingCountryData] = useState([])
   const [statusDistribution, setStatusDistribution] = useState([])
   const [citizenshipDistribution, setCitizenshipDistribution] = useState([])
-  const [countryTimeline, setCountryTimeline] = useState([])
 
-  // Fetch filter options on component mount
   useEffect(() => {
-    fetchFilterOptions()
-    fetchChartData()
+    fetchData()
+    fetchDepartmentsAndRoles()
   }, [filters])
 
-  const fetchFilterOptions = async () => {
+  const fetchDepartmentsAndRoles = async () => {
     try {
       // Fetch departments
-      const { data: depts } = await supabase
+      const { data: deptData } = await supabase
         .from('departments')
         .select('id, name')
         .eq('status', 'active')
 
-      setDepartments(depts || [])
+      setDepartments(deptData || [])
 
       // Fetch roles
       const { data: roleData } = await supabase
@@ -74,211 +82,326 @@ const BackgroundCheckReport = () => {
         .eq('status', 'active')
 
       setRoles(roleData || [])
-
-      // Fetch unique requestedBy values
-      const { data: requestedBy } = await supabase
-        .from('background_checks')
-        .select('requested_by')
-        .not('requested_by', 'is', null)
-
-      setRequestedByOptions([...new Set(requestedBy.map(item => item.requested_by))])
-
-      // Fetch unique citizenship values
-      const { data: citizenship } = await supabase
-        .from('background_checks')
-        .select('citizenship')
-
-      setCitizenshipOptions([...new Set(citizenship.map(item => item.citizenship))])
-
-      // Fetch unique from_company values
-      const { data: companies } = await supabase
-        .from('background_checks')
-        .select('from_company')
-        .not('from_company', 'is', null)
-
-      setFromCompanyOptions([...new Set(companies.map(item => item.from_company))])
-
     } catch (error) {
-      console.error('Error fetching filter options:', error)
+      console.error('Error fetching departments and roles:', error)
     }
   }
 
-  const fetchChartData = async () => {
+  const fetchData = async () => {
     setLoading(true)
     try {
-      let query = supabase.from('background_checks').select('*')
+      let query = supabase
+        .from('background_checks')
+        .select(`
+          *,
+          departments(name),
+          roles(name, type)
+        `)
 
       // Apply filters
       if (filters.dateRange !== 'all') {
-        if (filters.startDate) {
-          query = query.gte('created_at', filters.startDate)
+        const startDate = getDateRangeStart(filters.dateRange)
+        const endDate = getDateRangeEnd()
+        if (startDate) {
+          query = query.gte('submitted_date', startDate.toISOString())
         }
-        if (filters.endDate) {
-          query = query.lte('created_at', filters.endDate)
+        if (endDate) {
+          query = query.lte('submitted_date', endDate.toISOString())
         }
       }
-      if (filters.requestedBy) {
-        query = query.eq('requested_by', filters.requestedBy)
+
+      if (filters.requested_by) {
+        query = query.ilike('requested_by', `%${filters.requested_by}%`)
       }
+
       if (filters.citizenship) {
         query = query.eq('citizenship', filters.citizenship)
       }
-      if (filters.fromCompany) {
-        query = query.eq('from_company', filters.fromCompany)
+
+      if (filters.from_company) {
+        query = query.ilike('from_company', `%${filters.from_company}%`)
       }
-      if (filters.departmentId) {
-        query = query.eq('department_id', filters.departmentId)
+
+      if (filters.department) {
+        query = query.eq('department_id', filters.department)
       }
-      if (filters.roleType) {
-        query = query.eq('role_id', filters.roleType)
+
+      if (filters.role_type) {
+        query = query.eq('role_id', filters.role_type)
       }
 
       const { data, error } = await query
 
       if (error) throw error
 
-      // Process data for charts
-      processChartData(data)
+      // Process data for stats and charts
+      processData(data)
     } catch (error) {
-      console.error('Error fetching chart data:', error)
+      console.error('Error fetching report data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const processChartData = (data) => {
-    // Process status distribution
-    const statusCounts = data.reduce((acc, item) => {
-      acc[item.status] = (acc[item.status] || 0) + 1
-      return acc
-    }, {})
+  const processData = (data) => {
+    // Basic stats
+    const totalChecks = data.length
+    const pendingChecks = data.filter(check => check.status === 'Pending').length
+    const closedChecks = data.filter(check => check.status === 'Closed').length
 
-    setStatusDistribution(Object.entries(statusCounts).map(([name, value]) => ({
-      name,
-      value
-    })))
+    setStats({ totalChecks, pendingChecks, closedChecks })
 
-    // Process citizenship distribution
-    const citizenshipCounts = data.reduce((acc, item) => {
-      acc[item.citizenship] = (acc[item.citizenship] || 0) + 1
-      return acc
-    }, {})
-
-    setCitizenshipDistribution(Object.entries(citizenshipCounts).map(([name, value]) => ({
-      name,
-      value
-    })))
-
-    // Process operating country timeline
-    const countryData = data.reduce((acc, item) => {
-      if (item.operating_country) {
-        const month = new Date(item.created_at).toLocaleString('default', { month: 'short' })
-        if (!acc[month]) {
-          acc[month] = {}
-        }
-        acc[month][item.operating_country] = (acc[month][item.operating_country] || 0) + 1
+    // Process operating country data
+    const countryData = data.reduce((acc, check) => {
+      if (check.operating_country) {
+        const date = check.submitted_date.split('T')[0]
+        acc[date] = (acc[date] || 0) + 1
       }
       return acc
     }, {})
 
-    setCountryTimeline(Object.entries(countryData).map(([month, countries]) => ({
-      month,
-      ...countries
-    })))
+    setOperatingCountryData(
+      Object.entries(countryData)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+    )
+
+    // Process status distribution
+    const statusData = data.reduce((acc, check) => {
+      acc[check.status] = (acc[check.status] || 0) + 1
+      return acc
+    }, {})
+
+    setStatusDistribution(
+      Object.entries(statusData)
+        .map(([name, value]) => ({ name, value }))
+    )
+
+    // Process citizenship distribution
+    const citizenshipData = data.reduce((acc, check) => {
+      acc[check.citizenship] = (acc[check.citizenship] || 0) + 1
+      return acc
+    }, {})
+
+    setCitizenshipDistribution(
+      Object.entries(citizenshipData)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+    )
   }
 
   return (
     <AdminLayout>
       <div className="flex justify-center -mt-6">
         <div className="w-full max-w-[90%] px-4">
-          {/* Header */}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-6">
-            Background Check Report
+            Background Check Analysis
           </h1>
 
-          {/* Filters */}
+          {/* Filters Card */}
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-lg font-medium">Filters</CardTitle>
+              <CardTitle className="flex items-center text-sm font-medium">
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {/* Date Range Filter */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Date Range</label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Date Range
+                  </label>
                   <select
                     value={filters.dateRange}
-                    onChange={(e) => setFilters(prev => ({
-                      ...prev,
-                      dateRange: e.target.value
-                    }))}
-                    className="w-full rounded-lg border p-2"
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setFilters(prev => ({
+                        ...prev,
+                        dateRange: newValue,
+                        startDate: newValue === 'custom' ? prev.startDate : '',
+                        endDate: newValue === 'custom' ? prev.endDate : ''
+                      }))
+                    }}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
                   >
                     <option value="all">All Time</option>
+                    <option value="last7days">Last 7 Days</option>
+                    <option value="last30days">Last 30 Days</option>
+                    <option value="last3months">Last 3 Months</option>
                     <option value="custom">Custom Range</option>
                   </select>
                 </div>
 
                 {filters.dateRange === 'custom' && (
-                  <>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Start Date</label>
+                  <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Start Date
+                      </label>
                       <DatePicker
                         selected={filters.startDate ? new Date(filters.startDate) : null}
-                        onChange={(date) => setFilters(prev => ({
-                          ...prev,
-                          startDate: date
-                        }))}
-                        className="w-full rounded-lg border p-2"
+                        onChange={date => setFilters(prev => ({ ...prev, startDate: date }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                        dateFormat="yyyy-MM-dd"
+                        placeholderText="Select start date"
+                        maxDate={new Date()}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">End Date</label>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        End Date
+                      </label>
                       <DatePicker
                         selected={filters.endDate ? new Date(filters.endDate) : null}
-                        onChange={(date) => setFilters(prev => ({
-                          ...prev,
-                          endDate: date
-                        }))}
-                        className="w-full rounded-lg border p-2"
+                        onChange={date => setFilters(prev => ({ ...prev, endDate: date }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                        dateFormat="yyyy-MM-dd"
+                        placeholderText="Select end date"
+                        maxDate={new Date()}
+                        minDate={filters.startDate ? new Date(filters.startDate) : null}
                       />
                     </div>
-                  </>
+                  </div>
                 )}
 
-                {/* Other Filters */}
-                {/* ... Add other filter dropdowns for requestedBy, citizenship, etc. */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Department
+                  </label>
+                  <select
+                    value={filters.department}
+                    onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                  >
+                    <option value="all">All Departments</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Role Type
+                  </label>
+                  <select
+                    value={filters.roleType}
+                    onChange={(e) => setFilters(prev => ({ ...prev, roleType: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                  >
+                    <option value="all">All Roles</option>
+                    <option value="Staff">Staff</option>
+                    <option value="Expert">Expert</option>
+                    <option value="Contractor">Contractor</option>
+                    <option value="Consultant">Consultant</option>
+                    <option value="Internship">Internship</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Citizenship
+                  </label>
+                  <select
+                    value={filters.citizenship}
+                    onChange={(e) => setFilters(prev => ({ ...prev, citizenship: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                  >
+                    <option value="all">All Countries</option>
+                    {citizenshipOptions.map((country) => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Checks</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalChecks}</div>
+                <p className="text-xs text-muted-foreground">
+                  All time background checks
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending Checks</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.pendingChecks}</div>
+                <p className="text-xs text-muted-foreground">
+                  Awaiting completion
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Operating Countries</CardTitle>
+                <Globe className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.uniqueCountries}</div>
+                <p className="text-xs text-muted-foreground">
+                  Unique operating locations
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Departments</CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.activeDepartments}</div>
+                <p className="text-xs text-muted-foreground">
+                  Departments with active checks
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            {/* Operating Country Timeline - Full width */}
+            {/* Operating Countries Timeline - Full width */}
             <Card className="lg:col-span-3">
               <CardHeader>
-                <CardTitle>Operating Country Timeline</CardTitle>
+                <CardTitle>Operating Countries Timeline</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[400px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={countryTimeline}>
+                    <AreaChart data={timelineData}>
+                      <defs>
+                        <linearGradient id="colorCountries" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#0A2647" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#0A2647" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
+                      <XAxis dataKey="date" />
                       <YAxis />
                       <Tooltip />
-                      <Legend />
-                      {Object.keys(countryTimeline[0] || {})
-                        .filter(key => key !== 'month')
-                        .map((country, index) => (
-                          <Area
-                            key={country}
-                            type="monotone"
-                            dataKey={country}
-                            stackId="1"
-                            fill={COLORS[index % COLORS.length]}
-                          />
-                        ))}
+                      <Area 
+                        type="monotone" 
+                        dataKey="count" 
+                        stroke="#0A2647" 
+                        fillOpacity={1} 
+                        fill="url(#colorCountries)" 
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -288,10 +411,10 @@ const BackgroundCheckReport = () => {
             {/* Status Distribution */}
             <Card className="lg:col-span-1">
               <CardHeader>
-                <CardTitle>Distribution by Status</CardTitle>
+                <CardTitle>Status Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
+                <div className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -300,9 +423,9 @@ const BackgroundCheckReport = () => {
                         cy="50%"
                         innerRadius={60}
                         outerRadius={80}
-                        fill="#8884d8"
+                        fill="#0A2647"
+                        paddingAngle={5}
                         dataKey="value"
-                        label
                       >
                         {statusDistribution.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -319,19 +442,28 @@ const BackgroundCheckReport = () => {
             {/* Citizenship Distribution */}
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Distribution by Citizenship</CardTitle>
+                <CardTitle>Citizenship Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
+                <div className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={citizenshipDistribution}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fontSize: 12 }}
+                        interval={0}
+                        angle={-45}
+                        textAnchor="end"
+                      />
                       <YAxis />
                       <Tooltip />
                       <Bar dataKey="value">
                         {citizenshipDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={COLORS[index % COLORS.length]} 
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -343,7 +475,8 @@ const BackgroundCheckReport = () => {
         </div>
       </div>
     </AdminLayout>
-  )
+  );
+
 }
 
 export default BackgroundCheckReport
