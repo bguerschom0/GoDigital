@@ -39,7 +39,7 @@ function App() {
             <Route path="background/update" element={<UpdateBackgroundCheck />} />
             <Route path="background/expired" element={<ExpiredDocuments />} />
             <Route path="background/all" element={<AllBackgroundChecks />} />
-            <Route path="background/report" element={<BackgroundCheckReport />} />
+            <Route path="/reports/BackgroundCheckReport" element={<BackgroundCheckReport />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
