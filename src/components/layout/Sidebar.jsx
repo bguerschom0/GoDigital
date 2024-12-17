@@ -246,21 +246,6 @@ const Sidebar = ({ isOpen, onClose }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="flex items-center justify-between p-4 border-b">
-        <span className={`font-semibold transition-all duration-300 ${
-          isHovered ? 'opacity-100' : 'opacity-0'
-        }`}>
-          Navigation
-        </span>
-        {isOpen && (
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        )}
-      </div>
 
       <nav className="mt-5 px-2">
         {navItems.map((item) => (
