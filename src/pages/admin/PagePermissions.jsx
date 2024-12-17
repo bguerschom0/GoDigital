@@ -146,7 +146,7 @@ const PagePermissions = () => {
             </select>
           </div>
 
-          {selectedUser && (
+ {selectedUser && (
             <Tabs defaultValue="stakeholder">
               <TabsList className="mb-4">
                 <TabsTrigger value="stakeholder">Stakeholder</TabsTrigger>
@@ -160,7 +160,7 @@ const PagePermissions = () => {
                     {pages
                       .filter(page => page.category === category)
                       .map(page => (
-                        <div key={page.id} className="flex items-center justify-between p-4 border rounded">
+                        <div key={page.id} className="flex items-center justify-between p-4 border rounded hover:bg-gray-50">
                           <div>
                             <h3 className="font-medium">{page.name}</h3>
                             <p className="text-sm text-gray-500">{page.description}</p>
@@ -169,20 +169,20 @@ const PagePermissions = () => {
                             <label className="flex items-center space-x-2">
                               <input
                                 type="checkbox"
-                                checked={permissions[page.id]?.can_view || false}
-                                onChange={(e) => handlePermissionChange(page.id, 'can_view', e.target.checked)}
+                                checked={permissions[page.id]?.can_access || false}
+                                onChange={(e) => handlePermissionChange(page.id, 'can_access', e.target.checked)}
                                 className="rounded"
                               />
-                              <span>View</span>
+                              <span>Access Page</span>
                             </label>
                             <label className="flex items-center space-x-2">
                               <input
                                 type="checkbox"
-                                checked={permissions[page.id]?.can_download || false}
-                                onChange={(e) => handlePermissionChange(page.id, 'can_download', e.target.checked)}
+                                checked={permissions[page.id]?.can_export || false}
+                                onChange={(e) => handlePermissionChange(page.id, 'can_export', e.target.checked)}
                                 className="rounded"
                               />
-                              <span>Download</span>
+                              <span>Export Data</span>
                             </label>
                           </div>
                         </div>
