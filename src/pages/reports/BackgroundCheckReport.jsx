@@ -93,7 +93,7 @@ const BackgroundCheckReport = () => {
       let query = supabase
         .from('background_checks')
         .select(`
-          *,
+          *
           departments(name),
           roles(name, type)
         `)
