@@ -1,4 +1,3 @@
-```jsx
 // src/pages/background/NewBackgroundCheck.jsx
 import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
@@ -363,233 +362,257 @@ const NewBackgroundCheck = () => {
         )
 
       case 3:
-        return (
-          <div className="space-y-4">
-            {/* Staff or Apprentice Fields */}
-            {['Staff', 'Apprentice'].includes(formData.role_type) && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Submitted Date
-                  </label>
-                  <input
-                    type="date"
-                    name="submitted_date"
-                    value={formData.submitted_date}
-                    onChange={handleInputChange}
-                    // Continuing from where it left off...
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.submitted_date && (
-                    <p className="mt-1 text-sm text-red-500">{errors.submitted_date}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Requested By
-                  </label>
-                  <input
-                    type="text"
-                    name="requested_by"
-                    value={formData.requested_by}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.requested_by && (
-                    <p className="mt-1 text-sm text-red-500">{errors.requested_by}</p>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Expert Fields */}
-            {formData.role_type === 'Expert' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Company
-                  </label>
-                  <input
-                    type="text"
-                    name="from_company"
-                    value={formData.from_company}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.from_company && (
-                    <p className="mt-1 text-sm text-red-500">{errors.from_company}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Submitted Date
-                  </label>
-                  <input
-                    type="date"
-                    name="submitted_date"
-                    value={formData.submitted_date}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.submitted_date && (
-                    <p className="mt-1 text-sm text-red-500">{errors.submitted_date}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Requested By
-                  </label>
-                  <input
-                    type="text"
-                    name="requested_by"
-                    value={formData.requested_by}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.requested_by && (
-                    <p className="mt-1 text-sm text-red-500">{errors.requested_by}</p>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Contractor or Consultant Fields */}
-            {['Contractor', 'Consultant'].includes(formData.role_type) && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Duration
-                  </label>
-                  <input
-                    type="text"
-                    name="duration"
-                    value={formData.duration}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="e.g., 6 months"
-                  />
-                  {errors.duration && (
-                    <p className="mt-1 text-sm text-red-500">{errors.duration}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Operating Country
-                  </label>
-                  <input
-                    type="text"
-                    name="operating_country"
-                    value={formData.operating_country}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.operating_country && (
-                    <p className="mt-1 text-sm text-red-500">{errors.operating_country}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Company
-                  </label>
-                  <input
-                    type="text"
-                    name="from_company"
-                    value={formData.from_company}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.from_company && (
-                    <p className="mt-1 text-sm text-red-500">{errors.from_company}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Submitted Date
-                  </label>
-                  <input
-                    type="date"
-                    name="submitted_date"
-                    value={formData.submitted_date}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.submitted_date && (
-                    <p className="mt-1 text-sm text-red-500">{errors.submitted_date}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Requested By
-                  </label>
-                  <input
-                    type="text"
-                    name="requested_by"
-                    value={formData.requested_by}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.requested_by && (
-                    <p className="mt-1 text-sm text-red-500">{errors.requested_by}</p>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Internship Fields */}
-            {formData.role_type === 'Internship' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    name="date_start"
-                    value={formData.date_start}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.date_start && (
-                    <p className="mt-1 text-sm text-red-500">{errors.date_start}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    name="date_end"
-                    value={formData.date_end}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.date_end && (
-                    <p className="mt-1 text-sm text-red-500">{errors.date_end}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Work With
-                  </label>
-                  <input
-                    type="text"
-                    name="work_with"
-                    value={formData.work_with}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Supervisor/Team"
-                  />
-                  {errors.work_with && (
-                    <p className="mt-1 text-sm text-red-500">{errors.work_with}</p>
-                  )}
-                </div>
-              </>
+  return (
+    <div className="space-y-4">
+      {formData.roleType === 'Staff' || formData.roleType === 'Apprentice' ? (
+        // Staff or Apprentice Fields
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Submitted Date *
+            </label>
+            <div className="relative">
+              <input
+                type="date"
+                name="submittedDate"
+                value={formData.submittedDate}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              />
+              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            {errors.submittedDate && (
+              <p className="mt-1 text-sm text-red-500">{errors.submittedDate}</p>
             )}
           </div>
-        )
 
-      case 4:
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Requested By *
+            </label>
+            <input
+              type="text"
+              name="requestedBy"
+              value={formData.requestedBy}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter requester name"
+            />
+            {errors.requestedBy && (
+              <p className="mt-1 text-sm text-red-500">{errors.requestedBy}</p>
+            )}
+          </div>
+        </>
+      ) : formData.roleType === 'Expert' ? (
+        // Expert Fields
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              From Company *
+            </label>
+            <input
+              type="text"
+              name="fromCompany"
+              value={formData.fromCompany}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter company name"
+            />
+            {errors.fromCompany && (
+              <p className="mt-1 text-sm text-red-500">{errors.fromCompany}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Submitted Date *
+            </label>
+            <div className="relative">
+              <input
+                type="date"
+                name="submittedDate"
+                value={formData.submittedDate}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              />
+              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            {errors.submittedDate && (
+              <p className="mt-1 text-sm text-red-500">{errors.submittedDate}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Requested By *
+            </label>
+            <input
+              type="text"
+              name="requestedBy"
+              value={formData.requestedBy}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter requester name"
+            />
+            {errors.requestedBy && (
+              <p className="mt-1 text-sm text-red-500">{errors.requestedBy}</p>
+            )}
+          </div>
+        </>
+      ) : formData.roleType === 'Contractor' || formData.roleType === 'Consultant' ? (
+        // Contractor or Consultant Fields
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Duration *
+            </label>
+            <input
+              type="text"
+              name="duration"
+              value={formData.duration}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter duration of stay"
+            />
+            {errors.duration && (
+              <p className="mt-1 text-sm text-red-500">{errors.duration}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Operating Country *
+            </label>
+            <input
+              type="text"
+              name="operatingCountry"
+              value={formData.operatingCountry}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter operating country"
+            />
+            {errors.operatingCountry && (
+              <p className="mt-1 text-sm text-red-500">{errors.operatingCountry}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              From Company *
+            </label>
+            <input
+              type="text"
+              name="fromCompany"
+              value={formData.fromCompany}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter company name"
+            />
+            {errors.fromCompany && (
+              <p className="mt-1 text-sm text-red-500">{errors.fromCompany}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Submitted Date *
+            </label>
+            <div className="relative">
+              <input
+                type="date"
+                name="submittedDate"
+                value={formData.submittedDate}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              />
+              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            {errors.submittedDate && (
+              <p className="mt-1 text-sm text-red-500">{errors.submittedDate}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Requested By *
+            </label>
+            <input
+              type="text"
+              name="requestedBy"
+              value={formData.requestedBy}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter requester name"
+            />
+            {errors.requestedBy && (
+              <p className="mt-1 text-sm text-red-500">{errors.requestedBy}</p>
+            )}
+          </div>
+        </>
+      ) : formData.roleType === 'Internship' ? (
+        // Internship Fields
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Date Start *
+            </label>
+            <div className="relative">
+              <input
+                type="date"
+                name="dateStart"
+                value={formData.dateStart}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              />
+              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            {errors.dateStart && (
+              <p className="mt-1 text-sm text-red-500">{errors.dateStart}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Date End *
+            </label>
+            <div className="relative">
+              <input
+                type="date"
+                name="dateEnd"
+                value={formData.dateEnd}
+                onChange={handleInputChange}
+                min={formData.dateStart} // Ensure end date is after start date
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              />
+              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            {errors.dateEnd && (
+              <p className="mt-1 text-sm text-red-500">{errors.dateEnd}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Will Work With *
+            </label>
+            <input
+              type="text"
+              name="workWith"
+              value={formData.workWith}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter supervisor/mentor name"
+            />
+            {errors.workWith && (
+              <p className="mt-1 text-sm text-red-500">{errors.workWith}</p>
+            )}
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+
+         case 4:
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -753,3 +776,4 @@ const NewBackgroundCheck = () => {
 }
 
 export default NewBackgroundCheck
+        
