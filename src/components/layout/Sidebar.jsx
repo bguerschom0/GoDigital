@@ -59,6 +59,36 @@ const Sidebar = ({ isOpen, onClose }) => {
         }
         ]
     },
+      {
+    title: 'Background Checks',
+    icon: <UserCheck className="w-5 h-5" />,
+    id: 'background',
+    children: [
+      {
+        title: 'New Request',
+        icon: <FileText className="w-5 h-5" />,
+        href: '/admin/background/new'
+      },
+      {
+        title: 'Pending Requests',
+        icon: <Clock className="w-5 h-5" />,
+        href: '/admin/background/pending'
+      },
+      {
+        title: 'Update Request',
+        icon: <Edit className="w-5 h-5" />,
+        href: '/admin/background/update'
+      },
+      {
+        title: 'Expired Documents',
+        icon: <AlertTriangle className="w-5 h-5" />,
+        href: '/admin/background/expired'
+      },
+      {
+        title: 'All Requests',
+        icon: <Files className="w-5 h-5" />,
+        href: '/admin/background/all'
+      },
        {
       title: 'Reports',
       icon: <BarChart className="w-5 h-5" />,
@@ -68,7 +98,12 @@ const Sidebar = ({ isOpen, onClose }) => {
           title: 'Stakeholder Analysis',
           icon: <FileText className="w-5 h-5" />,
           href: '/admin/reports/stakeholder'
-        }
+        },
+        {
+        title: 'Reports',
+        icon: <BarChart2 className="w-5 h-5" />,
+        href: '/admin/reports/report'
+      }
       ]
     }
   ]
