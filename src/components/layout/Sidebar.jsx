@@ -16,7 +16,8 @@ import {
   UserCheck,
   AlertTriangle,
   Files,
-  BarChart2
+  BarChart2,
+  Lock
 } from 'lucide-react'
 import { FaGraduationCap } from 'react-icons/fa'
 
