@@ -1,277 +1,310 @@
-
 // src/pages/reports/BackgroundCheckReport.jsx
-import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { 
-  Users, 
-  FileText, 
-  Clock, 
-  Calendar,
-  Flag,
-  Building,
-  Briefcase,
-  BarChart2
-} from 'lucide-react'
-import { supabase } from '@/config/supabase'
+import { AdminLayout } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { motion, AnimatePresence } from 'framer-motion'
+import DatePicker from 'react-datepicker'
+import "react-datepicker/dist/react-datepicker.css"
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area
 } from 'recharts'
+import { supabase } from '@/config/supabase'
 
 const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D']
 
 const BackgroundCheckReport = () => {
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({
-    totalChecks: 0,
-    pendingChecks: 0,
-    completedChecks: 0,
-    expiringPassports: 0
+  // States for filters
+  const [filters, setFilters] = useState({
+    dateRange: 'all',
+    startDate: '',
+    endDate: '',
+    requestedBy: '',
+    citizenship: '',
+    submittedDate: '',
+    fromCompany: '',
+    departmentId: '',
+    roleType: ''
   })
-  const [timelineData, setTimelineData] = useState([])
-  const [roleDistribution, setRoleDistribution] = useState([])
+
+  // States for data
+  const [departments, setDepartments] = useState([])
+  const [roles, setRoles] = useState([])
+  const [requestedByOptions, setRequestedByOptions] = useState([])
+  const [citizenshipOptions, setCitizenshipOptions] = useState([])
+  const [fromCompanyOptions, setFromCompanyOptions] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // States for chart data
+  const [statusDistribution, setStatusDistribution] = useState([])
   const [citizenshipDistribution, setCitizenshipDistribution] = useState([])
-  const [departmentDistribution, setDepartmentDistribution] = useState([])
+  const [countryTimeline, setCountryTimeline] = useState([])
 
+  // Fetch filter options on component mount
   useEffect(() => {
-    fetchData()
-  }, [])
+    fetchFilterOptions()
+    fetchChartData()
+  }, [filters])
 
-  const fetchData = async () => {
+  const fetchFilterOptions = async () => {
     try {
-      // Fetch total counts
-      const { data: allChecks, error: checksError } = await supabase
-        .from('background_checks')
-        .select('*')
-
-      if (checksError) throw checksError
-
-      // Calculate stats
-      const pending = allChecks.filter(check => check.status === 'Pending').length
-      const completed = allChecks.filter(check => check.status === 'Closed').length
-      const expiring = allChecks.filter(check => {
-        if (!check.passport_expiry_date) return false
-        const expiryDate = new Date(check.passport_expiry_date)
-        const threeMonthsFromNow = new Date()
-        threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3)
-        return expiryDate <= threeMonthsFromNow && expiryDate > new Date()
-      }).length
-
-      setStats({
-        totalChecks: allChecks.length,
-        pendingChecks: pending,
-        completedChecks: completed,
-        expiringPassports: expiring
-      })
-
-      // Process role distribution
-      const roleCounts = allChecks.reduce((acc, check) => {
-        acc[check.role_id] = (acc[check.role_id] || 0) + 1
-        return acc
-      }, {})
-
-      // Fetch role names
-      const { data: roles } = await supabase
-        .from('roles')
-        .select('id, name')
-
-      const roleData = Object.entries(roleCounts).map(([roleId, count]) => ({
-        name: roles.find(r => r.id === roleId)?.name || 'Unknown',
-        value: count
-      }))
-
-      setRoleDistribution(roleData)
-
-      // Process citizenship distribution
-      const citizenshipCounts = allChecks.reduce((acc, check) => {
-        acc[check.citizenship] = (acc[check.citizenship] || 0) + 1
-        return acc
-      }, {})
-
-      const citizenshipData = Object.entries(citizenshipCounts)
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value)
-
-      setCitizenshipDistribution(citizenshipData)
-
-      // Process department distribution
-      const { data: departments } = await supabase
+      // Fetch departments
+      const { data: depts } = await supabase
         .from('departments')
         .select('id, name')
+        .eq('status', 'active')
 
-      const deptCounts = allChecks.reduce((acc, check) => {
-        acc[check.department_id] = (acc[check.department_id] || 0) + 1
-        return acc
-      }, {})
+      setDepartments(depts || [])
 
-      const departmentData = Object.entries(deptCounts)
-        .map(([deptId, count]) => ({
-          name: departments.find(d => d.id === deptId)?.name || 'Unknown',
-          value: count
-        }))
-        .sort((a, b) => b.value - a.value)
+      // Fetch roles
+      const { data: roleData } = await supabase
+        .from('roles')
+        .select('id, name, type')
+        .eq('status', 'active')
 
-      setDepartmentDistribution(departmentData)
+      setRoles(roleData || [])
 
-      // Process timeline data
-      const timelineStats = allChecks.reduce((acc, check) => {
-        const month = new Date(check.created_at).toLocaleString('default', { month: 'short', year: 'numeric' })
-        acc[month] = (acc[month] || 0) + 1
-        return acc
-      }, {})
+      // Fetch unique requestedBy values
+      const { data: requestedBy } = await supabase
+        .from('background_checks')
+        .select('requested_by')
+        .not('requested_by', 'is', null)
 
-      const timelineArray = Object.entries(timelineStats)
-        .map(([date, count]) => ({ date, count }))
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
+      setRequestedByOptions([...new Set(requestedBy.map(item => item.requested_by))])
 
-      setTimelineData(timelineArray)
+      // Fetch unique citizenship values
+      const { data: citizenship } = await supabase
+        .from('background_checks')
+        .select('citizenship')
+
+      setCitizenshipOptions([...new Set(citizenship.map(item => item.citizenship))])
+
+      // Fetch unique from_company values
+      const { data: companies } = await supabase
+        .from('background_checks')
+        .select('from_company')
+        .not('from_company', 'is', null)
+
+      setFromCompanyOptions([...new Set(companies.map(item => item.from_company))])
 
     } catch (error) {
-      console.error('Error fetching report data:', error)
+      console.error('Error fetching filter options:', error)
+    }
+  }
+
+  const fetchChartData = async () => {
+    setLoading(true)
+    try {
+      let query = supabase.from('background_checks').select('*')
+
+      // Apply filters
+      if (filters.dateRange !== 'all') {
+        if (filters.startDate) {
+          query = query.gte('created_at', filters.startDate)
+        }
+        if (filters.endDate) {
+          query = query.lte('created_at', filters.endDate)
+        }
+      }
+      if (filters.requestedBy) {
+        query = query.eq('requested_by', filters.requestedBy)
+      }
+      if (filters.citizenship) {
+        query = query.eq('citizenship', filters.citizenship)
+      }
+      if (filters.fromCompany) {
+        query = query.eq('from_company', filters.fromCompany)
+      }
+      if (filters.departmentId) {
+        query = query.eq('department_id', filters.departmentId)
+      }
+      if (filters.roleType) {
+        query = query.eq('role_id', filters.roleType)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // Process data for charts
+      processChartData(data)
+    } catch (error) {
+      console.error('Error fetching chart data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0A2647]" />
-        </div>
-      </AdminLayout>
-    )
+  const processChartData = (data) => {
+    // Process status distribution
+    const statusCounts = data.reduce((acc, item) => {
+      acc[item.status] = (acc[item.status] || 0) + 1
+      return acc
+    }, {})
+
+    setStatusDistribution(Object.entries(statusCounts).map(([name, value]) => ({
+      name,
+      value
+    })))
+
+    // Process citizenship distribution
+    const citizenshipCounts = data.reduce((acc, item) => {
+      acc[item.citizenship] = (acc[item.citizenship] || 0) + 1
+      return acc
+    }, {})
+
+    setCitizenshipDistribution(Object.entries(citizenshipCounts).map(([name, value]) => ({
+      name,
+      value
+    })))
+
+    // Process operating country timeline
+    const countryData = data.reduce((acc, item) => {
+      if (item.operating_country) {
+        const month = new Date(item.created_at).toLocaleString('default', { month: 'short' })
+        if (!acc[month]) {
+          acc[month] = {}
+        }
+        acc[month][item.operating_country] = (acc[month][item.operating_country] || 0) + 1
+      }
+      return acc
+    }, {})
+
+    setCountryTimeline(Object.entries(countryData).map(([month, countries]) => ({
+      month,
+      ...countries
+    })))
   }
 
   return (
     <AdminLayout>
       <div className="flex justify-center -mt-6">
         <div className="w-full max-w-[90%] px-4">
+          {/* Header */}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-6">
-            Background Check Analytics
+            Background Check Report
           </h1>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Checks</CardTitle>
-                <BarChart2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalChecks}</div>
-                <p className="text-xs text-muted-foreground">
-                  All background checks
-                </p>
-              </CardContent>
-            </Card>
+          {/* Filters */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">Filters</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Date Range Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Date Range</label>
+                  <select
+                    value={filters.dateRange}
+                    onChange={(e) => setFilters(prev => ({
+                      ...prev,
+                      dateRange: e.target.value
+                    }))}
+                    className="w-full rounded-lg border p-2"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingChecks}</div>
-                <p className="text-xs text-muted-foreground">
-                  Awaiting completion
-                </p>
-              </CardContent>
-            </Card>
+                {filters.dateRange === 'custom' && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Start Date</label>
+                      <DatePicker
+                        selected={filters.startDate ? new Date(filters.startDate) : null}
+                        onChange={(date) => setFilters(prev => ({
+                          ...prev,
+                          startDate: date
+                        }))}
+                        className="w-full rounded-lg border p-2"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">End Date</label>
+                      <DatePicker
+                        selected={filters.endDate ? new Date(filters.endDate) : null}
+                        onChange={(date) => setFilters(prev => ({
+                          ...prev,
+                          endDate: date
+                        }))}
+                        className="w-full rounded-lg border p-2"
+                      />
+                    </div>
+                  </>
+                )}
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.completedChecks}</div>
-                <p className="text-xs text-muted-foreground">
-                  Closed checks
-                </p>
-              </CardContent>
-            </Card>
+                {/* Other Filters */}
+                {/* ... Add other filter dropdowns for requestedBy, citizenship, etc. */}
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.expiringPassports}</div>
-                <p className="text-xs text-muted-foreground">
-                  Passports expiring in 3 months
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Charts Grid */}
+          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            {/* Timeline Chart - Full width */}
+            {/* Operating Country Timeline - Full width */}
             <Card className="lg:col-span-3">
               <CardHeader>
-                <CardTitle>Background Checks Timeline</CardTitle>
+                <CardTitle>Operating Country Timeline</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[400px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={timelineData}>
-                      <defs>
-                        <linearGradient id="colorChecks" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#0A2647" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#0A2647" stopOpacity={0.1}/>
-                        </linearGradient>
-                      </defs>
+                    <AreaChart data={countryTimeline}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
+                      <XAxis dataKey="month" />
                       <YAxis />
                       <Tooltip />
-                      <Area 
-                        type="monotone" 
-                        dataKey="count" 
-                        stroke="#0A2647" 
-                        fillOpacity={1} 
-                        fill="url(#colorChecks)"
-                      />
+                      <Legend />
+                      {Object.keys(countryTimeline[0] || {})
+                        .filter(key => key !== 'month')
+                        .map((country, index) => (
+                          <Area
+                            key={country}
+                            type="monotone"
+                            dataKey={country}
+                            stackId="1"
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        ))}
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Role Distribution */}
-            <Card>
+            {/* Status Distribution */}
+            <Card className="lg:col-span-1">
               <CardHeader>
-                <CardTitle>Distribution by Role</CardTitle>
+                <CardTitle>Distribution by Status</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={roleDistribution}
+                        data={statusDistribution}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
                         outerRadius={80}
-                        paddingAngle={5}
+                        fill="#8884d8"
                         dataKey="value"
+                        label
                       >
-                        {roleDistribution.map((entry, index) => (
+                        {statusDistribution.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -283,31 +316,22 @@ const BackgroundCheckReport = () => {
               </CardContent>
             </Card>
 
-            {/* Department Distribution */}
+            {/* Citizenship Distribution */}
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Distribution by Department</CardTitle>
+                <CardTitle>Distribution by Citizenship</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={departmentDistribution}>
+                    <BarChart data={citizenshipDistribution}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="name" 
-                        tick={{ fontSize: 12 }}
-                        interval={0}
-                        angle={-45}
-                        textAnchor="end"
-                      />
+                      <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip />
                       <Bar dataKey="value">
-                        {departmentDistribution.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={COLORS[index % COLORS.length]}
-                          />
+                        {citizenshipDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Bar>
                     </BarChart>
