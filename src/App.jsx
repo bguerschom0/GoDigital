@@ -35,81 +35,52 @@ const Root = () => {
   return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} replace />
 }
 
-// Admin route wrapper
-const AdminRoute = ({ children }) => {
-  const { user, loading } = useAuth()
-
-  if (loading) {
-    return <div>Loading...</div>
-  }
-
-  if (!user || user.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />
-  }
-
-  return children
-}
-
 function App() {
   return (
     <Router>
       <AuthProvider>
         <Routes>
-          {/* Public routes */}
+          {/* Public route */}
           <Route path="/login" element={<AuthForm />} />
+
+          {/* Root redirect */}
           <Route path="/" element={<Root />} />
 
           {/* User routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <UserLayout>
-                  <UserDashboard />
-                </UserLayout>
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <UserLayout>
+                <UserDashboard />
+              </UserLayout>
+            </ProtectedRoute>
+          } />
 
           {/* Admin routes */}
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminLayout />
-              </AdminRoute>
-            }
-          >
+          <Route path="/admin" element={
+            <ProtectedRoute requireAdmin>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<Users />} />
             <Route path="permissions" element={<PagePermissions />} />
-
-            {/* Stakeholder routes */}
-            <Route path="stakeholder">
-              <Route path="new" element={<NewRequest />} />
-              <Route path="pending" element={<PendingRequests />} />
-              <Route path="update" element={<UpdateRequest />} />
-            </Route>
-
-            {/* Background Check routes */}
-            <Route path="background">
-              <Route path="new" element={<NewBackgroundCheck />} />
-              <Route path="pending" element={<PendingBackgroundChecks />} />
-              <Route path="update" element={<UpdateBackgroundCheck />} />
-              <Route path="expired" element={<ExpiredDocuments />} />
-              <Route path="all" element={<AllBackgroundChecks />} />
-              <Route path="InternshipOverview" element={<InternshipOverview />} />
-            </Route>
-
-            {/* Report routes */}
-            <Route path="reports">
-              <Route path="stakeholder" element={<StakeholderReport />} />
-              <Route path="BackgroundCheckReport" element={<BackgroundCheckReport />} />
-            </Route>
+            <Route path="stakeholder/new" element={<NewRequest />} />
+            <Route path="stakeholder/pending" element={<PendingRequests />} />
+            <Route path="stakeholder/update" element={<UpdateRequest />} />
+            <Route path="reports/stakeholder" element={<StakeholderReport />} />
+            <Route path="background/new" element={<NewBackgroundCheck />} />
+            <Route path="background/pending" element={<PendingBackgroundChecks />} />
+            <Route path="background/update" element={<UpdateBackgroundCheck />} />
+            <Route path="background/expired" element={<ExpiredDocuments />} />
+            <Route path="background/all" element={<AllBackgroundChecks />} />
+            <Route path="reports/BackgroundCheckReport" element={<BackgroundCheckReport />} />
+            <Route path="background/InternshipOverview" element={<InternshipOverview />} />
           </Route>
 
-          {/* Catch all route */}
+          
+
+          {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
