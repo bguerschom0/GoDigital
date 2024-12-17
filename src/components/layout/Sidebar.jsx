@@ -88,6 +88,8 @@ const Sidebar = ({ isOpen, onClose }) => {
         title: 'All Requests',
         icon: <Files className="w-5 h-5" />,
         href: '/admin/background/all'
+      }
+      ]
       },
        {
       title: 'Reports',
