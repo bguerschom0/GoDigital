@@ -9,9 +9,11 @@ import {
   AlertCircle,
   Clock,
   Activity,
-  BarChart2
+  BarChart2,
+  Loader2  // Added this import
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+
 
 const Dashboard = () => {
   const { user } = useAuth()
