@@ -1,10 +1,10 @@
 // src/pages/admin/PagePermissions.jsx
 import { useState, useEffect } from 'react'
-import { AdminLayout } from '@/components/layout'
 import { supabase } from '@/config/supabase'
+import { useAuth } from '@/context/AuthContext'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Loader2 } from 'lucide-react'
 
 const PagePermissions = () => {
   const [users, setUsers] = useState([])
@@ -12,40 +12,39 @@ const PagePermissions = () => {
   const [permissions, setPermissions] = useState({})
   const [selectedUser, setSelectedUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const { user: currentUser } = useAuth()
 
   useEffect(() => {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    if (selectedUser) {
+      fetchUserPermissions(selectedUser.id)
+    }
+  }, [selectedUser])
+
   const fetchData = async () => {
     try {
+      setLoading(true)
       // Fetch users
-      const { data: userData } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('status', 'active')
         .order('username')
 
+      if (userError) throw userError
+
       // Fetch pages
-      const { data: pageData } = await supabase
+      const { data: pageData, error: pageError } = await supabase
         .from('pages')
         .select('*')
         .eq('is_active', true)
-        .order('category', 'name')
+        .order('category', { ascending: true })
+        .order('name', { ascending: true })
 
-      // Fetch permissions if a user is selected
-      if (selectedUser) {
-        const { data: permissionData } = await supabase
-          .from('page_permissions')
-          .select('*')
-          .eq('user_id', selectedUser.id)
-
-        const permissionMap = {}
-        permissionData?.forEach(perm => {
-          permissionMap[perm.page_id] = perm
-        })
-        setPermissions(permissionMap)
-      }
+      if (pageError) throw pageError
 
       setUsers(userData || [])
       setPages(pageData || [])
@@ -53,6 +52,25 @@ const PagePermissions = () => {
       console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchUserPermissions = async (userId) => {
+    try {
+      const { data: permissionData, error } = await supabase
+        .from('page_permissions')
+        .select('*')
+        .eq('user_id', userId)
+
+      if (error) throw error
+
+      const permissionMap = {}
+      permissionData?.forEach(perm => {
+        permissionMap[perm.page_id] = perm
+      })
+      setPermissions(permissionMap)
+    } catch (error) {
+      console.error('Error fetching permissions:', error)
     }
   }
 
@@ -64,7 +82,10 @@ const PagePermissions = () => {
         // Update existing permission
         const { error } = await supabase
           .from('page_permissions')
-          .update({ [permission]: value, updated_at: new Date() })
+          .update({ 
+            [permission]: value, 
+            updated_at: new Date().toISOString() 
+          })
           .eq('id', existingPermission.id)
 
         if (error) throw error
@@ -76,97 +97,104 @@ const PagePermissions = () => {
             user_id: selectedUser.id,
             page_id: pageId,
             [permission]: value,
-            created_by: auth.user().id
+            created_by: currentUser.id,
+            created_at: new Date().toISOString()
           }])
 
         if (error) throw error
       }
 
-      // Refresh permissions
-      fetchData()
+      // Refresh permissions for the selected user
+      await fetchUserPermissions(selectedUser.id)
     } catch (error) {
       console.error('Error updating permission:', error)
     }
   }
 
-  return (
-    <AdminLayout>
-      <div className="p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Page Permissions Management</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* User Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Select User</label>
-              <select
-                value={selectedUser?.id || ''}
-                onChange={(e) => {
-                  const user = users.find(u => u.id === e.target.value)
-                  setSelectedUser(user)
-                }}
-                className="w-full p-2 border rounded"
-              >
-                <option value="">Select a user...</option>
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.fullname} ({user.username})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {selectedUser && (
-              <Tabs defaultValue="stakeholder">
-                <TabsList>
-                  <TabsTrigger value="stakeholder">Stakeholder</TabsTrigger>
-                  <TabsTrigger value="background">Background Check</TabsTrigger>
-                  <TabsTrigger value="report">Reports</TabsTrigger>
-                </TabsList>
-
-                {['stakeholder', 'background', 'report'].map(category => (
-                  <TabsContent key={category} value={category}>
-                    <div className="space-y-4">
-                      {pages
-                        .filter(page => page.category === category)
-                        .map(page => (
-                          <div key={page.id} className="flex items-center justify-between p-4 border rounded">
-                            <div>
-                              <h3 className="font-medium">{page.name}</h3>
-                              <p className="text-sm text-gray-500">{page.description}</p>
-                            </div>
-                            <div className="flex space-x-4">
-                              <label className="flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  checked={permissions[page.id]?.can_view || false}
-                                  onChange={(e) => handlePermissionChange(page.id, 'can_view', e.target.checked)}
-                                  className="rounded"
-                                />
-                                <span>View</span>
-                              </label>
-                              <label className="flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  checked={permissions[page.id]?.can_download || false}
-                                  onChange={(e) => handlePermissionChange(page.id, 'can_download', e.target.checked)}
-                                  className="rounded"
-                                />
-                                <span>Download</span>
-                              </label>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </TabsContent>
-                ))}
-              </Tabs>
-            )}
-          </CardContent>
-        </Card>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin" />
       </div>
-    </AdminLayout>
+    )
+  }
+
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Page Permissions Management</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* User Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-2">Select User</label>
+            <select
+              value={selectedUser?.id || ''}
+              onChange={(e) => {
+                const user = users.find(u => u.id === e.target.value)
+                setSelectedUser(user)
+              }}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Select a user...</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.fullname} ({user.username})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedUser && (
+            <Tabs defaultValue="stakeholder">
+              <TabsList className="mb-4">
+                <TabsTrigger value="stakeholder">Stakeholder</TabsTrigger>
+                <TabsTrigger value="background">Background Check</TabsTrigger>
+                <TabsTrigger value="report">Reports</TabsTrigger>
+              </TabsList>
+
+              {['stakeholder', 'background', 'report'].map(category => (
+                <TabsContent key={category} value={category}>
+                  <div className="space-y-4">
+                    {pages
+                      .filter(page => page.category === category)
+                      .map(page => (
+                        <div key={page.id} className="flex items-center justify-between p-4 border rounded">
+                          <div>
+                            <h3 className="font-medium">{page.name}</h3>
+                            <p className="text-sm text-gray-500">{page.description}</p>
+                          </div>
+                          <div className="flex space-x-4">
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={permissions[page.id]?.can_view || false}
+                                onChange={(e) => handlePermissionChange(page.id, 'can_view', e.target.checked)}
+                                className="rounded"
+                              />
+                              <span>View</span>
+                            </label>
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={permissions[page.id]?.can_download || false}
+                                onChange={(e) => handlePermissionChange(page.id, 'can_download', e.target.checked)}
+                                className="rounded"
+                              />
+                              <span>Download</span>
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 
