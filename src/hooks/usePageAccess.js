@@ -1,4 +1,3 @@
-// src/hooks/usePageAccess.js
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/config/supabase'
@@ -14,6 +13,13 @@ export const usePageAccess = () => {
 
   const fetchUserPermissions = async () => {
     if (!user) {
+      setPermissions({})
+      setLoading(false)
+      return
+    }
+
+    // If user is admin, we don't need to fetch permissions
+    if (user.role === 'admin') {
       setPermissions({})
       setLoading(false)
       return
@@ -48,18 +54,32 @@ export const usePageAccess = () => {
       setPermissions(permMap)
     } catch (error) {
       console.error('Error fetching permissions:', error)
+      setPermissions({})
     } finally {
       setLoading(false)
     }
   }
 
   const checkPermission = (path) => {
-    if (user?.role === 'admin') return { canAccess: true, canExport: true }
+    // Admin has access to everything
+    if (user?.role === 'admin') {
+      return { canAccess: true, canExport: true }
+    }
+
+    // Non-admin users need explicit permissions
     return {
       canAccess: permissions[path]?.canAccess || false,
-      canExport: permissions[path]?.canExport || false
+      canExport: permissions[path]?.canExport || false,
+      name: permissions[path]?.name,
+      category: permissions[path]?.category
     }
   }
 
-  return { permissions, loading, checkPermission, refreshPermissions: fetchUserPermissions }
+  return { 
+    permissions, 
+    loading, 
+    checkPermission, 
+    refreshPermissions: fetchUserPermissions,
+    isAdmin: user?.role === 'admin'
+  }
 }
