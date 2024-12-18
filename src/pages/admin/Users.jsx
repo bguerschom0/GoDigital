@@ -1,5 +1,5 @@
 // src/pages/admin/Users.jsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, React } from 'react'
 import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { 
