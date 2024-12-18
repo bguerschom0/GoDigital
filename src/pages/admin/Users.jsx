@@ -263,11 +263,11 @@ const Users = () => {
          <Table>
   <TableHeader>
     <TableRow>
-      <TableHead className="w-[150px]">Username</TableHead>
-      <TableHead className="w-[200px]">Full Name</TableHead>
-      <TableHead className="w-[100px]">Role</TableHead>
-      <TableHead className="w-[100px]">Status</TableHead>
-      <TableHead className="w-[120px] text-right">Actions</TableHead>
+      <TableHead className="w-[50px]">Username</TableHead>
+      <TableHead className="w-[100px]">Full Name</TableHead>
+      <TableHead className="w-[500px]">Role</TableHead>
+      <TableHead className="w-[500px]">Status</TableHead>
+      <TableHead className="w-[100px] text-right">Actions</TableHead>
     </TableRow>
   </TableHeader>
   <TableBody>
