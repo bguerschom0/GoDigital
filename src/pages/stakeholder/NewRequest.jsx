@@ -53,17 +53,28 @@ const NewRequest = () => {
   const [message, setMessage] = useState({ type: '', text: '' })
 
   // Check page access
-  useEffect(() => {
-    const checkAccess = async () => {
-      const { canAccess } = checkPermission('/stakeholder/new')
-      if (!canAccess) {
-        navigate('/dashboard')
-        return
-      }
-      setAccessChecked(true)
+useEffect(() => {
+  const checkAccess = async () => {
+    const path = '/stakeholder/new'
+    const { canAccess } = checkPermission(path)
+    
+    console.log('=== Permission Check for New Request ===')
+    console.log('Path:', path)
+    console.log('User:', user)
+    console.log('Can Access:', canAccess)
+    console.log('====================================')
+
+    if (!canAccess) {
+      console.log('Access denied - Redirecting to dashboard')
+      navigate('/dashboard')
+      return
     }
-    checkAccess()
-  }, [])
+    
+    console.log('Access granted - Loading component')
+    setAccessChecked(true)
+  }
+  checkAccess()
+}, [])
 
   useEffect(() => {
     if (accessChecked) {
