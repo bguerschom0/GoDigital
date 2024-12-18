@@ -1,8 +1,8 @@
+// src/hooks/usePageAccess.js
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/config/supabase'
 
-// In usePageAccess.js
 export const usePageAccess = () => {
   const [permissions, setPermissions] = useState({})
   const [loading, setLoading] = useState(true)
@@ -14,7 +14,7 @@ export const usePageAccess = () => {
 
   const fetchUserPermissions = async () => {
     console.log('=== Fetching User Permissions ===')
-    console.log('Current User:', user)
+    console.log('Current user:', user)
 
     if (!user) {
       console.log('No user found - clearing permissions')
@@ -47,10 +47,7 @@ export const usePageAccess = () => {
         `)
         .eq('user_id', user.id)
 
-      if (error) {
-        console.error('Error fetching permissions:', error)
-        throw error
-      }
+      if (error) throw error
 
       console.log('Retrieved permissions:', permissionData)
 
@@ -67,7 +64,7 @@ export const usePageAccess = () => {
       console.log('Processed permission map:', permMap)
       setPermissions(permMap)
     } catch (error) {
-      console.error('Error in permission fetch:', error)
+      console.error('Error fetching permissions:', error)
       setPermissions({})
     } finally {
       setLoading(false)
@@ -75,27 +72,26 @@ export const usePageAccess = () => {
   }
 
   const checkPermission = (path) => {
-    console.log('=== Checking Permission ===')
-    console.log('Path:', path)
-    console.log('User Role:', user?.role)
-    
-    // Admin check
+    console.log('=== Checking Permission ===', {
+      path,
+      userRole: user?.role,
+      hasPermissions: !!permissions[path]
+    })
+
+    // Admin has access to everything
     if (user?.role === 'admin') {
-      console.log('Admin access granted automatically')
+      console.log('Admin access granted')
       return { canAccess: true, canExport: true }
     }
 
-    // Regular user permission check
-    const permission = permissions[path]
-    console.log('Found permissions:', permission)
+    // Regular users need explicit permissions
+    const hasAccess = permissions[path]?.canAccess || false
+    console.log(`Permission result for ${path}: ${hasAccess}`)
     
-    const result = {
-      canAccess: permissions[path]?.canAccess || false,
+    return {
+      canAccess: hasAccess,
       canExport: permissions[path]?.canExport || false
     }
-    
-    console.log('Permission check result:', result)
-    return result
   }
 
   return { 
