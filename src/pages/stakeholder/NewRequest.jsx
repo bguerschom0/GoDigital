@@ -1,6 +1,7 @@
-import { AdminLayout } from '@/components/layout'
+// src/pages/stakeholder/NewRequest.jsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AdminLayout } from '@/components/layout'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar,
@@ -10,14 +11,16 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { supabase } from '@/config/supabase'
+import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
-import { useAuth } from '@/context/AuthContext'
 
 const formatDate = (date) => {
   if (!date) return '';
@@ -27,13 +30,11 @@ const formatDate = (date) => {
 
 const NewRequest = () => {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const [hasAccess, setHasAccess] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const { checkPermission } = usePageAccess()
   const [availableUsers, setAvailableUsers] = useState([])
-  const [senderOptions, setSenderOptions] = useState([])
-  const [subjectOptions, setSubjectOptions] = useState([])
+  const { user } = useAuth()
   const [currentSection, setCurrentSection] = useState(0)
+  const [accessChecked, setAccessChecked] = useState(false)
   const [formData, setFormData] = useState({
     dateReceived: '',
     referenceNumber: '',
@@ -48,7 +49,42 @@ const NewRequest = () => {
   })
   
   const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+
+  // Check page access
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = checkPermission('/stakeholder/new')
+      if (!canAccess) {
+        navigate('/dashboard')
+        return
+      }
+      setAccessChecked(true)
+    }
+    checkAccess()
+  }, [])
+
+  useEffect(() => {
+    if (accessChecked) {
+      fetchAvailableUsers()
+    }
+  }, [accessChecked])
+
+  const fetchAvailableUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('username, fullname')
+        .eq('status', 'active')
+        .order('username')
+
+      if (error) throw error
+      setAvailableUsers(data || [])
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
 
   const sections = [
     {
@@ -109,11 +145,10 @@ const NewRequest = () => {
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
             >
               <option value="">Select Sender</option>
-              {senderOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label || option.value}
-                </option>
-              ))}
+              <option value="NPPA">NPPA</option>
+              <option value="RIB">RIB</option>
+              <option value="MPG">MPG</option>
+              <option value="Private Advocate">Private Advocate</option>
               <option value="Other">Other</option>
             </select>
             {errors.sender && (
@@ -147,11 +182,23 @@ const NewRequest = () => {
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
             >
               <option value="">Select Subject</option>
-              {subjectOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label || option.value}
-                </option>
-              ))}
+              <option value="Account Unblock">Account Unblock</option>
+              <option value="Account Block">Account Block</option>
+              <option value="Account Block & Reversal">Account Block & Reversal</option>
+              <option value="MoMo Transaction & Account Block">MoMo Transaction & Account Block</option>
+              <option value="MoMo Transaction & Account Unblock">MoMo Transaction & Account Unblock</option>
+              <option value="MoMo Transaction">MoMo Transaction</option>
+              <option value="Call History">Call History</option>
+              <option value="Call History & MoMo Transaction">Call History & MoMo Transaction</option>
+              <option value="Reversal">Reversal</option>
+              <option value="Reversal & Account Unblock">Reversal & Account Unblock</option>
+              <option value="Account Information">Account Information</option>
+              <option value="Account Information & MoMo Transaction">Account Information & MoMo Transaction</option>
+              <option value="Account Status">Account Status</option>
+              <option value="Sim Registration Information">Sim Registration Information</option>
+              <option value="Sim Swap Information">Sim Swap Information</option>
+              <option value="Sim Card Information">Sim Card Information</option>
+              <option value="Balance">Balance</option>
               <option value="Other">Other</option>
             </select>
             {errors.subject && (
@@ -267,54 +314,20 @@ const NewRequest = () => {
     }
   ]
 
-    useEffect(() => {
-    const checkPermissions = async () => {
-      try {
-        if (!user) {
-          navigate('/login')
-          return
-        }
-
-        // If user is admin, grant access immediately
-        if (user.role === 'admin') {
-          setHasAccess(true)
-          await fetchInitialData()
-          return
-        }
-
-        // For non-admin users, check permissions
-        const { data: pageData, error: pageError } = await supabase
-          .from('pages')
-          .select('id')
-          .eq('name', 'New Stakeholder Request')
-          .single()
-
-        if (pageError) throw pageError
-
-        const { data: permissionData, error: permissionError } = await supabase
-          .from('page_permissions')
-          .select('can_access')
-          .eq('user_id', user.id)
-          .eq('page_id', pageData.id)
-          .single()
-
-        if (permissionError || !permissionData?.can_access) {
-          navigate('/admin/dashboard')
-          return
-        }
-
-        setHasAccess(true)
-        await fetchInitialData()
-      } catch (error) {
-        console.error('Permission check error:', error)
-        navigate('/admin/dashboard')
-      } finally {
-        setIsLoading(false)
-      }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }))
     }
+  }
 
-    checkPermissions()
-  }, [user, navigate])
+  const handleDateChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: formatDate(value) }))
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
 
   const validateSection = (section) => {
     const newErrors = {}
@@ -333,9 +346,11 @@ const NewRequest = () => {
       }
     } else if (section === 2) {
       if (!formData.description) newErrors.description = 'Description is required'
-    } else if (section === 3 && formData.status === 'Answered') {
-      if (!formData.responseDate) newErrors.responseDate = 'Response date is required'
-      if (!formData.answeredBy) newErrors.answeredBy = 'Please select who answered'
+    } else if (section === 3) {
+      if (formData.status === 'Answered') {
+        if (!formData.responseDate) newErrors.responseDate = 'Response date is required'
+        if (!formData.answeredBy) newErrors.answeredBy = 'Please select who answered'
+      }
     }
 
     setErrors(newErrors)
@@ -356,7 +371,7 @@ const NewRequest = () => {
         throw new Error('No user found. Please login again.')
       }
 
-      const requestData = {
+    const requestData = {
         date_received: formData.dateReceived,
         reference_number: formData.referenceNumber,
         sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
@@ -365,7 +380,7 @@ const NewRequest = () => {
         response_date: formData.responseDate || null,
         answered_by: formData.answeredBy || null,
         description: formData.description,
-        created_by: user.id,
+        created_by: user.username,
         created_at: new Date().toISOString()
       }
 
@@ -379,10 +394,7 @@ const NewRequest = () => {
       handleReset()
     } catch (error) {
       console.error('Error:', error)
-      setMessage({ 
-        type: 'error', 
-        text: error.message || 'Error saving request. Please try again.' 
-      })
+      setMessage({ type: 'error', text: error.message || 'Error saving request. Please try again.' })
     } finally {
       setIsLoading(false)
     }
@@ -405,19 +417,12 @@ const NewRequest = () => {
     setErrors({})
   }
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  const handleDateChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: formatDate(value) }))
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
+  if (!accessChecked) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -490,79 +495,86 @@ const NewRequest = () => {
             </div>
 
             {/* Form Content */}
-          <div className="flex-1">
-            <Card className="p-4 lg:p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              {sections[currentSection].fields()}
+            <div className="flex-1">
+              <Card className="p-4 lg:p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                {sections[currentSection].fields()}
 
-              <div className="mt-6 flex flex-col sm:flex-row justify-between gap-4">
-                <Button
-                  type="button"
-                  onClick={handleReset}
-                  variant="outline"
-                  className="text-[#0A2647] dark:text-white border-[#0A2647] dark:border-white"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Reset
-                </Button>
-
-                <div className="flex flex-col sm:flex-row gap-2">
-                  {currentSection > 0 && (
-                    <Button
-                      type="button"
-                      onClick={() => setCurrentSection(prev => prev - 1)}
-                      variant="outline"
-                      className="text-[#0A2647] dark:text-white border-[#0A2647] dark:border-white"
-                    >
-                      <ChevronUp className="w-4 h-4 mr-2" />
-                      Previous
-                    </Button>
-                  )}
+                <div className="mt-6 flex flex-col sm:flex-row justify-between gap-4">
                   <Button
-                    onClick={handleSubmit}
-                    disabled={isLoading}
-                    className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+                    type="button"
+                    onClick={handleReset}
+                    variant="outline"
+                    className="text-[#0A2647] dark:text-white border-[#0A2647] dark:border-white"
                   >
-                    {isLoading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : currentSection === sections.length - 1 ? (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Submit
-                      </>
-                    ) : (
-                      <>
-                        Next
-                        <ChevronDown className="w-4 h-4 ml-2" />
-                      </>
-                    )}
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Reset
                   </Button>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    {currentSection > 0 && (
+                      <Button
+                        type="button"
+                        onClick={() => setCurrentSection(prev => prev - 1)}
+                        variant="outline"
+                        className="text-[#0A2647] dark:text-white border-[#0A2647] dark:border-white"
+                      >
+                        <ChevronUp className="w-4 h-4 mr-2" />
+                        Previous
+                      </Button>
+                    )}
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={isLoading}
+                      className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+                    >
+                      {isLoading ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : currentSection === sections.length - 1 ? (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Submit
+                        </>
+                      ) : (
+                        <>
+                          Next
+                          <ChevronDown className="w-4 h-4 ml-2" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
+      {/* Success/Error Message */}
       <AnimatePresence>
         {message.text && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          >
-            <div className={`
-              mx-4 p-6 rounded-lg shadow-xl max-w-md w-full bg-white
-              ${message.type === 'success' ? 'text-[#0A2647]' : 'text-red-600'}
-            `}>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className={`
+                mx-4 p-6 rounded-lg shadow-xl max-w-md w-full
+                ${message.type === 'success' 
+                  ? 'bg-white text-[#0A2647]' 
+                  : 'bg-white text-red-600'
+                }
+              `}
+            >
               <div className="flex items-center space-x-4">
                 <div className={`
-                  p-2 rounded-full
-                  ${message.type === 'success' ? 'bg-[#0A2647]/10' : 'bg-red-100'}
+                  p-2 rounded-full 
+                  ${message.type === 'success' 
+                    ? 'bg-[#0A2647]/10 text-[#0A2647]' 
+                    : 'bg-red-100 text-red-600'
+                  }
                 `}>
                   {message.type === 'success' ? (
                     <Check className="w-6 h-6" />
@@ -570,11 +582,13 @@ const NewRequest = () => {
                     <AlertCircle className="w-6 h-6" />
                   )}
                 </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="text-lg font-medium">
                     {message.type === 'success' ? 'Success' : 'Error'}
                   </h3>
-                  <p className="text-gray-600">{message.text}</p>
+                  <p className="text-gray-600">
+                    {message.text}
+                  </p>
                 </div>
               </div>
               <div className="mt-6 flex justify-end">
@@ -585,12 +599,12 @@ const NewRequest = () => {
                   Close
                 </Button>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
-        </AdminLayout>
-)
+    </AdminLayout>
+  )
 }
 
 export default NewRequest
