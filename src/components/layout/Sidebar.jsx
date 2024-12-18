@@ -145,12 +145,12 @@ const Sidebar = ({ isOpen, onClose }) => {
         {
           title: 'Pending Requests',
           icon: <Clock className="w-5 h-5" />,
-          href: '/admin/stakeholder/pending'
+          href: '/pages/stakeholder/PendingRequests'
         },
         {
           title: 'Update Request',
           icon: <Edit className="w-5 h-5" />,
-          href: '/admin/stakeholder/update'
+          href: '/pages/stakeholder/UpdateRequest'
         }
       ]
     },
@@ -162,32 +162,32 @@ const Sidebar = ({ isOpen, onClose }) => {
         {
           title: 'New Request',
           icon: <FileText className="w-5 h-5" />,
-          href: '/admin/background/new'
+          href: '/pages/background/NewBackgroundCheck'
         },
         {
           title: 'Pending Requests',
           icon: <Clock className="w-5 h-5" />,
-          href: '/admin/background/pending'
+          href: '/pages/background/PendingBackgroundChecks'
         },
         {
           title: 'Update Request',
           icon: <Edit className="w-5 h-5" />,
-          href: '/admin/background/update'
+          href: '/pages/background/UpdateBackgroundCheck'
         },
         {
           title: 'Expired Documents',
           icon: <AlertTriangle className="w-5 h-5" />,
-          href: '/admin/background/expired'
+          href: '/pages/background/ExpiredDocuments'
         },
         {
           title: 'Internship Overview',
           icon: <GraduationCap className="w-5 h-5" />,
-          href: '/admin/background/InternshipOverview'
+          href: '/pages/background/InternshipOverview'
         },
         {
           title: 'All Requests',
           icon: <Files className="w-5 h-5" />,
-          href: '/admin/background/all'
+          href: '/pages/background/AllBackgroundChecks'
         }
       ]
     },
@@ -199,12 +199,12 @@ const Sidebar = ({ isOpen, onClose }) => {
         {
           title: 'Stakeholder Analysis',
           icon: <BarChart2 className="w-5 h-5" />,
-          href: '/admin/reports/stakeholder'
+          href: '/pages/reports/StakeholderReport'
         },
         {
           title: 'Background Check Analytics',
           icon: <BarChart2 className="w-5 h-5" />,
-          href: '/admin/reports/BackgroundCheckReport'
+          href: '/pages/reports/BackgroundCheckReport'
         }
       ]
     }
