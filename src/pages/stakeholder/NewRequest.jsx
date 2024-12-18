@@ -53,34 +53,45 @@ const NewRequest = () => {
   const [message, setMessage] = useState({ type: '', text: '' })
 
   // Check page access
-useEffect(() => {
-  const checkAccess = async () => {
-    const path = '/stakeholder/new'
-    const { canAccess } = checkPermission(path)
+  useEffect(() => {
+    console.log('=== NewRequest Component Mount ===')
+    console.log('Current User:', user)
+    console.log('Component Mounting...')
     
-    console.log('=== Permission Check for New Request ===')
-    console.log('Path:', path)
-    console.log('User:', user)
-    console.log('Can Access:', canAccess)
-    console.log('====================================')
+    const checkAccess = async () => {
+      const path = '/stakeholder/new'
+      const { canAccess } = checkPermission(path)
+      
+      console.log('Permission Check Results:', {
+        path,
+        canAccess,
+        userRole: user?.role,
+        isLoggedIn: !!user
+      })
 
-    if (!canAccess) {
-      console.log('Access denied - Redirecting to dashboard')
-      navigate('/dashboard')
-      return
+      if (!canAccess) {
+        console.log('Access Denied - Redirecting to dashboard')
+        return
+      }
+      
+      setAccessChecked(true)
+      console.log('Access Granted - Component Ready')
     }
-    
-    console.log('Access granted - Loading component')
-    setAccessChecked(true)
-  }
-  checkAccess()
-}, [])
 
+    checkAccess()
+  }, [])
+  
   useEffect(() => {
     if (accessChecked) {
       fetchAvailableUsers()
     }
   }, [accessChecked])
+
+    console.log('Render State:', {
+    accessChecked,
+    user: !!user,
+    mounted: true
+  })
 
   const fetchAvailableUsers = async () => {
     try {
