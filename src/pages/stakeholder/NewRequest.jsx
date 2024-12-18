@@ -1,227 +1,114 @@
-// src/pages/admin/NewRequest.jsx
-import { AdminLayout } from '@/components/layout'
+// src/pages/stakeholder/NewRequest.jsx
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Calendar,
-  FileText,
-  Check,
-  Save,
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
-  AlertCircle,
-  X
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/config/supabase'
+import { motion, AnimatePresence } from 'framer-motion'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
-import { useAuth } from '@/context/AuthContext'
-import { useToast } from '@/components/ui/use-toast'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { 
+  Check, 
+  ChevronUp, 
+  ChevronDown, 
+  RefreshCw, 
+  Save, 
+  AlertCircle 
+} from 'lucide-react'
 
 const STATUS_OPTIONS = [
   { value: 'Pending', label: 'Pending' },
-  { value: 'Answered', label: 'Answered' }
+  { value: 'Closed', label: 'Closed' }
 ]
 
-const formatDate = (date) => {
-  if (!date) return '';
-  return new Date(date).toISOString().split('T')[0];
-};
-
-const initialFormData = {
-  dateReceived: '',
-  referenceNumber: '',
-  sender: '',
-  otherSender: '',
-  subject: '',
-  otherSubject: '',
-  status: 'Pending',
-  responseDate: '',
-  answeredBy: '',
-  description: ''
-}
-
 const NewRequest = () => {
-  const [availableUsers, setAvailableUsers] = useState([])
-  const [senderOptions, setSenderOptions] = useState([])
-  const [subjectOptions, setSubjectOptions] = useState([])
+  const navigate = useNavigate()
   const { user } = useAuth()
-  const { toast } = useToast()
   const [currentSection, setCurrentSection] = useState(0)
-  const [formData, setFormData] = useState(initialFormData)
-  const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState({ type: '', text: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [availableUsers, setAvailableUsers] = useState([])
+  const [message, setMessage] = useState({ type: '', text: '' })
+
+  const [formData, setFormData] = useState({
+    subject: '',
+    otherSubject: '',
+    description: '',
+    status: 'Pending',
+    dateReceived: new Date(),
+    responseDate: null,
+    answeredBy: ''
+  })
+
+  const [errors, setErrors] = useState({})
 
   useEffect(() => {
-    Promise.all([
-      fetchAvailableUsers(),
-      fetchOptions('sender_options'),
-      fetchOptions('subject_options')
-    ])
+    fetchUsers()
   }, [])
 
-  const fetchAvailableUsers = async () => {
+  const fetchUsers = async () => {
     try {
       const { data, error } = await supabase
         .from('users')
         .select('username, fullname')
         .eq('status', 'active')
-        .order('fullname')
-
+        
       if (error) throw error
-      setAvailableUsers(data || [])
+      setAvailableUsers(data)
     } catch (error) {
       console.error('Error fetching users:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch users list',
-        variant: 'destructive'
-      })
     }
   }
 
-  const fetchOptions = async (table) => {
-    try {
-      const { data, error } = await supabase
-        .from(table)
-        .select('*')
-        .order('value')
-
-      if (error) throw error
-
-      const options = data.map(item => ({
-        value: item.value,
-        label: item.label || item.value
-      }))
-      
-      // Always add "Other" option
-      options.push({ value: 'Other', label: 'Other' })
-
-      if (table === 'sender_options') {
-        setSenderOptions(options)
-      } else {
-        setSubjectOptions(options)
-      }
-    } catch (error) {
-      console.error(`Error fetching ${table}:`, error)
-      toast({
-        title: 'Error',
-        description: `Failed to fetch ${table.replace('_', ' ')}`,
-        variant: 'destructive'
-      })
-    }
-  }
-
-  const saveNewOption = async (table, value, label = null) => {
-    try {
-      const { data, error } = await supabase
-        .from(table)
-        .insert([{
-          value: value,
-          label: label || value,
-          created_by: user.username,
-          created_at: new Date().toISOString()
-        }])
-
-      if (error) throw error
-
-      // Refresh options after adding new one
-      await fetchOptions(table)
-      
-      toast({
-        title: 'Success',
-        description: `New option added to ${table.replace('_', ' ')}`
-      })
-    } catch (error) {
-      console.error(`Error saving new ${table} option:`, error)
-      toast({
-        title: 'Error',
-        description: `Failed to save new option to ${table.replace('_', ' ')}`,
-        variant: 'destructive'
-      })
-    }
-  }
-
-  const handleInputChange = async (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => {
-      const newData = { ...prev, [name]: value }
-      
-      // Reset related fields when certain values change
-      if (name === 'sender' && value !== 'Other') {
-        newData.otherSender = ''
-      }
-      if (name === 'subject' && value !== 'Other') {
-        newData.otherSubject = ''
-      }
-      if (name === 'status' && value !== 'Answered') {
-        newData.responseDate = ''
-        newData.answeredBy = ''
-      }
-      
-      return newData
-    })
-    
-    // Clear related errors
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+    // Clear error when field is modified
     if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors[name]
-        return newErrors
-      })
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }))
     }
   }
 
-  const handleDateChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: formatDate(value) }))
-    if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors[name]
-        return newErrors
-      })
+  const handleDateChange = (field, date) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: date
+    }))
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }))
     }
   }
 
-  const validateSection = (section) => {
+  const validateForm = () => {
     const newErrors = {}
 
-    switch (section) {
-      case 0: // Basic Information
-        if (!formData.dateReceived) newErrors.dateReceived = 'Date is required'
-        if (!formData.referenceNumber?.trim()) newErrors.referenceNumber = 'Reference number is required'
-        break
-
-      case 1: // Request Details
-        if (!formData.sender) newErrors.sender = 'Sender is required'
-        if (formData.sender === 'Other' && !formData.otherSender?.trim()) {
-          newErrors.otherSender = 'Please specify the sender'
-        }
-        if (!formData.subject) newErrors.subject = 'Subject is required'
-        if (formData.subject === 'Other' && !formData.otherSubject?.trim()) {
-          newErrors.otherSubject = 'Please specify the subject'
-        }
-        break
-
-      case 2: // Description
-        if (!formData.description?.trim()) newErrors.description = 'Description is required'
-        break
-
-      case 3: // Response
-        if (formData.status === 'Answered') {
-          if (!formData.responseDate) newErrors.responseDate = 'Response date is required'
-          if (!formData.answeredBy) newErrors.answeredBy = 'Please select who answered'
-          if (formData.responseDate && formData.dateReceived && 
-              new Date(formData.responseDate) < new Date(formData.dateReceived)) {
-            newErrors.responseDate = 'Response date cannot be before received date'
-          }
-        }
-        break
+    // Add your validation logic here
+    if (!formData.subject) {
+      newErrors.subject = 'Subject is required'
+    }
+    if (formData.subject === 'Other' && !formData.otherSubject) {
+      newErrors.otherSubject = 'Please specify the subject'
+    }
+    if (!formData.description) {
+      newErrors.description = 'Description is required'
+    }
+    if (formData.status === 'Answered') {
+      if (!formData.responseDate) {
+        newErrors.responseDate = 'Response date is required'
+      }
+      if (!formData.answeredBy) {
+        newErrors.answeredBy = 'Please select who answered'
+      }
     }
 
     setErrors(newErrors)
@@ -306,7 +193,8 @@ const NewRequest = () => {
     setErrors({})
   }
 
-  const sections = [
+  // Your existing sections array and JSX
+const sections = [
     {
       title: 'Basic Information',
       description: 'Reference and date details',
@@ -429,7 +317,7 @@ const NewRequest = () => {
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
               />
               {errors.otherSubject && (
-                <p className="mt-1 text-sm text-red-500">{errors.otherSubject}</p>
+              <p className="mt-1 text-sm text-red-500">{errors.otherSubject}</p>
               )}
             </div>
           )}
