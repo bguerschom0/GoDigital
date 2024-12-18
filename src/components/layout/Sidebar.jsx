@@ -140,7 +140,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {
           title: 'New Request',
           icon: <FileText className="w-5 h-5" />,
-          href: '/admin/stakeholder/new'
+          href: '/pages/stakeholder/NewRequest'
         },
         {
           title: 'Pending Requests',
