@@ -140,17 +140,17 @@ const Sidebar = ({ isOpen, onClose }) => {
         {
           title: 'New Request',
           icon: <FileText className="w-5 h-5" />,
-          href: '/pages/stakeholder/NewRequest'
+          href: '/admin/stakeholder/new'
         },
         {
           title: 'Pending Requests',
           icon: <Clock className="w-5 h-5" />,
-          href: '/pages/stakeholder/PendingRequests'
+          href: '/admin/stakeholder/pending'
         },
         {
           title: 'Update Request',
           icon: <Edit className="w-5 h-5" />,
-          href: '/pages/stakeholder/UpdateRequest'
+          href: '/admin/stakeholder/update'
         }
       ]
     },
@@ -162,32 +162,32 @@ const Sidebar = ({ isOpen, onClose }) => {
         {
           title: 'New Request',
           icon: <FileText className="w-5 h-5" />,
-          href: '/pages/background/NewBackgroundCheck'
+          href: '/admin/background/new'
         },
         {
           title: 'Pending Requests',
           icon: <Clock className="w-5 h-5" />,
-          href: '/pages/background/PendingBackgroundChecks'
+          href: '/admin/background/pending'
         },
         {
           title: 'Update Request',
           icon: <Edit className="w-5 h-5" />,
-          href: '/pages/background/UpdateBackgroundCheck'
+          href: '/admin/background/update'
         },
         {
           title: 'Expired Documents',
           icon: <AlertTriangle className="w-5 h-5" />,
-          href: '/pages/background/ExpiredDocuments'
+          href: '/admin/background/expired'
         },
         {
           title: 'Internship Overview',
           icon: <GraduationCap className="w-5 h-5" />,
-          href: '/pages/background/InternshipOverview'
+          href: '/admin/background/InternshipOverview'
         },
         {
           title: 'All Requests',
           icon: <Files className="w-5 h-5" />,
-          href: '/pages/background/AllBackgroundChecks'
+          href: '/admin/background/all'
         }
       ]
     },
@@ -199,12 +199,12 @@ const Sidebar = ({ isOpen, onClose }) => {
         {
           title: 'Stakeholder Analysis',
           icon: <BarChart2 className="w-5 h-5" />,
-          href: '/pages/reports/StakeholderReport'
+          href: '/admin/reports/stakeholder'
         },
         {
           title: 'Background Check Analytics',
           icon: <BarChart2 className="w-5 h-5" />,
-          href: '/pages/reports/BackgroundCheckReport'
+          href: '/admin/reports/BackgroundCheckReport'
         }
       ]
     }
