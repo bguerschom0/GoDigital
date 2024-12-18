@@ -575,56 +575,7 @@ const NewRequest = () => {
       </div>
 
 
-      <AnimatePresence>
-        {message.text && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className={`
-                mx-4 p-6 rounded-lg shadow-xl max-w-md w-full
-                ${message.type === 'success' 
-                  ? 'bg-white text-[#0A2647]' 
-                  : 'bg-white text-red-600'
-                }
-              `}
-            >
-              <div className="flex items-center space-x-4">
-                <div className={`
-                  p-2 rounded-full 
-                  ${message.type === 'success' 
-                    ? 'bg-[#0A2647]/10 text-[#0A2647]' 
-                    : 'bg-red-100 text-red-600'
-                  }
-                `}>
-                  {message.type === 'success' ? (
-                    <Check className="w-6 h-6" />
-                  ) : (
-                    <AlertCircle className="w-6 h-6" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-medium">
-                    {message.type === 'success' ? 'Success' : 'Error'}
-                  </h3>
-                  <p className="text-gray-600">
-                    {message.text}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end">
-                <Button
-                  onClick={() => setMessage({ type: '', text: '' })}
-                  className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
-                >
-                  Close
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+     
 
   )
 }
