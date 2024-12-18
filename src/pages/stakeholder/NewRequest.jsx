@@ -59,7 +59,14 @@ const NewRequest = () => {
           return
         }
 
-        // Get the page ID for New Stakeholder Request
+        // If user is admin, grant access immediately
+        if (user.role === 'admin') {
+          setHasAccess(true)
+          await fetchInitialData()
+          return
+        }
+
+        // For non-admin users, check permissions
         const { data: pageData, error: pageError } = await supabase
           .from('pages')
           .select('id')
@@ -68,7 +75,6 @@ const NewRequest = () => {
 
         if (pageError) throw pageError
 
-        // Check user's permission for this page
         const { data: permissionData, error: permissionError } = await supabase
           .from('page_permissions')
           .select('can_access')
@@ -76,9 +82,7 @@ const NewRequest = () => {
           .eq('page_id', pageData.id)
           .single()
 
-        if (permissionError) throw permissionError
-
-        if (!permissionData?.can_access) {
+        if (permissionError || !permissionData?.can_access) {
           navigate('/admin/dashboard')
           return
         }
@@ -98,7 +102,7 @@ const NewRequest = () => {
 
   const fetchInitialData = async () => {
     try {
-      // Fetch active users
+      // Fetch users
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('username, fullname')
@@ -131,7 +135,6 @@ const NewRequest = () => {
     }
   }
 
-  // Show loading state
   if (isLoading) {
     return (
       <AdminLayout>
@@ -142,354 +145,18 @@ const NewRequest = () => {
     )
   }
 
-  // Show error if no access
   if (!hasAccess) {
-    return null // Component will redirect in useEffect
+    return null
   }
 
-  // Rest of your existing component code...
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  const handleDateChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: formatDate(value) }))
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  const sections = [
-    {
-      title: 'Basic Information',
-      description: 'Reference and date details',
-      fields: () => (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Date Received
-            </label>
-            <div className="relative">
-              <DatePicker
-                selected={formData.dateReceived ? new Date(formData.dateReceived) : null}
-                onChange={(date) => handleDateChange('dateReceived', date)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-                dateFormat="yyyy-MM-dd"
-                placeholderText="Select date"
-                maxDate={new Date()}
-              />
-            </div>
-            {errors.dateReceived && (
-              <p className="mt-1 text-sm text-red-500">{errors.dateReceived}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Reference Number
-            </label>
-            <input
-              type="text"
-              name="referenceNumber"
-              value={formData.referenceNumber}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-            />
-            {errors.referenceNumber && (
-              <p className="mt-1 text-sm text-red-500">{errors.referenceNumber}</p>
-            )}
-          </div>
-        </div>
-      )
-    },
-    {
-      title: 'Request Details',
-      description: 'Sender and subject information',
-      fields: () => (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Sender
-            </label>
-            <select
-              name="sender"
-              value={formData.sender}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-            >
-              <option value="">Select Sender</option>
-              <option value="NPPA">NPPA</option>
-              <option value="RIB">RIB</option>
-              <option value="MPG">MPG</option>
-              <option value="Private Advocate">Private Advocate</option>
-              <option value="Other">Other</option>
-            </select>
-            {errors.sender && (
-              <p className="mt-1 text-sm text-red-500">{errors.sender}</p>
-            )}
-          </div>
-
-          {formData.sender === 'Other' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Other Sender
-              </label>
-              <input
-                type="text"
-                name="otherSender"
-                value={formData.otherSender}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Subject
-            </label>
-            <select
-              name="subject"
-              value={formData.subject}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-            >
-              <option value="">Select Subject</option>
-              <option value="Account Unblock">Account Unblock</option>
-              <option value="Account Block">Account Block</option>
-              <option value="Account Block & Reversal">Account Block & Reversal</option>
-              <option value="MoMo Transaction & Account Block">MoMo Transaction & Account Block</option>
-              <option value="MoMo Transaction & Account Unblock">MoMo Transaction & Account Unblock</option>
-              <option value="MoMo Transaction">MoMo Transaction</option>
-              <option value="Call History">Call History</option>
-              <option value="Call History & MoMo Transaction">Call History & MoMo Transaction</option>
-              <option value="Reversal">Reversal</option>
-              <option value="Reversal & Account Unblock">Reversal & Account Unblock</option>
-              <option value="Account Information">Account Information</option>
-              <option value="Account Information & MoMo Transaction">Account Information & MoMo Transaction</option>
-              <option value="Account Status">Account Status</option>
-              <option value="Sim Registration Information">Sim Registration Information</option>
-              <option value="Sim Swap Information">Sim Swap Information</option>
-              <option value="Sim Card Information">Sim Card Information</option>
-              <option value="Balance">Balance</option>
-              <option value="Other">Other</option>
-            </select>
-            {errors.subject && (
-              <p className="mt-1 text-sm text-red-500">{errors.subject}</p>
-            )}
-          </div>
-
-          {formData.subject === 'Other' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Other Subject
-              </label>
-              <input
-                type="text"
-                name="otherSubject"
-                value={formData.otherSubject}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-              />
-            </div>
-          )}
-        </div>
-      )
-    },
-    {
-      title: 'Description',
-      description: 'Detailed request information',
-      fields: () => (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Description
-          </label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            rows={6}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-          />
-          {errors.description && (
-            <p className="mt-1 text-sm text-red-500">{errors.description}</p>
-          )}
-        </div>
-      )
-    },
-{
-  title: 'Response',
-  description: 'Status and response details',
-  fields: () => (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Status
-        </label>
-        <select
-          name="status"
-          value={formData.status}
-          onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-        >
-          <option value="Pending">Pending</option>
-          <option value="Answered">Answered</option>
-        </select>
-      </div>
-
-      {formData.status === 'Answered' && (
-        <>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Response Date
-            </label>
-            <div className="relative">
-              <DatePicker
-                selected={formData.responseDate ? new Date(formData.responseDate) : null}
-                onChange={(date) => handleDateChange('responseDate', date)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-                dateFormat="yyyy-MM-dd"
-                placeholderText="Select response date"
-                maxDate={new Date()}
-                minDate={formData.dateReceived ? new Date(formData.dateReceived) : null}
-              />
-            </div>
-            {errors.responseDate && (
-              <p className="mt-1 text-sm text-red-500">{errors.responseDate}</p>
-            )}
-          </div>
-
-       <div>
-  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-    Answered By
-  </label>
-  <select
-    name="answeredBy"
-    value={formData.answeredBy}
-    onChange={handleInputChange}
-    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-  >
-    <option value="">Select Person</option>
-    {availableUsers.map((user) => (
-      <option key={user.username} value={user.username}>
-        {user.fullname}
-      </option>
-    ))}
-  </select>
-  {errors.answeredBy && (
-    <p className="mt-1 text-sm text-red-500">{errors.answeredBy}</p>
-  )}
-</div>
-        </>
-      )}
-    </div>
-  )
-}
-  ]
-
-  const validateSection = (section) => {
-    const newErrors = {}
-
-    if (section === 0) {
-      if (!formData.dateReceived) newErrors.dateReceived = 'Date is required'
-      if (!formData.referenceNumber) newErrors.referenceNumber = 'Reference number is required'
-    } else if (section === 1) {
-      if (!formData.sender) newErrors.sender = 'Sender is required'
-      if (formData.sender === 'Other' && !formData.otherSender) {
-        newErrors.otherSender = 'Please specify the sender'
-      }
-      if (!formData.subject) newErrors.subject = 'Subject is required'
-      if (formData.subject === 'Other' && !formData.otherSubject) {
-        newErrors.otherSubject = 'Please specify the subject'
-      }
-    } else if (section === 2) {
-      if (!formData.description) newErrors.description = 'Description is required'
-    }
-
-  else if (section === 3) { // Response section
-    if (formData.status === 'Answered') {
-      if (!formData.responseDate) newErrors.responseDate = 'Response date is required'
-      if (!formData.answeredBy) newErrors.answeredBy = 'Please select who answered'
-    }
-  }
-
-  setErrors(newErrors)
-  return Object.keys(newErrors).length === 0
-}
-
-  const handleSubmit = async () => {
-  if (!validateSection(currentSection)) return
-
-  if (currentSection < sections.length - 1) {
-    setCurrentSection(prev => prev + 1)
-    return
-  }
-
-  setIsLoading(true)
-  try {
-    if (!user) {
-      throw new Error('No user found. Please login again.')
-    }
-
-    const requestData = {
-      date_received: formData.dateReceived,
-      reference_number: formData.referenceNumber,
-      sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
-      subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
-      status: formData.status,
-      response_date: formData.responseDate || null,
-      answered_by: formData.answeredBy || null,
-      description: formData.description,
-      created_by: user.username,
-      created_at: new Date().toISOString()
-    }
-
-    const { error } = await supabase
-      .from('stakeholder_requests')
-      .insert([requestData])
-
-    if (error) throw error
-
-    setMessage({ type: 'success', text: 'Request saved successfully!' })
-    handleReset()
-  } catch (error) {
-    console.error('Error:', error)
-    setMessage({ type: 'error', text: error.message || 'Error saving request. Please try again.' })
-  } finally {
-    setIsLoading(false)
-  }
-}
-
-const handleReset = () => {
-  setFormData({
-    dateReceived: '',
-    referenceNumber: '',
-    sender: '',
-    otherSender: '',
-    subject: '',
-    otherSubject: '',
-    status: 'Pending',
-    responseDate: '',
-    answeredBy: '',
-    description: ''
-  })
-  setCurrentSection(0)
-  setErrors({})
-}
-  // Your existing JSX return...
   return (
     <AdminLayout>
-          <div className="flex justify-center -mt-6">
-      <div className="w-full max-w-4xl px-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-6">
-          New Request
-        </h1>
-
-        {/* Mobile view: Stack timeline and form */}
+      <div className="flex justify-center -mt-6">
+        <div className="w-full max-w-4xl px-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-6">
+            New Request
+          </h1>
+  {/* Mobile view: Stack timeline and form */}
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Timeline - Hide on small screens */}
           <div className="hidden lg:block relative">
