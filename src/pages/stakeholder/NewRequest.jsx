@@ -33,6 +33,7 @@ const NewRequest = () => {
   const [pageLoading, setPageLoading] = useState(true)
   const [availableUsers, setAvailableUsers] = useState([])
   const [currentSection, setCurrentSection] = useState(0)
+    const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     dateReceived: '',
     referenceNumber: '',
