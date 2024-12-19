@@ -1,8 +1,7 @@
 // src/pages/stakeholder/NewRequest.jsx
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { AdminLayout } from '@/components/layout'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { 
   Calendar,
   FileText,
@@ -11,16 +10,15 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
-  AlertCircle,
-  Loader2
+  AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { supabase } from '@/config/supabase'
-import { useAuth } from '@/context/AuthContext'
-import { usePageAccess } from '@/hooks/usePageAccess'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
+import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 
 const formatDate = (date) => {
   if (!date) return '';
@@ -30,11 +28,11 @@ const formatDate = (date) => {
 
 const NewRequest = () => {
   const navigate = useNavigate()
-  const { checkPermission } = usePageAccess()
-  const [availableUsers, setAvailableUsers] = useState([])
   const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
+  const [availableUsers, setAvailableUsers] = useState([])
   const [currentSection, setCurrentSection] = useState(0)
-  const [accessChecked, setAccessChecked] = useState(false)
   const [formData, setFormData] = useState({
     dateReceived: '',
     referenceNumber: '',
@@ -47,51 +45,28 @@ const NewRequest = () => {
     answeredBy: '',
     description: ''
   })
-  
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
   // Check page access
   useEffect(() => {
-    console.log('=== NewRequest Component Mount ===')
-    console.log('Current User:', user)
-    console.log('Component Mounting...')
-    
     const checkAccess = async () => {
-      const path = '/stakeholder/new'
-      const { canAccess } = checkPermission(path)
+      const { canAccess } = checkPermission('/stakeholder/new')
       
-      console.log('Permission Check Results:', {
-        path,
-        canAccess,
-        userRole: user?.role,
-        isLoggedIn: !!user
-      })
-
       if (!canAccess) {
-        console.log('Access Denied - Redirecting to dashboard')
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
         return
       }
-      
-      setAccessChecked(true)
-      console.log('Access Granted - Component Ready')
+      setPageLoading(false)
     }
-
+    
     checkAccess()
   }, [])
-  
-  useEffect(() => {
-    if (accessChecked) {
-      fetchAvailableUsers()
-    }
-  }, [accessChecked])
 
-    console.log('Render State:', {
-    accessChecked,
-    user: !!user,
-    mounted: true
-  })
+  useEffect(() => {
+    fetchAvailableUsers()
+  }, [])
 
   const fetchAvailableUsers = async () => {
     try {
@@ -108,6 +83,7 @@ const NewRequest = () => {
     }
   }
 
+  
   const sections = [
     {
       title: 'Basic Information',
@@ -167,11 +143,11 @@ const NewRequest = () => {
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
             >
               <option value="">Select Sender</option>
-              <option value="NPPA">NPPA</option>
-              <option value="RIB">RIB</option>
-              <option value="MPG">MPG</option>
-              <option value="Private Advocate">Private Advocate</option>
-              <option value="Other">Other</option>
+              {senderOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             {errors.sender && (
               <p className="mt-1 text-sm text-red-500">{errors.sender}</p>
@@ -190,6 +166,9 @@ const NewRequest = () => {
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
               />
+              {errors.otherSender && (
+                <p className="mt-1 text-sm text-red-500">{errors.otherSender}</p>
+              )}
             </div>
           )}
 
@@ -204,24 +183,11 @@ const NewRequest = () => {
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
             >
               <option value="">Select Subject</option>
-              <option value="Account Unblock">Account Unblock</option>
-              <option value="Account Block">Account Block</option>
-              <option value="Account Block & Reversal">Account Block & Reversal</option>
-              <option value="MoMo Transaction & Account Block">MoMo Transaction & Account Block</option>
-              <option value="MoMo Transaction & Account Unblock">MoMo Transaction & Account Unblock</option>
-              <option value="MoMo Transaction">MoMo Transaction</option>
-              <option value="Call History">Call History</option>
-              <option value="Call History & MoMo Transaction">Call History & MoMo Transaction</option>
-              <option value="Reversal">Reversal</option>
-              <option value="Reversal & Account Unblock">Reversal & Account Unblock</option>
-              <option value="Account Information">Account Information</option>
-              <option value="Account Information & MoMo Transaction">Account Information & MoMo Transaction</option>
-              <option value="Account Status">Account Status</option>
-              <option value="Sim Registration Information">Sim Registration Information</option>
-              <option value="Sim Swap Information">Sim Swap Information</option>
-              <option value="Sim Card Information">Sim Card Information</option>
-              <option value="Balance">Balance</option>
-              <option value="Other">Other</option>
+              {subjectOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             {errors.subject && (
               <p className="mt-1 text-sm text-red-500">{errors.subject}</p>
@@ -240,6 +206,9 @@ const NewRequest = () => {
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
               />
+              {errors.otherSubject && (
+              <p className="mt-1 text-sm text-red-500">{errors.otherSubject}</p>
+              )}
             </div>
           )}
         </div>
@@ -281,8 +250,11 @@ const NewRequest = () => {
               onChange={handleInputChange}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
             >
-              <option value="Pending">Pending</option>
-              <option value="Answered">Answered</option>
+              {STATUS_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -351,27 +323,26 @@ const NewRequest = () => {
     }
   }
 
+  
   const validateSection = (section) => {
-    const newErrors = {}
+        const newErrors = {}
 
-    if (section === 0) {
-      if (!formData.dateReceived) newErrors.dateReceived = 'Date is required'
-      if (!formData.referenceNumber) newErrors.referenceNumber = 'Reference number is required'
-    } else if (section === 1) {
-      if (!formData.sender) newErrors.sender = 'Sender is required'
-      if (formData.sender === 'Other' && !formData.otherSender) {
-        newErrors.otherSender = 'Please specify the sender'
+    // Add your validation logic here
+    if (!formData.subject) {
+      newErrors.subject = 'Subject is required'
+    }
+    if (formData.subject === 'Other' && !formData.otherSubject) {
+      newErrors.otherSubject = 'Please specify the subject'
+    }
+    if (!formData.description) {
+      newErrors.description = 'Description is required'
+    }
+    if (formData.status === 'Answered') {
+      if (!formData.responseDate) {
+        newErrors.responseDate = 'Response date is required'
       }
-      if (!formData.subject) newErrors.subject = 'Subject is required'
-      if (formData.subject === 'Other' && !formData.otherSubject) {
-        newErrors.otherSubject = 'Please specify the subject'
-      }
-    } else if (section === 2) {
-      if (!formData.description) newErrors.description = 'Description is required'
-    } else if (section === 3) {
-      if (formData.status === 'Answered') {
-        if (!formData.responseDate) newErrors.responseDate = 'Response date is required'
-        if (!formData.answeredBy) newErrors.answeredBy = 'Please select who answered'
+      if (!formData.answeredBy) {
+        newErrors.answeredBy = 'Please select who answered'
       }
     }
 
@@ -380,30 +351,41 @@ const NewRequest = () => {
   }
 
   const handleSubmit = async () => {
-    if (!validateSection(currentSection)) return
+    /    if (!validateSection(currentSection)) return
 
     if (currentSection < sections.length - 1) {
       setCurrentSection(prev => prev + 1)
       return
     }
 
+    setIsSubmitting(true)
     setIsLoading(true)
+
     try {
       if (!user) {
         throw new Error('No user found. Please login again.')
       }
 
-    const requestData = {
+      // First, save any new options if they exist
+      if (formData.sender === 'Other' && formData.otherSender) {
+        await saveNewOption('sender_options', formData.otherSender)
+      }
+      if (formData.subject === 'Other' && formData.otherSubject) {
+        await saveNewOption('subject_options', formData.otherSubject)
+      }
+
+      const requestData = {
         date_received: formData.dateReceived,
-        reference_number: formData.referenceNumber,
-        sender: formData.sender === 'Other' ? formData.otherSender : formData.sender,
-        subject: formData.subject === 'Other' ? formData.otherSubject : formData.subject,
+        reference_number: formData.referenceNumber.trim(),
+        sender: formData.sender === 'Other' ? formData.otherSender.trim() : formData.sender,
+        subject: formData.subject === 'Other' ? formData.otherSubject.trim() : formData.subject,
         status: formData.status,
         response_date: formData.responseDate || null,
         answered_by: formData.answeredBy || null,
-        description: formData.description,
+        description: formData.description.trim(),
         created_by: user.username,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
 
       const { error } = await supabase
@@ -412,51 +394,54 @@ const NewRequest = () => {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Request saved successfully!' })
+      toast({
+        title: 'Success',
+        description: 'Request has been saved successfully'
+      })
+      
+      setMessage({ 
+        type: 'success', 
+        text: 'Request has been saved successfully. You can create a new request or go back to the dashboard.' 
+      })
+      
       handleReset()
     } catch (error) {
       console.error('Error:', error)
-      setMessage({ type: 'error', text: error.message || 'Error saving request. Please try again.' })
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save request. Please try again.',
+        variant: 'destructive'
+      })
+      setMessage({ 
+        type: 'error', 
+        text: error.message || 'Failed to save request. Please check your input and try again.' 
+      })
     } finally {
       setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
   const handleReset = () => {
-    setFormData({
-      dateReceived: '',
-      referenceNumber: '',
-      sender: '',
-      otherSender: '',
-      subject: '',
-      otherSubject: '',
-      status: 'Pending',
-      responseDate: '',
-      answeredBy: '',
-      description: ''
-    })
+        setFormData(initialFormData)
     setCurrentSection(0)
     setErrors({})
   }
 
-  if (!accessChecked) {
+  if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <RefreshCw className="w-8 h-8 animate-spin text-[#0A2647]" />
       </div>
     )
   }
 
+  
   return (
-
-      <div className="flex justify-center -mt-6">
-        <div className="w-full max-w-4xl px-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-6">
-            New Request
-          </h1>
-
-          {/* Mobile view: Stack timeline and form */}
-          <div className="flex flex-col lg:flex-row gap-8">
+    <div className="p-6">
+      <div className="flex justify-center">
+        <div className="w-full max-w-4xl">
+                    <div className="flex flex-col lg:flex-row gap-8">
             {/* Timeline - Hide on small screens */}
             <div className="hidden lg:block relative">
               <div className="absolute top-0 bottom-0 left-4 w-0.5 bg-gray-200 dark:bg-gray-700" />
@@ -546,10 +531,10 @@ const NewRequest = () => {
                     )}
                     <Button
                       onClick={handleSubmit}
-                      disabled={isLoading}
+                      disabled={isLoading || isSubmitting}
                       className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
                     >
-                      {isLoading ? (
+                      {isLoading || isSubmitting ? (
                         <>
                           <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                           Saving...
@@ -574,9 +559,57 @@ const NewRequest = () => {
         </div>
       </div>
 
-
-     
-
+      
+      <AnimatePresence>
+        {message.text && (
+                    <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className={`
+                mx-4 p-6 rounded-lg shadow-xl max-w-md w-full bg-white
+                ${message.type === 'success' ? 'text-[#0A2647]' : 'text-red-600'}
+              `}
+            >
+              <div className="flex items-center space-x-4">
+                <div className={`
+                  p-2 rounded-full 
+                  ${message.type === 'success' 
+                    ? 'bg-[#0A2647]/10 text-[#0A2647]' 
+                    : 'bg-red-100 text-red-600'}
+                `}>
+                  {message.type === 'success' ? (
+                    <Check className="w-6 h-6" />
+                  ) : (
+                    <AlertCircle className="w-6 h-6" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-medium">
+                    {message.type === 'success' ? 'Success' : 'Error'}
+                  </h3>
+                  <p className="text-gray-600">{message.text}</p>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <Button
+                  onClick={() => setMessage({ type: '', text: '' })}
+                  className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+                >
+                  Close
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
