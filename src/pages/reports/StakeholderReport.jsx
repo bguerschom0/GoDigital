@@ -1,6 +1,6 @@
 // src/pages/reports/StakeholderReport.jsx
-import { AdminLayout } from '@/components/layout'
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
   BarChart2, 
@@ -12,11 +12,14 @@ import {
   PieChartIcon,
   TrendingUp,
   FileText,
-  Save
+  Save,
+  Loader2
 } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import {
@@ -44,7 +47,12 @@ import * as XLSX from 'xlsx'
 const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D', '#6096B4']
 
 const StakeholderReport = () => {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
   const chartsRef = useRef(null)
+  
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)),
     endDate: new Date()
@@ -66,7 +74,22 @@ const StakeholderReport = () => {
   const [subjectOptions, setSubjectOptions] = useState([])
   const [rawData, setRawData] = useState([])
 
+  // Check permissions
   useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess, canExport } = checkPermission('/reports/stakeholder')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
+
+   useEffect(() => {
     fetchInitialData()
     fetchFilterOptions()
   }, [])
@@ -361,13 +384,19 @@ const fetchFilterOptions = async () => {
     window.location.reload()
   }
 
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
+  }
+
   return (
-    <AdminLayout>
-      <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))] -mt-6">
-        <div className="flex-1 flex justify-center">
-          <div className="w-full max-w-[90%] px-4 pb-8">
-            {/* Header with Title and Actions */}
-            <div className="flex justify-between items-center pt-2 mb-6">
+    <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))]">
+      <div className="flex-1 flex justify-center">
+        <div className="w-full max-w-[90%] px-4 pb-8">
+                      <div className="flex justify-between items-center pt-2 mb-6">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Stakeholder Analysis Report
               </h1>
@@ -627,10 +656,9 @@ const fetchFilterOptions = async () => {
                 </Card>
   </div>
               </div>
-            </div>
-          </div>
         </div>
-    </AdminLayout>
+      </div>
+    </div>
   )
 }
 
