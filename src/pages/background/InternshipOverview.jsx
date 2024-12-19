@@ -20,8 +20,6 @@ import { format } from 'date-fns'
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
 
-console.log('InternshipOverview component loading...') // Debug log
-
 const InternshipOverview = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -29,50 +27,35 @@ const InternshipOverview = () => {
   const [pageLoading, setPageLoading] = useState(true)
   const [internships, setInternships] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [filters, setFilters] = useState({
     status: 'active',
     startDate: null,
     endDate: null,
   })
 
-  console.log('Component rendered with user:', user) // Debug log
-
-  // Check permissions
+  // Permission check
   useEffect(() => {
     const checkAccess = async () => {
-      try {
-        console.log('Checking permissions...') // Debug log
-        const { canAccess } = checkPermission('/background/internship')
-        
-        if (!canAccess) {
-          console.log('Access denied') // Debug log
-          navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
-          return
-        }
-        console.log('Access granted') // Debug log
-        setPageLoading(false)
-      } catch (error) {
-        console.error('Permission check error:', error)
-        setError(error.message)
-        setPageLoading(false)
+      const { canAccess, canExport } = checkPermission('/background/InternshipOverview')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
       }
+      setPageLoading(false)
     }
     
     checkAccess()
   }, [])
 
-  // Fetch data
   useEffect(() => {
-    if (!pageLoading && !error) {
+    if (!pageLoading) {
       fetchInternships()
     }
-  }, [filters, pageLoading, error])
+  }, [filters, pageLoading])
 
   const fetchInternships = async () => {
     try {
-      console.log('Fetching internships...') // Debug log
-      setLoading(true)
       let query = supabase
         .from('background_checks')
         .select(`
@@ -82,7 +65,7 @@ const InternshipOverview = () => {
         `)
         .eq('roles.type', 'Internship')
 
-      // Apply filters
+      // Apply date range filter if set
       if (filters.startDate) {
         query = query.gte('date_start', filters.startDate)
       }
@@ -90,39 +73,37 @@ const InternshipOverview = () => {
         query = query.lte('date_end', filters.endDate)
       }
 
-      const { data, error: fetchError } = await query
-      if (fetchError) throw fetchError
+      // Apply status filter
+      const currentDate = new Date().toISOString()
+      if (filters.status === 'active') {
+        query = query.gte('date_end', currentDate)
+      } else if (filters.status === 'expired') {
+        query = query.lt('date_end', currentDate)
+      }
 
-      console.log('Fetched internships:', data) // Debug log
+      const { data, error } = await query
+
+      if (error) throw error
       setInternships(data || [])
     } catch (error) {
       console.error('Error fetching internships:', error)
-      setError(error.message)
     } finally {
       setLoading(false)
     }
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500">Error: {error}</div>
-      </div>
-    )
+  const calculateStatus = (endDate) => {
+    const today = new Date()
+    const end = new Date(endDate)
+    return end >= today ? 'Active' : 'Expired'
   }
 
-  if (pageLoading || loading) {
+  if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
       </div>
     )
-  }
-
-    const calculateStatus = (endDate) => {
-    const today = new Date()
-    const end = new Date(endDate)
-    return end >= today ? 'Active' : 'Expired'
   }
 
   return (
