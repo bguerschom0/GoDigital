@@ -6,7 +6,7 @@ import {
   Search, 
   FileText, 
   Download,
-  Loader2,
+  Loader,
   Filter,
   Calendar,
   ChevronDown,
@@ -175,7 +175,7 @@ const AllBackgroundChecks = () => {
   if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+        <Loader className="w-8 h-8 animate-spin text-[#0A2647]" />
       </div>
     )
   }
