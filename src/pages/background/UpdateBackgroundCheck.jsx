@@ -13,13 +13,21 @@ import {
   Building,
   Clock,
   FileText,
-  Loader2
+  Loader2,
+  Search, 
+  Loader, 
+  AlertCircle, 
+  Calendar,
+  X,
+  CheckCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
+import { format } from 'date-fns'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 
 // Keep your existing steps and SuccessPopup component
 
