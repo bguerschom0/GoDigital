@@ -26,10 +26,8 @@ import { Card } from '@/components/ui/card'
 import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
-import { format } from 'date-fns'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-
-// Keep your existing steps and SuccessPopup component
+import { format } from 'date-fns'
 
 const SuccessPopup = ({ message, onClose }) => (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -63,13 +61,15 @@ const SuccessPopup = ({ message, onClose }) => (
   </div>
 )
 
-// Similar updates for PendingBackgroundChecks.jsx:
-const PendingBackgroundChecks = () => {
+
+
+// Similar updates for UpdateBackgroundCheck.jsx:
+const UpdateBackgroundCheck = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { checkPermission } = usePageAccess()
   const [pageLoading, setPageLoading] = useState(true)
-    const [searchTerm, setSearchTerm] = useState('')
+   const [searchTerm, setSearchTerm] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -94,11 +94,12 @@ const PendingBackgroundChecks = () => {
     date_end: '',
     work_with: ''
   })
+
   
   // Add permission check
   useEffect(() => {
     const checkAccess = async () => {
-      const { canAccess } = checkPermission('/background/pending')
+      const { canAccess } = checkPermission('/background/update')
       
       if (!canAccess) {
         navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
@@ -245,9 +246,11 @@ useEffect(() => {
   }
 
   return (
-    <div className="flex justify-center">
-      <div className="w-full max-w-[90%] px-4">
-                    {/* Search Section */}
+    <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))]">
+      <div className="flex-1 flex justify-center">
+          <div className="w-full max-w-[90%] px-4 pb-8">
+
+            {/* Search Section */}
             <Card className="overflow-visible">
               <CardHeader>
                 <CardTitle className="text-lg font-medium">Search Record</CardTitle>
@@ -284,7 +287,8 @@ useEffect(() => {
 
             {/* Update Form */}
             {/* Would you like me to continue with the update form section? */}
-      </div>
+          </div>
+        </div>
     </div>
   )
 }
