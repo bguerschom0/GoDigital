@@ -1,7 +1,6 @@
-
 // src/pages/background/ExpiredDocuments.jsx
-import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar,
@@ -9,7 +8,7 @@ import {
   Clock,
   Filter,
   Search,
-  Loader,
+  Loader2,
   Calendar as CalendarIcon,
   FileText
 } from 'lucide-react'
@@ -17,17 +16,40 @@ import { supabase } from '@/config/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { format, addDays, isAfter, isBefore, parseISO } from 'date-fns'
+import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 
 const ExpiredDocuments = () => {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
   const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all') // all, expired, expiring-soon
+  const [filter, setFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
-  const [timeframe, setTimeframe] = useState('30') // days until expiry for "expiring soon"
+  const [timeframe, setTimeframe] = useState('30')
+
+  // Check permissions
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = checkPermission('/background/expired')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
 
   useEffect(() => {
-    fetchDocuments()
-  }, [filter, timeframe])
+    if (!pageLoading) {
+      fetchDocuments()
+    }
+  }, [filter, timeframe, pageLoading])
 
   const fetchDocuments = async () => {
     setLoading(true)
@@ -59,7 +81,6 @@ const ExpiredDocuments = () => {
 
       if (error) throw error
 
-      // Process the data based on expiry conditions
       const processedData = data.map(doc => ({
         ...doc,
         isExpired: doc.passport_expiry_date 
@@ -76,7 +97,6 @@ const ExpiredDocuments = () => {
           : false
       }))
 
-      // Filter based on current filter selection
       const filteredData = processedData.filter(doc => {
         if (filter === 'expired') {
           return doc.isExpired || doc.contractExpired
@@ -105,12 +125,21 @@ const ExpiredDocuments = () => {
     doc.id_passport_number.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
+  }
+
   return (
-      <div className="flex justify-center -mt-6">
-        <div className="w-full max-w-[90%] px-4">
+    <div className="p-6">
+      <div className="flex justify-center">
+        <div className="w-full max-w-[90%]">
           <div className="flex flex-col space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center pt-2">
+            <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Expired Documents
               </h1>
@@ -179,7 +208,7 @@ const ExpiredDocuments = () => {
             <div className="space-y-4">
               {loading ? (
                 <div className="flex justify-center items-center h-48">
-                  <Loader className="w-8 h-8 animate-spin text-[#0A2647]" />
+                  <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
                 </div>
               ) : filteredDocuments.length === 0 ? (
                 <Card>
@@ -248,6 +277,7 @@ const ExpiredDocuments = () => {
           </div>
         </div>
       </div>
+    </div>
   )
 }
 
