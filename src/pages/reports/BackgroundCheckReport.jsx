@@ -1,4 +1,4 @@
-// src/pages/reports/BackgroundCheckReport.jsx
+
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
@@ -39,13 +39,8 @@ import {
 
 const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D']
 
-const BackgroundCheckReport = () => {
-  const navigate = useNavigate()
-  const { user } = useAuth()
-  const { checkPermission } = usePageAccess()
-  const [pageLoading, setPageLoading] = useState(true)
-  
-  const citizenshipOptions = [
+
+const citizenshipOptions = [
   'United States',
   'United Kingdom',
   'Canada',
@@ -77,7 +72,15 @@ const getDateRangeStart = (range) => {
 const getDateRangeEnd = () => new Date()
 
 const BackgroundCheckReport = () => {
-  // States for filters
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
+  
+
+
+
+
   const [filters, setFilters] = useState({
     dateRange: 'all',
     startDate: '',
@@ -562,5 +565,5 @@ const BackgroundCheckReport = () => {
     </div>
   )
 }
-}
+
 export default BackgroundCheckReport
