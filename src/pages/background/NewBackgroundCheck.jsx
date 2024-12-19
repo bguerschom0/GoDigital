@@ -1,6 +1,6 @@
 // src/pages/background/NewBackgroundCheck.jsx
-import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Calendar,
@@ -12,12 +12,15 @@ import {
   User,
   Building,
   Clock,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
+
 
 const steps = [
   { id: 1, title: 'Basic Information', description: 'Personal and identification details' },
@@ -59,8 +62,12 @@ const SuccessPopup = ({ message, onClose }) => (
 )
 
 const NewBackgroundCheck = () => {
+  const navigate = useNavigate()
   const { user } = useAuth()
-  const [currentStep, setCurrentStep] = useState(1)
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
+  
+   const [currentStep, setCurrentStep] = useState(1)
   const [departments, setDepartments] = useState([])
   const [roles, setRoles] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -86,7 +93,22 @@ const NewBackgroundCheck = () => {
     work_with: ''
   })
 
+  // Check permissions
   useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = checkPermission('/background/new')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
+
+   useEffect(() => {
     fetchDepartmentsAndRoles()
   }, [])
 
@@ -652,16 +674,18 @@ const NewBackgroundCheck = () => {
     }
   }
 
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
+  }
+
   return (
-    <AdminLayout>
-      <div className="max-w-4xl mx-auto">
-        <Card className="p-6">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">New Background Check</h2>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Submit a new background check request
-            </p>
-          </div>
+    <div className="max-w-4xl mx-auto p-6">
+      <Card className="p-6">
+
 
           {/* Progress Steps */}
           <div className="mb-8">
@@ -753,27 +777,9 @@ const NewBackgroundCheck = () => {
             </div>
           </div>
         </Card>
-
-        {/* Success Message Popup */}
-        <AnimatePresence>
-          {message.type === 'success' && (
-            <SuccessPopup
-              message={message.text}
-              onClose={() => setMessage({ type: '', text: '' })}
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Error Message */}
-        {message.type === 'error' && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-600">{message.text}</p>
-          </div>
-        )}
-      </div>
-    </AdminLayout>
+    </div>
   )
 }
 
 export default NewBackgroundCheck
-        
+
