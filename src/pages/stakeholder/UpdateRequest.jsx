@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, 
   Save, 
-  Loader2, 
+  Loader, 
   AlertCircle, 
   Calendar,
   X,
@@ -182,8 +182,8 @@ const UpdateRequest = () => {
   response_date: '',
   answered_by: '',
   description: '',
-  otherSender: '',   // Add this
-  otherSubject: ''   // Add this
+  otherSender: '',   
+  otherSubject: ''   
 })
 
 const handleUpdate = async (e) => {
@@ -226,7 +226,7 @@ const handleUpdate = async (e) => {
   if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+        <Loader className="w-8 h-8 animate-spin text-[#0A2647]" />
       </div>
     )
   }
