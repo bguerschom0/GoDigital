@@ -126,9 +126,6 @@ const PendingRequests = () => {
       <div className="flex justify-center">
         <div className="w-full max-w-[90%]">
           
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-4">
-            Pending Requests
-          </h1>
 
           <div className="flex flex-col">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
