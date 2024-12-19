@@ -562,5 +562,5 @@ const BackgroundCheckReport = () => {
     </div>
   )
 }
-
+}
 export default BackgroundCheckReport;
