@@ -1,13 +1,12 @@
-
 // src/pages/background/AllBackgroundChecks.jsx
-import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
   Search, 
   FileText, 
   Download,
-  Loader,
+  Loader2,
   Filter,
   Calendar,
   ChevronDown,
@@ -18,8 +17,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
 import * as XLSX from 'xlsx'
+import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 
 const AllBackgroundChecks = () => {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
@@ -36,10 +41,27 @@ const AllBackgroundChecks = () => {
   const [departments, setDepartments] = useState([])
   const [roles, setRoles] = useState([])
 
+  // Check permissions
   useEffect(() => {
-    fetchDepartmentsAndRoles()
-    fetchRecords()
-  }, [filters, sortConfig])
+    const checkAccess = async () => {
+      const { canAccess, canExport } = checkPermission('/background/all')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
+
+  useEffect(() => {
+    if (!pageLoading) {
+      fetchDepartmentsAndRoles()
+      fetchRecords()
+    }
+  }, [filters, sortConfig, pageLoading])
 
   const fetchDepartmentsAndRoles = async () => {
     try {
@@ -115,7 +137,13 @@ const AllBackgroundChecks = () => {
     }))
   }
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
+    const { canExport } = await checkPermission('/background/all')
+    if (!canExport) {
+      alert('You do not have permission to export data')
+      return
+    }
+
     const exportData = records.map(record => ({
       'Full Names': record.full_names,
       'Citizenship': record.citizenship,
@@ -131,13 +159,32 @@ const AllBackgroundChecks = () => {
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Background Checks')
     XLSX.writeFile(wb, `background_checks_${format(new Date(), 'yyyy-MM-dd')}.xlsx`)
+
+    // Log the export activity
+    try {
+      await supabase.from('activity_log').insert([{
+        user_id: user.id,
+        description: 'Exported background checks data',
+        type: 'export'
+      }])
+    } catch (error) {
+      console.error('Error logging activity:', error)
+    }
+  }
+
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
   }
 
   return (
-    <AdminLayout>
-      <div className="flex justify-center -mt-6">
-        <div className="w-full max-w-[90%] px-4">
-          <div className="flex justify-between items-center pt-2 mb-6">
+    <div className="p-6">
+      <div className="flex justify-center">
+        <div className="w-full max-w-[90%]">
+          <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               All Background Checks
             </h1>
@@ -150,6 +197,7 @@ const AllBackgroundChecks = () => {
             </Button>
           </div>
 
+          {/* Filters Card */}
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="text-lg font-medium flex items-center">
@@ -237,6 +285,7 @@ const AllBackgroundChecks = () => {
             </CardContent>
           </Card>
 
+          {/* Table Card */}
           <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -328,7 +377,7 @@ const AllBackgroundChecks = () => {
           </Card>
         </div>
       </div>
-    </AdminLayout>
+    </div>
   )
 }
 
