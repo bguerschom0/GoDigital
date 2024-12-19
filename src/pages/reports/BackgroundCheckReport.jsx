@@ -563,4 +563,4 @@ const BackgroundCheckReport = () => {
   )
 }
 }
-export default BackgroundCheckReport;
+export default BackgroundCheckReport
