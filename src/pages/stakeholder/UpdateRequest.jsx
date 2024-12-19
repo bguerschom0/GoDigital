@@ -1,11 +1,11 @@
 // src/pages/stakeholder/UpdateRequest.jsx
-import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, 
   Save, 
-  Loader, 
+  Loader2, 
   AlertCircle, 
   Calendar,
   X,
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 
 const SuccessPopup = ({ message, onClose }) => (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -50,7 +51,12 @@ const SuccessPopup = ({ message, onClose }) => (
 )
 
 const UpdateRequest = () => {
+  const navigate = useNavigate()
   const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
+  
+  
   const [searchTerm, setSearchTerm] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [selectedRequest, setSelectedRequest] = useState(null)
@@ -61,7 +67,22 @@ const UpdateRequest = () => {
   const [availableUsers, setAvailableUsers] = useState([])
   const [currentAnswerer, setCurrentAnswerer] = useState(null)
 
+  // Check permissions
   useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = checkPermission('/stakeholder/update')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
+
+   useEffect(() => {
     fetchAvailableUsers()
   }, [])
 
@@ -202,12 +223,17 @@ const handleUpdate = async (e) => {
   const clearMessage = () => setMessage({ type: '', text: '' })
 
 
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
+  }
 
   return (
-
-  <AdminLayout>
-    <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))] -mt-6 bg-white dark:bg-gray-900">
-        <div className="flex-1 flex justify-center">
+    <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))] bg-white dark:bg-gray-900">
+              <div className="flex-1 flex justify-center">
           <div className="w-full max-w-[90%] px-4 pb-8">
             {/* Header */}
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-4">
@@ -518,19 +544,8 @@ const handleUpdate = async (e) => {
             </AnimatePresence>
           </div>
         </div>
-      </div>
-
-      {/* Success/Error Message Popup */}
-      <AnimatePresence>
-        {message?.text && (
-          <SuccessPopup 
-            message={message.text} 
-            onClose={clearMessage}
-          />
-        )}
-      </AnimatePresence>
-    </AdminLayout>
-  );
+    </div>
+  )
 }
 
 export default UpdateRequest
