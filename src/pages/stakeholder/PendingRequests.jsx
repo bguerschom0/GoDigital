@@ -1,9 +1,9 @@
 // src/pages/stakeholder/PendingRequests.jsx
-import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Loader, 
+  Loader2, 
   CheckCircle2, 
   ChevronDown, 
   ChevronUp,
@@ -13,6 +13,8 @@ import {
 import { supabase } from '@/config/supabase'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 
 const SuccessPopup = ({ message }) => (
   <motion.div
@@ -29,6 +31,10 @@ const SuccessPopup = ({ message }) => (
 const ITEMS_PER_PAGE = 10;
 
 const PendingRequests = () => {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
   const [pendingRequests, setPendingRequests] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState(null)
@@ -37,6 +43,21 @@ const PendingRequests = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
 
+ 
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess, canExport } = checkPermission('/stakeholder/pending')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
+
   useEffect(() => {
     fetchPendingRequests()
     // Set up auto-refresh every 30 seconds
@@ -44,7 +65,7 @@ const PendingRequests = () => {
     return () => clearInterval(interval)
   }, [sortField, sortDirection, currentPage])
 
-  const fetchPendingRequests = async () => {
+   const fetchPendingRequests = async () => {
     setIsLoading(true)
     try {
       // First get total count
@@ -92,16 +113,23 @@ const PendingRequests = () => {
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
   return (
-    <AdminLayout>
-      <div className="flex justify-center -mt-4">
-        <div className="w-full max-w-[90%] px-4">
-          {/* Header moved to top of page */}
+    <div className="p-6">
+      <div className="flex justify-center">
+        <div className="w-full max-w-[90%]">
+          
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-4">
             Pending Requests
           </h1>
 
-          {/* Main content area with reduced top spacing */}
           <div className="flex flex-col">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
               {isLoading ? (
@@ -220,13 +248,7 @@ const PendingRequests = () => {
           </div>
         </div>
       </div>
-
-      <AnimatePresence>
-        {message?.type === 'success' && (
-          <SuccessPopup message={message.text} />
-        )}
-      </AnimatePresence>
-    </AdminLayout>
+    </div>
   )
 }
 
