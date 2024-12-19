@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Loader2, 
+  Loader, 
   CheckCircle2, 
   ChevronDown, 
   ChevronUp,
@@ -116,7 +116,7 @@ const PendingRequests = () => {
   if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     )
   }
