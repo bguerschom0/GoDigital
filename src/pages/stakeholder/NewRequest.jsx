@@ -351,7 +351,7 @@ const NewRequest = () => {
   }
 
   const handleSubmit = async () => {
-    /    if (!validateSection(currentSection)) return
+       if (!validateSection(currentSection)) return
 
     if (currentSection < sections.length - 1) {
       setCurrentSection(prev => prev + 1)
