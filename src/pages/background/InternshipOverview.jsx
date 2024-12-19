@@ -1,10 +1,10 @@
 // src/pages/background/InternshipOverview.jsx
-
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
   Calendar,
-  Loader, 
+  Loader2, 
   Filter,
   Download,
   Clock,
@@ -17,19 +17,42 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { format } from 'date-fns'
+import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 
 const InternshipOverview = () => {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
   const [internships, setInternships] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
-    status: 'active', // active, expired, all
+    status: 'active',
     startDate: null,
     endDate: null,
   })
 
+  // Permission check
   useEffect(() => {
-    fetchInternships()
-  }, [filters])
+    const checkAccess = async () => {
+      const { canAccess, canExport } = checkPermission('/background/internship')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
+
+  useEffect(() => {
+    if (!pageLoading) {
+      fetchInternships()
+    }
+  }, [filters, pageLoading])
 
   const fetchInternships = async () => {
     try {
@@ -75,10 +98,18 @@ const InternshipOverview = () => {
     return end >= today ? 'Active' : 'Expired'
   }
 
-  return (
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
+  }
 
-      <div className="flex justify-center -mt-6">
-        <div className="w-full max-w-[90%] px-4">
+  return (
+    <div className="p-6">
+      <div className="flex justify-center">
+        <div className="w-full max-w-[90%]">
           <div className="flex flex-col space-y-6">
             {/* Header with Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -192,7 +223,7 @@ const InternshipOverview = () => {
               <CardContent>
                 {loading ? (
                   <div className="flex justify-center items-center h-48">
-                    <Loader className="w-8 h-8 animate-spin text-[#0A2647]" />
+                    <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -257,7 +288,7 @@ const InternshipOverview = () => {
           </div>
         </div>
       </div>
-
+    </div>
   )
 }
 
