@@ -1,6 +1,6 @@
 // src/pages/reports/BackgroundCheckReport.jsx
-import { AdminLayout } from '@/components/layout'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { 
@@ -13,11 +13,14 @@ import {
   Users,
   Clock,
   Globe,
-  Building2
+  Building2,
+  Loader2
 } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 import {
   AreaChart,
   Area,
@@ -36,7 +39,13 @@ import {
 
 const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D']
 
-const citizenshipOptions = [
+const BackgroundCheckReport = () => {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
+  
+  const citizenshipOptions = [
   'United States',
   'United Kingdom',
   'Canada',
@@ -94,6 +103,21 @@ const BackgroundCheckReport = () => {
   const [operatingCountryData, setOperatingCountryData] = useState([])
   const [statusDistribution, setStatusDistribution] = useState([])
   const [citizenshipDistribution, setCitizenshipDistribution] = useState([])
+
+  // Check permissions
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess, canExport } = checkPermission('/reports/background')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
 
   useEffect(() => {
     fetchData()
@@ -239,16 +263,18 @@ const BackgroundCheckReport = () => {
     )
   }
 
-  return (
-    <AdminLayout>
-      <div className="flex justify-center -mt-6">
-        <div className="w-full max-w-[90%] px-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-6">
-            Background Check Analysis
-          </h1>
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
+  }
 
-          {/* Filters Card */}
-          <Card className="mb-6">
+  return (
+    <div className="flex justify-center">
+      <div className="w-full max-w-[90%] px-4">
+                  <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center text-sm font-medium">
                 <Filter className="w-4 h-4 mr-2" />
@@ -389,7 +415,7 @@ const BackgroundCheckReport = () => {
                   </CardContent>
                 </Card>
 
-<Card>
+                  <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Pending Checks</CardTitle>
                     <Clock className="h-4 w-4 text-muted-foreground" />
@@ -532,10 +558,9 @@ const BackgroundCheckReport = () => {
               </div>
             </>
           )}
-        </div>
       </div>
-    </AdminLayout>
-  );
+    </div>
+  )
 }
 
-export default BackgroundCheckReport;
+export default BackgroundCheckReport
