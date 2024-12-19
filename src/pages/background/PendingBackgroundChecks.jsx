@@ -256,3 +256,4 @@ const PendingBackgroundChecks = () => {
   )
 }
 
+export default PendingBackgroundChecks
