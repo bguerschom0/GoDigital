@@ -17,54 +17,19 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { format } from 'date-fns'
-import { useAuth } from '@/context/AuthContext'
-import { usePageAccess } from '@/hooks/usePageAccess'
 
 const InternshipOverview = () => {
-   const navigate = useNavigate()
-  const { user } = useAuth()
-  const { checkPermission } = usePageAccess()
-  const [pageLoading, setPageLoading] = useState(true)
   const [internships, setInternships] = useState([])
   const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
   const [filters, setFilters] = useState({
     status: 'active', // active, expired, all
     startDate: null,
     endDate: null,
   })
 
-// Check permissions
   useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        console.log('Checking permissions...') // Debug log
-        const { canAccess } = checkPermission('/background/internship')
-        
-        if (!canAccess) {
-          console.log('Access denied') // Debug log
-          navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
-          return
-        }
-        console.log('Access granted') // Debug log
-        setPageLoading(false)
-      } catch (error) {
-        console.error('Permission check error:', error)
-        setError(error.message)
-        setPageLoading(false)
-      }
-    }
-    
-    checkAccess()
-  }, [])
-  
-  
-  // Fetch data
-  useEffect(() => {
-    if (!pageLoading && !error) {
-      fetchInternships()
-    }
-  }, [filters, pageLoading, error])
+    fetchInternships()
+  }, [filters])
 
   const fetchInternships = async () => {
     try {
@@ -111,7 +76,7 @@ const InternshipOverview = () => {
   }
 
   return (
-    <AdminLayout>
+
       <div className="flex justify-center -mt-6">
         <div className="w-full max-w-[90%] px-4">
           <div className="flex flex-col space-y-6">
@@ -292,7 +257,7 @@ const InternshipOverview = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
+
   )
 }
 
