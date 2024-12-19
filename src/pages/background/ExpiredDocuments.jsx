@@ -106,7 +106,6 @@ const ExpiredDocuments = () => {
   )
 
   return (
-    <AdminLayout>
       <div className="flex justify-center -mt-6">
         <div className="w-full max-w-[90%] px-4">
           <div className="flex flex-col space-y-6">
@@ -249,7 +248,6 @@ const ExpiredDocuments = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   )
 }
 
