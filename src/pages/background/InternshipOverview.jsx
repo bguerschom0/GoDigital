@@ -1,10 +1,10 @@
 // src/pages/background/InternshipOverview.jsx
+
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
   Calendar,
-  Loader2, 
+  Loader, 
   Filter,
   Download,
   Clock,
@@ -21,38 +21,50 @@ import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
 
 const InternshipOverview = () => {
-  const navigate = useNavigate()
+   const navigate = useNavigate()
   const { user } = useAuth()
   const { checkPermission } = usePageAccess()
   const [pageLoading, setPageLoading] = useState(true)
   const [internships, setInternships] = useState([])
   const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
   const [filters, setFilters] = useState({
-    status: 'active',
+    status: 'active', // active, expired, all
     startDate: null,
     endDate: null,
   })
 
-  // Permission check
+// Check permissions
   useEffect(() => {
     const checkAccess = async () => {
-      const { canAccess, canExport } = checkPermission('/background/InternshipOverview')
-      
-      if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
-        return
+      try {
+        console.log('Checking permissions...') // Debug log
+        const { canAccess } = checkPermission('/background/internship')
+        
+        if (!canAccess) {
+          console.log('Access denied') // Debug log
+          navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+          return
+        }
+        console.log('Access granted') // Debug log
+        setPageLoading(false)
+      } catch (error) {
+        console.error('Permission check error:', error)
+        setError(error.message)
+        setPageLoading(false)
       }
-      setPageLoading(false)
     }
     
     checkAccess()
   }, [])
-
+  
+  
+  // Fetch data
   useEffect(() => {
-    if (!pageLoading) {
+    if (!pageLoading && !error) {
       fetchInternships()
     }
-  }, [filters, pageLoading])
+  }, [filters, pageLoading, error])
 
   const fetchInternships = async () => {
     try {
@@ -98,18 +110,10 @@ const InternshipOverview = () => {
     return end >= today ? 'Active' : 'Expired'
   }
 
-  if (pageLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
-      </div>
-    )
-  }
-
   return (
-    <div className="p-6">
-      <div className="flex justify-center">
-        <div className="w-full max-w-[90%]">
+    <AdminLayout>
+      <div className="flex justify-center -mt-6">
+        <div className="w-full max-w-[90%] px-4">
           <div className="flex flex-col space-y-6">
             {/* Header with Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -223,7 +227,7 @@ const InternshipOverview = () => {
               <CardContent>
                 {loading ? (
                   <div className="flex justify-center items-center h-48">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+                    <Loader className="w-8 h-8 animate-spin text-[#0A2647]" />
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -288,7 +292,7 @@ const InternshipOverview = () => {
           </div>
         </div>
       </div>
-    </div>
+    </AdminLayout>
   )
 }
 
