@@ -1,22 +1,27 @@
-
-// src/pages/background/UpdateBackgroundCheck.jsx
-import { AdminLayout } from '@/components/layout'
+// src/pages/background/NewBackgroundCheck.jsx
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Search, 
-  Save, 
-  Loader, 
-  AlertCircle, 
   Calendar,
-  X,
-  CheckCircle
+  Check,
+  Save,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  User,
+  Building,
+  Clock,
+  FileText,
+  Loader2
 } from 'lucide-react'
-import { supabase } from '@/config/supabase'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { format } from 'date-fns'
+import { Card } from '@/components/ui/card'
+import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
+
+// Keep your existing steps and SuccessPopup component
 
 const SuccessPopup = ({ message, onClose }) => (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -50,9 +55,13 @@ const SuccessPopup = ({ message, onClose }) => (
   </div>
 )
 
-const UpdateBackgroundCheck = () => {
+// Similar updates for PendingBackgroundChecks.jsx:
+const PendingBackgroundChecks = () => {
+  const navigate = useNavigate()
   const { user } = useAuth()
-  const [searchTerm, setSearchTerm] = useState('')
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
+    const [searchTerm, setSearchTerm] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -77,8 +86,23 @@ const UpdateBackgroundCheck = () => {
     date_end: '',
     work_with: ''
   })
-
+  
+  // Add permission check
   useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = checkPermission('/background/pending')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
+
+useEffect(() => {
     fetchDepartments()
     fetchRoles()
   }, [])
@@ -204,17 +228,18 @@ const UpdateBackgroundCheck = () => {
 
   const clearMessage = () => setMessage({ type: '', text: '' })
 
-  return (
-    <AdminLayout>
-      <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))] -mt-6">
-        <div className="flex-1 flex justify-center">
-          <div className="w-full max-w-[90%] px-4 pb-8">
-            {/* Header */}
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white pt-2 mb-4">
-              Update Background Check
-            </h1>
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
+  }
 
-            {/* Search Section */}
+  return (
+    <div className="flex justify-center">
+      <div className="w-full max-w-[90%] px-4">
+                    {/* Search Section */}
             <Card className="overflow-visible">
               <CardHeader>
                 <CardTitle className="text-lg font-medium">Search Record</CardTitle>
@@ -251,21 +276,8 @@ const UpdateBackgroundCheck = () => {
 
             {/* Update Form */}
             {/* Would you like me to continue with the update form section? */}
-          </div>
-        </div>
       </div>
-
-      {/* Success/Error Message Popup */}
-      <AnimatePresence>
-        {message?.text && (
-          <SuccessPopup 
-            message={message.text} 
-            onClose={clearMessage}
-          />
-        )}
-      </AnimatePresence>
-    </AdminLayout>
+    </div>
   )
 }
-
 export default UpdateBackgroundCheck
