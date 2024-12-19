@@ -17,12 +17,10 @@ import {
   Search, 
   Loader, 
   AlertCircle, 
-  Calendar,
   X,
   CheckCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
