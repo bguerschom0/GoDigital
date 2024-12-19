@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AuthForm from './components/auth/AuthForm'
 import { AdminLayout, UserLayout } from './components/layout'
+import { useAuth } from './context/AuthContext'
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard'
@@ -30,6 +31,93 @@ import BackgroundCheckReport from './pages/reports/BackgroundCheckReport'
 // User Pages
 import UserDashboard from './pages/user/Dashboard'
 
+// Root component to handle initial redirect
+const Root = () => {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} replace />
+}
+
+// User routes component
+const UserRoutes = () => (
+  <Routes>
+    <Route path="/" element={<UserLayout />}>
+      <Route index element={<UserDashboard />} />
+      <Route path="dashboard" element={<UserDashboard />} />
+      
+      {/* User Stakeholder Routes */}
+      <Route path="stakeholder">
+        <Route path="new" element={<NewRequest />} />
+        <Route path="pending" element={<PendingRequests />} />
+        <Route path="update" element={<UpdateRequest />} />
+      </Route>
+
+      {/* User Background Check Routes */}
+      <Route path="background">
+        <Route path="new" element={<NewBackgroundCheck />} />
+        <Route path="pending" element={<PendingBackgroundChecks />} />
+        <Route path="update" element={<UpdateBackgroundCheck />} />
+        <Route path="expired" element={<ExpiredDocuments />} />
+        <Route path="all" element={<AllBackgroundChecks />} />
+        <Route path="internship" element={<InternshipOverview />} />
+      </Route>
+
+      {/* User Report Routes */}
+      <Route path="reports">
+        <Route path="stakeholder" element={<StakeholderReport />} />
+        <Route path="background" element={<BackgroundCheckReport />} />
+      </Route>
+    </Route>
+  </Routes>
+)
+
+// Admin routes component
+const AdminRoutes = () => (
+  <Routes>
+    <Route path="/" element={<AdminLayout />}>
+      <Route index element={<Dashboard />} />
+      <Route path="dashboard" element={<Dashboard />} />
+      <Route path="users" element={<Users />} />
+      <Route path="permissions" element={<PagePermissions />} />
+
+      {/* Admin Stakeholder Routes */}
+      <Route path="stakeholder">
+        <Route path="new" element={<NewRequest />} />
+        <Route path="pending" element={<PendingRequests />} />
+        <Route path="update" element={<UpdateRequest />} />
+      </Route>
+
+      {/* Admin Background Check Routes */}
+      <Route path="background">
+        <Route path="new" element={<NewBackgroundCheck />} />
+        <Route path="pending" element={<PendingBackgroundChecks />} />
+        <Route path="update" element={<UpdateBackgroundCheck />} />
+        <Route path="expired" element={<ExpiredDocuments />} />
+        <Route path="all" element={<AllBackgroundChecks />} />
+        <Route path="internship" element={<InternshipOverview />} />
+      </Route>
+
+      {/* Admin Report Routes */}
+      <Route path="reports">
+        <Route path="stakeholder" element={<StakeholderReport />} />
+        <Route path="background" element={<BackgroundCheckReport />} />
+      </Route>
+    </Route>
+  </Routes>
+)
+
 function App() {
   return (
     <Router>
@@ -38,48 +126,30 @@ function App() {
           {/* Public Routes */}
           <Route path="/login" element={<AuthForm />} />
           
-          {/* Admin Routes */}
-          <Route path="/admin" element={
-            <ProtectedRoute requireAdmin>
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Dashboard />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="users" element={<Users />} />
-            <Route path="permissions" element={<PagePermissions />} />
-            
-            {/* Stakeholder Routes */}
-            <Route path="stakeholder/new" element={<NewRequest />} />
-            <Route path="stakeholder/pending" element={<PendingRequests />} />
-            <Route path="stakeholder/update" element={<UpdateRequest />} />
+          {/* Root Route */}
+          <Route path="/" element={<Root />} />
 
-            {/* Background Check Routes */}
-            <Route path="background/new" element={<NewBackgroundCheck />} />
-            <Route path="background/pending" element={<PendingBackgroundChecks />} />
-            <Route path="background/update" element={<UpdateBackgroundCheck />} />
-            <Route path="background/expired" element={<ExpiredDocuments />} />
-            <Route path="background/all" element={<AllBackgroundChecks />} />
-            <Route path="background/InternshipOverview" element={<InternshipOverview />} />
+          {/* Protected Admin Routes */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminRoutes />
+              </ProtectedRoute>
+            }
+          />
 
-            {/* Report Routes */}
-            <Route path="reports/stakeholder" element={<StakeholderReport />} />
-            <Route path="reports/BackgroundCheckReport" element={<BackgroundCheckReport />} />
-          </Route>
+          {/* Protected User Routes */}
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <UserRoutes />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* User Routes */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <UserLayout>
-                <UserDashboard />
-              </UserLayout>
-            </ProtectedRoute>
-          } />
-
-          {/* Root redirect */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          
-          {/* Catch all route */}
+          {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
