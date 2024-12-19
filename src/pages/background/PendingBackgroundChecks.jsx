@@ -1,21 +1,60 @@
-
-// src/pages/background/PendingBackgroundChecks.jsx
-import { AdminLayout } from '@/components/layout'
+// src/pages/background/NewBackgroundCheck.jsx
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Loader } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Calendar,
+  Check,
+  Save,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  User,
+  Building,
+  Clock,
+  FileText,
+  Loader2
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { supabase } from '@/config/supabase'
+import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
+import { Loader } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
 
+// Keep your existing steps and SuccessPopup component
+
+
+
+// Similar updates for PendingBackgroundChecks.jsx:
 const PendingBackgroundChecks = () => {
-  const [pendingChecks, setPendingChecks] = useState([])
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
+    const [pendingChecks, setPendingChecks] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedRole, setSelectedRole] = useState('all')
   const [selectedDepartment, setSelectedDepartment] = useState('all')
   const [departments, setDepartments] = useState([])
   const [roles, setRoles] = useState([])
+  
+  // Add permission check
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = checkPermission('/background/pending')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
 
   // Fetch departments and roles for filters
   useEffect(() => {
@@ -97,21 +136,21 @@ const PendingBackgroundChecks = () => {
     return format(new Date(date), 'MMM d, yyyy')
   }
 
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
+  }
+
   return (
-    <AdminLayout>
-      <div className="flex justify-center -mt-6">
-        <div className="w-full max-w-[90%] px-4">
-          <div className="flex flex-col space-y-6">
+    <div className="flex justify-center">
+      <div className="w-full max-w-[90%] px-4">
+        <div className="flex flex-col space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center pt-8">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Pending Background Checks
-                </h1>
-                <p className="text-gray-500 dark:text-gray-400">
-                  View and manage pending background check requests
-                </p>
-              </div>
+
               
               {/* Filters */}
               <div className="flex space-x-4">
@@ -212,10 +251,8 @@ const PendingBackgroundChecks = () => {
               </CardContent>
             </Card>
           </div>
-        </div>
       </div>
-    </AdminLayout>
+    </div>
   )
 }
 
-export default PendingBackgroundChecks
