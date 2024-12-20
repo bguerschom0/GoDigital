@@ -17,8 +17,6 @@ import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
-import { toast } from '@/components/ui/use-toast'
-import { Toaster } from '@/components/ui/toaster'
 
 const formatDate = (date) => {
   if (!date) return '';
@@ -44,7 +42,6 @@ const NewRequest = () => {
   const { user } = useAuth()
   const { checkPermission } = usePageAccess()
   
-  // State management
   const [pageLoading, setPageLoading] = useState(true)
   const [availableUsers, setAvailableUsers] = useState([])
   const [currentSection, setCurrentSection] = useState(0)
@@ -53,8 +50,9 @@ const NewRequest = () => {
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [senderOptions, setSenderOptions] = useState([])
+  const [subjectOptions, setSubjectOptions] = useState([])
 
-  // Check page access
   useEffect(() => {
     const checkAccess = async () => {
       const { canAccess } = checkPermission('/stakeholder/new')
@@ -69,9 +67,9 @@ const NewRequest = () => {
     checkAccess()
   }, [])
 
-  // Fetch available users
   useEffect(() => {
     fetchAvailableUsers()
+    fetchDropdownOptions()
   }, [])
 
   const fetchAvailableUsers = async () => {
@@ -89,7 +87,203 @@ const NewRequest = () => {
     }
   }
 
-  // Form sections definition
+  const fetchDropdownOptions = async () => {
+    try {
+      const { data: senderData, error: senderError } = await supabase
+        .from('stakeholder_requests')
+        .select('sender')
+        .neq('sender', null)
+        .order('sender')
+
+      if (senderError) throw senderError
+
+      const { data: subjectData, error: subjectError } = await supabase
+        .from('stakeholder_requests')
+        .select('subject')
+        .neq('subject', null)
+        .order('subject')
+
+      if (subjectError) throw subjectError
+
+      const uniqueSenders = [...new Set(senderData.map(item => item.sender))]
+      const uniqueSubjects = [...new Set(subjectData.map(item => item.subject))]
+
+      setSenderOptions(uniqueSenders)
+      setSubjectOptions(uniqueSubjects)
+    } catch (error) {
+      console.error('Error fetching options:', error)
+    }
+  }
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value }
+      
+      if (name === 'sender' && value !== 'Other') {
+        newData.otherSender = ''
+      }
+      if (name === 'subject' && value !== 'Other') {
+        newData.otherSubject = ''
+      }
+      if (name === 'status' && value === 'Pending') {
+        newData.responseDate = ''
+        newData.answeredBy = ''
+      }
+      
+      return newData
+    })
+    
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
+
+  const handleDateChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: formatDate(value) }))
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
+
+  const validateSection = (section) => {
+    const newErrors = {}
+
+    switch (section) {
+      case 0: // Basic Information
+        if (!formData.dateReceived) {
+          newErrors.dateReceived = 'Date received is required'
+        }
+        if (!formData.referenceNumber) {
+          newErrors.referenceNumber = 'Reference number is required'
+        }
+        break
+
+      case 1: // Request Details
+        if (!formData.sender) {
+          newErrors.sender = 'Sender is required'
+        }
+        if (formData.sender === 'Other' && !formData.otherSender) {
+          newErrors.otherSender = 'Please specify the sender'
+        }
+        if (!formData.subject) {
+          newErrors.subject = 'Subject is required'
+        }
+        if (formData.subject === 'Other' && !formData.otherSubject) {
+          newErrors.otherSubject = 'Please specify the subject'
+        }
+        break
+
+      case 2: // Description
+        if (!formData.description) {
+          newErrors.description = 'Description is required'
+        }
+        break
+
+      case 3: // Response
+        if (formData.status === 'Answered') {
+          if (!formData.responseDate) {
+            newErrors.responseDate = 'Response date is required'
+          }
+          if (!formData.answeredBy) {
+            newErrors.answeredBy = 'Please select who answered'
+          }
+        }
+        break
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async () => {
+    if (!validateSection(currentSection)) return
+
+    if (currentSection < sections.length - 1) {
+      if (currentSection === 1) {
+        if (formData.sender === 'Other' && formData.otherSender) {
+          setFormData(prev => ({
+            ...prev,
+            sender: formData.otherSender.trim()
+          }))
+        }
+        if (formData.subject === 'Other' && formData.otherSubject) {
+          setFormData(prev => ({
+            ...prev,
+            subject: formData.otherSubject.trim()
+          }))
+        }
+      }
+      
+      setCurrentSection(prev => prev + 1)
+      return
+    }
+
+    setIsSubmitting(true)
+    setIsLoading(true)
+
+    try {
+      if (!user) {
+        throw new Error('No user found. Please login again.')
+      }
+
+      const finalSender = formData.sender === 'Other' ? formData.otherSender.trim() : formData.sender
+      const finalSubject = formData.subject === 'Other' ? formData.otherSubject.trim() : formData.subject
+
+      const requestData = {
+        date_received: formData.dateReceived,
+        reference_number: formData.referenceNumber.trim(),
+        sender: finalSender,
+        subject: finalSubject,
+        status: formData.status,
+        response_date: formData.responseDate || null,
+        answered_by: formData.answeredBy || null,
+        description: formData.description.trim(),
+        created_by: user.username,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase
+        .from('stakeholder_requests')
+        .insert([requestData])
+
+      if (error) throw error
+
+      await fetchDropdownOptions()
+      
+      setMessage({ 
+        type: 'success', 
+        text: 'Request has been saved successfully. You can create a new request or go back to the dashboard.' 
+      })
+      
+      handleReset()
+    } catch (error) {
+      console.error('Error:', error)
+      setMessage({ 
+        type: 'error', 
+        text: error.message || 'Failed to save request. Please check your input and try again.' 
+      })
+    } finally {
+      setIsLoading(false)
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleReset = () => {
+    setFormData(initialFormData)
+    setCurrentSection(0)
+    setErrors({})
+  }
+
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <RefreshCw className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
+  }
+
   const sections = [
     {
       title: 'Basic Information',
@@ -149,10 +343,9 @@ const NewRequest = () => {
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
             >
               <option value="">Select Sender</option>
-              <option value="NPPA">NPPA</option>
-              <option value="RIB">RIB</option>
-              <option value="MPG">MPG</option>
-              <option value="Private Advocate">Private Advocate</option>
+              {senderOptions.map(sender => (
+                <option key={sender} value={sender}>{sender}</option>
+              ))}
               <option value="Other">Other</option>
             </select>
             {errors.sender && (
@@ -163,7 +356,7 @@ const NewRequest = () => {
           {formData.sender === 'Other' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Other Sender
+                Specify Sender
               </label>
               <input
                 type="text"
@@ -189,14 +382,9 @@ const NewRequest = () => {
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
             >
               <option value="">Select Subject</option>
-              <option value="Account Unblock">Account Unblock</option>
-              <option value="MoMo Transaction">MoMo Transaction</option>
-              <option value="Call History">Call History</option>
-              <option value="Reversal">Reversal</option>
-              <option value="MoMo Transaction & Call History">MoMo Transaction & Call History</option>
-              <option value="Account Information">Account Information</option>
-              <option value="Account Status">Account Status</option>
-              <option value="Balance">Balance</option>
+              {subjectOptions.map(subject => (
+                <option key={subject} value={subject}>{subject}</option>
+              ))}
               <option value="Other">Other</option>
             </select>
             {errors.subject && (
@@ -207,7 +395,7 @@ const NewRequest = () => {
           {formData.subject === 'Other' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Other Subject
+                Specify Subject
               </label>
               <input
                 type="text"
@@ -216,15 +404,7 @@ const NewRequest = () => {
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
               />
-              {errors.otherSubject && (
-                <p className="mt-1 text-sm text-red-500">{errors.otherSubject}</p>
-              )}
-            </div>
-          )}
-        </div>
-      )
-    },
-    {
+              {
       title: 'Description',
       description: 'Detailed request information',
       fields: () => (
@@ -314,154 +494,6 @@ const NewRequest = () => {
       )
     }
   ]
-
-  // Form handlers
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => {
-      const newData = { ...prev, [name]: value }
-      
-      // Reset dependent fields when status changes
-      if (name === 'status' && value === 'Pending') {
-        newData.responseDate = ''
-        newData.answeredBy = ''
-      }
-      
-      return newData
-    })
-    
-    // Clear error when field is changed
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  const handleDateChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: formatDate(value) }))
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  const validateSection = (section) => {
-    const newErrors = {}
-
-    switch (section) {
-      case 0: // Basic Information
-        if (!formData.dateReceived) {
-          newErrors.dateReceived = 'Date received is required'
-        }
-        if (!formData.referenceNumber) {
-          newErrors.referenceNumber = 'Reference number is required'
-        }
-        break
-
-      case 1: // Request Details
-        if (!formData.sender) {
-          newErrors.sender = 'Sender is required'
-        }
-        if (formData.sender === 'Other' && !formData.otherSender) {
-          newErrors.otherSender = 'Please specify the sender'
-        }
-        if (!formData.subject) {
-          newErrors.subject = 'Subject is required'
-        }
-        if (formData.subject === 'Other' && !formData.otherSubject) {
-          newErrors.otherSubject = 'Please specify the subject'
-        }
-        break
-
-      case 2: // Description
-        if (!formData.description) {
-          newErrors.description = 'Description is required'
-        }
-        break
-
-      case 3: // Response
-        if (formData.status === 'Answered') {
-          if (!formData.responseDate) {
-            newErrors.responseDate = 'Response date is required'
-          }
-          if (!formData.answeredBy) {
-            newErrors.answeredBy = 'Please select who answered'
-          }
-        }
-        break
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-const handleSubmit = async () => {
-  if (!validateSection(currentSection)) return
-
-  if (currentSection < sections.length - 1) {
-    setCurrentSection(prev => prev + 1)
-    return
-  }
-
-  setIsSubmitting(true)
-  setIsLoading(true)
-
-  try {
-    if (!user) {
-      throw new Error('No user found. Please login again.')
-    }
-
-    const requestData = {
-      date_received: formData.dateReceived,
-      reference_number: formData.referenceNumber.trim(),
-      sender: formData.sender === 'Other' ? formData.otherSender.trim() : formData.sender,
-      subject: formData.subject === 'Other' ? formData.otherSubject.trim() : formData.subject,
-      status: formData.status,
-      response_date: formData.responseDate || null,
-      answered_by: formData.answeredBy || null,
-      description: formData.description.trim(),
-      created_by: user.username,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-
-    const { error } = await supabase
-      .from('stakeholder_requests')
-      .insert([requestData])
-
-    if (error) throw error
-    
-    // Remove toast notifications and just use the modal
-    setMessage({ 
-      type: 'success', 
-      text: 'Request has been saved successfully. You can create a new request or go back to the dashboard.' 
-    })
-    
-    handleReset()
-  } catch (error) {
-    console.error('Error:', error)
-    // Remove toast notifications and just use the modal
-    setMessage({ 
-      type: 'error', 
-      text: error.message || 'Failed to save request. Please check your input and try again.' 
-    })
-  } finally {
-    setIsLoading(false)
-    setIsSubmitting(false)
-  }
-}
-
-  const handleReset = () => {
-    setFormData(initialFormData)
-    setCurrentSection(0)
-    setErrors({})
-  }
-
-  if (pageLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <RefreshCw className="w-8 h-8 animate-spin text-[#0A2647]" />
-      </div>
-    )
-  }
 
   return (
     <div className="p-6">
@@ -635,7 +667,6 @@ const handleSubmit = async () => {
           </motion.div>
         )}
       </AnimatePresence>
-      
     </div>
   )
 }
