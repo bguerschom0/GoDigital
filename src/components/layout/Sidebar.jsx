@@ -160,7 +160,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {
           title: 'All Requests',
           icon: <Clock className="w-5 h-5" />,
-          href: '/admin/stakeholder/AllRequests'
+          href: '/admin/stakeholder/All Stakeholder Requests'
         }
       ]
     },
