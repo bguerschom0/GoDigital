@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
   }
 
   if (requireAdmin && user.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/user/dashboard" replace />
   }
 
   if (!requireAdmin && user.role === 'admin') {
@@ -34,7 +34,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     const { canAccess } = checkPermission(path)
     
     if (!canAccess) {
-      return <Navigate to="/dashboard" replace />
+      return <Navigate to="/user/dashboard" replace />
     }
   }
 
