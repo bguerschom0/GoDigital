@@ -24,6 +24,7 @@ import {
 import { format } from 'date-fns'
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const DeleteRequest = () => {
   const navigate = useNavigate()
