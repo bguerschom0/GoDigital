@@ -222,9 +222,9 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   const userNavItems = [
     {
-      title: 'Dashboard',
-      icon: <LayoutDashboard className="w-5 h-5" />,
-      href: '/dashboard'
+    title: 'Dashboard',
+    icon: <LayoutDashboard className="w-5 h-5" />,
+    href: '/user/dashboard'
     }
   ]
 
