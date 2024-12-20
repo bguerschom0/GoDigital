@@ -152,6 +152,16 @@ const Sidebar = ({ isOpen, onClose }) => {
           icon: <Edit className="w-5 h-5" />,
           href: '/admin/stakeholder/update'
         }
+                {
+          title: 'Delete Request',
+          icon: <Clock className="w-5 h-5" />,
+          href: '/admin/stakeholder/DeleteReques'
+        },
+                {
+          title: 'All Requests',
+          icon: <Clock className="w-5 h-5" />,
+          href: '/admin/stakeholder/AllRequests'
+        }
       ]
     },
     {
