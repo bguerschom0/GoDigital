@@ -18,6 +18,7 @@ import "react-datepicker/dist/react-datepicker.css"
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
 import { toast } from '@/components/ui/use-toast'
+import { Toaster } from '@/components/ui/toaster'
 
 const formatDate = (date) => {
   if (!date) return '';
@@ -392,70 +393,61 @@ const NewRequest = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async () => {
-    if (!validateSection(currentSection)) return
+const handleSubmit = async () => {
+  if (!validateSection(currentSection)) return
 
-    // Continuing handleSubmit function...
-    if (currentSection < sections.length - 1) {
-      setCurrentSection(prev => prev + 1)
-      return
-    }
-
-    setIsSubmitting(true)
-    setIsLoading(true)
-
-    try {
-      if (!user) {
-        throw new Error('No user found. Please login again.')
-      }
-
-      const requestData = {
-        date_received: formData.dateReceived,
-        reference_number: formData.referenceNumber.trim(),
-        sender: formData.sender === 'Other' ? formData.otherSender.trim() : formData.sender,
-        subject: formData.subject === 'Other' ? formData.otherSubject.trim() : formData.subject,
-        status: formData.status,
-        response_date: formData.responseDate || null,
-        answered_by: formData.answeredBy || null,
-        description: formData.description.trim(),
-        created_by: user.username,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-
-      const { error } = await supabase
-        .from('stakeholder_requests')
-        .insert([requestData])
-
-      if (error) throw error
-
-      toast({
-        title: 'Success',
-        description: 'Request has been saved successfully'
-      })
-      
-      setMessage({ 
-        type: 'success', 
-        text: 'Request has been saved successfully. You can create a new request or go back to the dashboard.' 
-      })
-      
-      handleReset()
-    } catch (error) {
-      console.error('Error:', error)
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to save request. Please try again.',
-        variant: 'destructive'
-      })
-      setMessage({ 
-        type: 'error', 
-        text: error.message || 'Failed to save request. Please check your input and try again.' 
-      })
-    } finally {
-      setIsLoading(false)
-      setIsSubmitting(false)
-    }
+  if (currentSection < sections.length - 1) {
+    setCurrentSection(prev => prev + 1)
+    return
   }
+
+  setIsSubmitting(true)
+  setIsLoading(true)
+
+  try {
+    if (!user) {
+      throw new Error('No user found. Please login again.')
+    }
+
+    const requestData = {
+      date_received: formData.dateReceived,
+      reference_number: formData.referenceNumber.trim(),
+      sender: formData.sender === 'Other' ? formData.otherSender.trim() : formData.sender,
+      subject: formData.subject === 'Other' ? formData.otherSubject.trim() : formData.subject,
+      status: formData.status,
+      response_date: formData.responseDate || null,
+      answered_by: formData.answeredBy || null,
+      description: formData.description.trim(),
+      created_by: user.username,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    const { error } = await supabase
+      .from('stakeholder_requests')
+      .insert([requestData])
+
+    if (error) throw error
+    
+    // Remove toast notifications and just use the modal
+    setMessage({ 
+      type: 'success', 
+      text: 'Request has been saved successfully. You can create a new request or go back to the dashboard.' 
+    })
+    
+    handleReset()
+  } catch (error) {
+    console.error('Error:', error)
+    // Remove toast notifications and just use the modal
+    setMessage({ 
+      type: 'error', 
+      text: error.message || 'Failed to save request. Please check your input and try again.' 
+    })
+  } finally {
+    setIsLoading(false)
+    setIsSubmitting(false)
+  }
+}
 
   const handleReset = () => {
     setFormData(initialFormData)
@@ -643,6 +635,7 @@ const NewRequest = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      
     </div>
   )
 }
