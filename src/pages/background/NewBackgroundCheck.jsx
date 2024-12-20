@@ -414,72 +414,122 @@ const NewBackgroundCheck = () => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex gap-8">
-        {/* Left Sidebar - Vertical Stepper */}
-        <div className="w-64 shrink-0">
-          <div className="space-y-8">
-            {steps.map((step, index) => (
-              <div key={step.id} className="relative">
-                <div className="flex items-start group">
-                  <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-                    <div className={`h-full w-full rounded-full flex items-center justify-center ${
-                      step.id === currentStep 
-                        ? 'bg-[#0A2647] text-white'
-                        : step.id < currentStep
-                        ? 'bg-[#0A2647]/20 text-[#0A2647]'
-                        : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {step.id < currentStep ? (
-                        <Check className="h-5 w-5" />
-                      ) : (
-                        <span>{step.id}</span>
-                      )}
-                    </div>
-                    {index < steps.length - 1 && (
-                      <div className={`absolute left-4 top-10 h-16 w-0.5 ${
-                        step.id < currentStep ? 'bg-[#0A2647]' : 'bg-gray-200'
-                      }`} />
-                    )}
-                  </div>
-                  <div className="ml-4 mt-1">
-                    <h3 className={`text-sm font-medium ${
-                      step.id === currentStep ? 'text-[#0A2647]' : 'text-gray-500'
-                    }`}>
-                      {step.title}
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1">{step.description}</p>
-                  </div>
+              {/* Mobile view: Stack timeline and form */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Timeline - Hide on small screens */}
+          <div className="hidden lg:block relative">
+            <div className="absolute top-0 bottom-0 left-4 w-0.5 bg-gray-200 dark:bg-gray-700" />
+            {sections.map((section, index) => (
+              <div key={index} className="relative mb-8">
+                <div className={`
+                  absolute left-0 w-8 h-8 rounded-full flex items-center justify-center
+                  ${index <= currentSection 
+                    ? 'bg-[#0A2647] text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}
+                `}>
+                  {index < currentSection ? (
+                    <Check className="w-5 h-5" />
+                  ) : (
+                    <span>{index + 1}</span>
+                  )}
+                </div>
+                <div className="ml-12 pt-1">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    {section.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {section.description}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Main Content */}
-        <Card className="flex-1 p-6">
-          {renderStepContent()}
-
-          <div className="flex justify-between pt-6 border-t mt-6">
-            <Button
-              type="button"
-              onClick={() => setCurrentStep(prev => prev - 1)}
-              disabled={currentStep === 1}
-              className="bg-gray-100 text-gray-900 hover:bg-gray-200"
-            >
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Previous
-            </Button>
-            
-            <Button
-              type="button"
-              onClick={() => setCurrentStep(prev => prev + 1)}
-              disabled={currentStep === steps.length}
-              className="bg-[#0A2647] text-white hover:bg-[#0A2647]/90"
-            >
-              Next
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
+          {/* Mobile Progress Indicator */}
+          <div className="lg:hidden mb-6">
+            <div className="flex items-center justify-between px-2">
+              {sections.map((section, index) => (
+                <div 
+                  key={index} 
+                  className={`flex flex-col items-center ${
+                    index === currentSection 
+                      ? 'text-[#0A2647] dark:text-white' 
+                      : 'text-gray-400 dark:text-gray-500'
+                  }`}
+                >
+                  <div className={`
+                    w-8 h-8 rounded-full flex items-center justify-center mb-2
+                    ${index <= currentSection 
+                      ? 'bg-[#0A2647] text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700'}
+                  `}>
+                    {index < currentSection ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      <span>{index + 1}</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-center">{section.title}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </Card>
+
+          {/* Form Content */}
+          <div className="flex-1">
+            <Card className="p-4 lg:p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+              {sections[currentSection].fields()}
+
+              <div className="mt-6 flex flex-col sm:flex-row justify-between gap-4">
+                <Button
+                  type="button"
+                  onClick={handleReset}
+                  variant="outline"
+                  className="text-[#0A2647] dark:text-white border-[#0A2647] dark:border-white"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Reset
+                </Button>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {currentSection > 0 && (
+                    <Button
+                      type="button"
+                      onClick={() => setCurrentSection(prev => prev - 1)}
+                      variant="outline"
+                      className="text-[#0A2647] dark:text-white border-[#0A2647] dark:border-white"
+                    >
+                      <ChevronUp className="w-4 h-4 mr-2" />
+                      Previous
+                    </Button>
+                  )}
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                    className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+                  >
+                    {isLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : currentSection === sections.length - 1 ? (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Submit
+                      </>
+                    ) : (
+                      <>
+                        Next
+                        <ChevronDown className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
