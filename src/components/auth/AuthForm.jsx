@@ -14,38 +14,40 @@ const AuthForm = () => {
   const { user, signIn } = useAuth()
 
   // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate(user.role === 'admin' ? '/admin/dashboard' : '/dashboard')
-    }
-  }, [user, navigate])
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (isLoading) return
-
-    setError('')
-    setIsLoading(true)
-    
-    try {
-      const userData = await signIn(username, password)
-      
-      // Clear form
-      setUsername('')
-      setPassword('')
-      
-      // Redirect based on role
-      if (userData.role === 'admin') {
-        navigate('/admin/dashboard')
-      } else {
-        navigate('/dashboard')
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to sign in')
-    } finally {
-      setIsLoading(false)
-    }
+useEffect(() => {
+  if (user) {
+    navigate(user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard')
   }
+}, [user, navigate])
+
+
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  if (isLoading) return
+
+  setError('')
+  setIsLoading(true)
+  
+  try {
+    const userData = await signIn(username, password)
+    
+    // Clear form
+    setUsername('')
+    setPassword('')
+    
+    // Update these redirect paths to match our route structure
+    if (userData.role === 'admin') {
+      navigate('/admin/dashboard')
+    } else {
+      navigate('/user/dashboard')  // Change from '/dashboard' to '/user/dashboard'
+    }
+  } catch (err) {
+    setError(err.message || 'Failed to sign in')
+  } finally {
+    setIsLoading(false)
+  }
+}
+
 
   return (
     <div className="min-h-screen bg-[#0A2647] flex items-center justify-center p-4 relative overflow-hidden">
