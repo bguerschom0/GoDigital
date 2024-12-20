@@ -16,7 +16,7 @@ import NewRequest from './pages/stakeholder/NewRequest'
 import PendingRequests from './pages/stakeholder/PendingRequests'
 import UpdateRequest from './pages/stakeholder/UpdateRequest'
 import DeleteRequest from './pages/stakeholder/DeleteRequest'
-import AllRequests from './pages/stakeholder/AllRequests'
+import All Stakeholder Requests from './pages/stakeholder/AllRequests'
 
 // Background Check Pages
 import NewBackgroundCheck from './pages/background/NewBackgroundCheck'
