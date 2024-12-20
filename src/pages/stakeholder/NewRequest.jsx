@@ -1,10 +1,8 @@
-// src/pages/stakeholder/NewRequest.jsx
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { 
   Calendar,
-  FileText,
   Check,
   Save,
   ChevronDown,
@@ -19,6 +17,7 @@ import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
+import { toast } from '@/components/ui/use-toast'
 
 const formatDate = (date) => {
   if (!date) return '';
@@ -26,26 +25,30 @@ const formatDate = (date) => {
   return d.toISOString().split('T')[0];
 };
 
+const initialFormData = {
+  dateReceived: '',
+  referenceNumber: '',
+  sender: '',
+  otherSender: '',
+  subject: '',
+  otherSubject: '',
+  status: 'Pending',
+  responseDate: '',
+  answeredBy: '',
+  description: ''
+}
+
 const NewRequest = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { checkPermission } = usePageAccess()
+  
+  // State management
   const [pageLoading, setPageLoading] = useState(true)
   const [availableUsers, setAvailableUsers] = useState([])
   const [currentSection, setCurrentSection] = useState(0)
-    const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
-    dateReceived: '',
-    referenceNumber: '',
-    sender: '',
-    otherSender: '',
-    subject: '',
-    otherSubject: '',
-    status: 'Pending',
-    responseDate: '',
-    answeredBy: '',
-    description: ''
-  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formData, setFormData] = useState(initialFormData)
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -65,6 +68,7 @@ const NewRequest = () => {
     checkAccess()
   }, [])
 
+  // Fetch available users
   useEffect(() => {
     fetchAvailableUsers()
   }, [])
@@ -84,7 +88,7 @@ const NewRequest = () => {
     }
   }
 
-  
+  // Form sections definition
   const sections = [
     {
       title: 'Basic Information',
@@ -144,11 +148,11 @@ const NewRequest = () => {
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
             >
               <option value="">Select Sender</option>
-              {senderOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
+              <option value="NPPA">NPPA</option>
+              <option value="RIB">RIB</option>
+              <option value="MPG">MPG</option>
+              <option value="Private Advocate">Private Advocate</option>
+              <option value="Other">Other</option>
             </select>
             {errors.sender && (
               <p className="mt-1 text-sm text-red-500">{errors.sender}</p>
@@ -184,11 +188,15 @@ const NewRequest = () => {
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
             >
               <option value="">Select Subject</option>
-              {subjectOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
+              <option value="Account Unblock">Account Unblock</option>
+              <option value="MoMo Transaction">MoMo Transaction</option>
+              <option value="Call History">Call History</option>
+              <option value="Reversal">Reversal</option>
+              <option value="MoMo Transaction & Call History">MoMo Transaction & Call History</option>
+              <option value="Account Information">Account Information</option>
+              <option value="Account Status">Account Status</option>
+              <option value="Balance">Balance</option>
+              <option value="Other">Other</option>
             </select>
             {errors.subject && (
               <p className="mt-1 text-sm text-red-500">{errors.subject}</p>
@@ -208,7 +216,7 @@ const NewRequest = () => {
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
               />
               {errors.otherSubject && (
-              <p className="mt-1 text-sm text-red-500">{errors.otherSubject}</p>
+                <p className="mt-1 text-sm text-red-500">{errors.otherSubject}</p>
               )}
             </div>
           )}
@@ -251,11 +259,8 @@ const NewRequest = () => {
               onChange={handleInputChange}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
             >
-              {STATUS_OPTIONS.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
+              <option value="Pending">Pending</option>
+              <option value="Answered">Answered</option>
             </select>
           </div>
 
@@ -309,9 +314,22 @@ const NewRequest = () => {
     }
   ]
 
+  // Form handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value }
+      
+      // Reset dependent fields when status changes
+      if (name === 'status' && value === 'Pending') {
+        newData.responseDate = ''
+        newData.answeredBy = ''
+      }
+      
+      return newData
+    })
+    
+    // Clear error when field is changed
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -324,27 +342,50 @@ const NewRequest = () => {
     }
   }
 
-  
   const validateSection = (section) => {
-        const newErrors = {}
+    const newErrors = {}
 
-    // Add your validation logic here
-    if (!formData.subject) {
-      newErrors.subject = 'Subject is required'
-    }
-    if (formData.subject === 'Other' && !formData.otherSubject) {
-      newErrors.otherSubject = 'Please specify the subject'
-    }
-    if (!formData.description) {
-      newErrors.description = 'Description is required'
-    }
-    if (formData.status === 'Answered') {
-      if (!formData.responseDate) {
-        newErrors.responseDate = 'Response date is required'
-      }
-      if (!formData.answeredBy) {
-        newErrors.answeredBy = 'Please select who answered'
-      }
+    switch (section) {
+      case 0: // Basic Information
+        if (!formData.dateReceived) {
+          newErrors.dateReceived = 'Date received is required'
+        }
+        if (!formData.referenceNumber) {
+          newErrors.referenceNumber = 'Reference number is required'
+        }
+        break
+
+      case 1: // Request Details
+        if (!formData.sender) {
+          newErrors.sender = 'Sender is required'
+        }
+        if (formData.sender === 'Other' && !formData.otherSender) {
+          newErrors.otherSender = 'Please specify the sender'
+        }
+        if (!formData.subject) {
+          newErrors.subject = 'Subject is required'
+        }
+        if (formData.subject === 'Other' && !formData.otherSubject) {
+          newErrors.otherSubject = 'Please specify the subject'
+        }
+        break
+
+      case 2: // Description
+        if (!formData.description) {
+          newErrors.description = 'Description is required'
+        }
+        break
+
+      case 3: // Response
+        if (formData.status === 'Answered') {
+          if (!formData.responseDate) {
+            newErrors.responseDate = 'Response date is required'
+          }
+          if (!formData.answeredBy) {
+            newErrors.answeredBy = 'Please select who answered'
+          }
+        }
+        break
     }
 
     setErrors(newErrors)
@@ -352,8 +393,9 @@ const NewRequest = () => {
   }
 
   const handleSubmit = async () => {
-       if (!validateSection(currentSection)) return
+    if (!validateSection(currentSection)) return
 
+    // Continuing handleSubmit function...
     if (currentSection < sections.length - 1) {
       setCurrentSection(prev => prev + 1)
       return
@@ -365,14 +407,6 @@ const NewRequest = () => {
     try {
       if (!user) {
         throw new Error('No user found. Please login again.')
-      }
-
-      // First, save any new options if they exist
-      if (formData.sender === 'Other' && formData.otherSender) {
-        await saveNewOption('sender_options', formData.otherSender)
-      }
-      if (formData.subject === 'Other' && formData.otherSubject) {
-        await saveNewOption('subject_options', formData.otherSubject)
       }
 
       const requestData = {
@@ -424,7 +458,7 @@ const NewRequest = () => {
   }
 
   const handleReset = () => {
-        setFormData(initialFormData)
+    setFormData(initialFormData)
     setCurrentSection(0)
     setErrors({})
   }
@@ -437,12 +471,11 @@ const NewRequest = () => {
     )
   }
 
-  
   return (
     <div className="p-6">
       <div className="flex justify-center">
         <div className="w-full max-w-4xl">
-                    <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-8">
             {/* Timeline - Hide on small screens */}
             <div className="hidden lg:block relative">
               <div className="absolute top-0 bottom-0 left-4 w-0.5 bg-gray-200 dark:bg-gray-700" />
@@ -560,10 +593,10 @@ const NewRequest = () => {
         </div>
       </div>
 
-      
+      {/* Success/Error Modal */}
       <AnimatePresence>
         {message.text && (
-                    <motion.div
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
