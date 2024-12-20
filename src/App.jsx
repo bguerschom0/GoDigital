@@ -1,3 +1,4 @@
+// Import only implemented components
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -45,36 +46,42 @@ const UserRoutes = () => {
         <Route index element={<Navigate to="/user/dashboard" replace />} />
         <Route path="user/dashboard" element={<UserDashboard />} />
         
-         {/* User Stakeholder Routes */}
-      <Route path="stakeholder">
-        <Route path="new" element={<NewRequest />} />
-        <Route path="pending" element={<PendingRequests />} />
-        <Route path="update" element={<UpdateRequest />} />
-        <Route path="DeleteRequest" element={<DeleteRequest />} />
-        <Route path="AllRequests" element={<AllRequests />} />
-      </Route>
+        {/* Comment out routes that aren't implemented yet */}
+        {/* Uncomment and add imports as you implement each feature */}
+        
+        {/* Stakeholder Routes - Commented until implemented
+        <Route path="stakeholder">
+          <Route path="new" element={<NewRequest />} />
+          <Route path="pending" element={<PendingRequests />} />
+          <Route path="update" element={<UpdateRequest />} />
+          <Route path="delete" element={<DeleteRequest />} />
+          <Route path="all" element={<AllRequests />} />
+        </Route>
+        */}
 
-      {/* User Background Check Routes */}
-      <Route path="background">
-        <Route path="new" element={<NewBackgroundCheck />} />
-        <Route path="pending" element={<PendingBackgroundChecks />} />
-        <Route path="update" element={<UpdateBackgroundCheck />} />
-        <Route path="expired" element={<ExpiredDocuments />} />
-        <Route path="all" element={<AllBackgroundChecks />} />
-        <Route path="internship" element={<InternshipOverview />} />
-      </Route>
+        {/* Background Check Routes - Commented until implemented
+        <Route path="background">
+          <Route path="new" element={<NewBackgroundCheck />} />
+          <Route path="pending" element={<PendingBackgroundChecks />} />
+          <Route path="update" element={<UpdateBackgroundCheck />} />
+          <Route path="expired" element={<ExpiredDocuments />} />
+          <Route path="all" element={<AllBackgroundChecks />} />
+          <Route path="internship" element={<InternshipOverview />} />
+        </Route>
+        */}
 
-      {/* User Report Routes */}
-      <Route path="reports">
-        <Route path="stakeholder" element={<StakeholderReport />} />
-        <Route path="background" element={<BackgroundCheckReport />} />
-      </Route>
+        {/* Report Routes - Commented until implemented
+        <Route path="reports">
+          <Route path="stakeholder" element={<StakeholderReport />} />
+          <Route path="background" element={<BackgroundCheckReport />} />
+        </Route>
+        */}
       </Route>
     </Routes>
   )
 }
 
-// Protected route wrapper with debug
+// Protected route wrapper
 const DebugProtectedRoute = ({ children, requireAdmin = false }) => {
   const { user, loading } = useAuth()
   console.log('ProtectedRoute - User:', user, 'Loading:', loading, 'RequireAdmin:', requireAdmin)
