@@ -224,7 +224,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     {
       title: 'Dashboard',
       icon: <LayoutDashboard className="w-5 h-5" />,
-      href: '/dashboard'
+      href: '/UserDashboard'
     }
   ]
 
