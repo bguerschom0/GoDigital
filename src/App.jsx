@@ -49,15 +49,16 @@ const Root = () => {
     return <Navigate to="/login" replace />
   }
 
-  return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} replace />
+  return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard'} replace />
+
 }
 
 // User routes component
 const UserRoutes = () => (
   <Routes>
-    <Route path="/" element={<UserLayout />}>
-      <Route index element={<UserDashboard />} />
-      <Route path="dashboard" element={<UserDashboard />} />
+        <Route path="/" element={<UserLayout />}>
+      <Route index element={<Navigate to="/user/dashboard" replace />} />
+      <Route path="user/dashboard" element={<UserDashboard />} />
       
       {/* User Stakeholder Routes */}
       <Route path="stakeholder">
