@@ -1,4 +1,3 @@
-// src/components/layout/UserLayout.jsx
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Header from './Header'
@@ -11,19 +10,17 @@ const UserLayout = ({ children }) => {
   const [isHovered, setIsHovered] = useState(false)
   const { user } = useAuth()
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <Header 
-        onMenuClick={() => setIsSidebarOpen(true)}
-        showMenuButton={!isSidebarOpen}
-        user={user}
-      />
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
 
+  return (
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* Sidebar */}
       <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        className="relative"
       >
         <Sidebar 
           isOpen={isSidebarOpen}
@@ -33,26 +30,27 @@ const UserLayout = ({ children }) => {
         />
       </div>
 
-      {/* Main Content */}
-      <main 
-        className={`
-          pt-16 
-          min-h-[calc(100vh-4rem)] 
-          transition-all 
-          duration-300 
-          ease-in-out
-          ${isSidebarOpen ? (isHovered ? 'lg:ml-64' : 'lg:ml-16') : ''}
-        `}
-      >
-        <div className="p-4 h-full">
-          <div className="mx-auto max-w-7xl h-full">
-            {children || <Outlet />}
-          </div>
-        </div>
-      </main>
+      {/* Main Content Wrapper */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <Header 
+          onMenuClick={toggleSidebar}
+          showMenuButton={!isSidebarOpen}
+          user={user}
+        />
 
-      {/* Footer */}
-      <Footer />
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+          <div className="container mx-auto px-4 py-6">
+            <div className="max-w-7xl mx-auto">
+              {children || <Outlet />}
+            </div>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <Footer />
+      </div>
     </div>
   )
 }
