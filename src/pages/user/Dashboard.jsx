@@ -32,7 +32,7 @@ const UserDashboard = () => {
   // Check basic dashboard access
   useEffect(() => {
     const checkAccess = async () => {
-      const { canAccess } = checkPermission('/dashboard')
+      const { canAccess } = checkPermission('/user/dashboard')
       if (!canAccess) {
         navigate('/login')
         return
