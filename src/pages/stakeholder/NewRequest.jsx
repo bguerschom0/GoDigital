@@ -55,17 +55,21 @@ const NewRequest = () => {
 
   useEffect(() => {
     const checkAccess = async () => {
+      console.log('Checking access for NewRequest')
       const { canAccess } = checkPermission('/stakeholder/new')
+      console.log('Access check result:', { canAccess })
       
       if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        console.log('Access denied, redirecting...')
+        navigate('/')
         return
       }
+      
       setPageLoading(false)
     }
     
     checkAccess()
-  }, [])
+  }, [checkPermission, navigate, user])
 
   useEffect(() => {
     fetchAvailableUsers()
