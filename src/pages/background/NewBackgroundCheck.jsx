@@ -71,6 +71,7 @@ const NewBackgroundCheck = () => {
   const [roles, setRoles] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [validationErrors, setValidationErrors] = useState([]);
   const [errors, setErrors] = useState({})
   
   const [formData, setFormData] = useState({
