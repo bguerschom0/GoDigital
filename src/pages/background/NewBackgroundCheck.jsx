@@ -1,57 +1,78 @@
-import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+// src/pages/background/NewBackgroundCheck.jsx
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Calendar, 
-  Check, 
-  ChevronRight, 
-  ChevronLeft, 
-  User, 
-  Building, 
-  Clock, 
-  Loader2,
-  RefreshCw,
+  Calendar,
+  Check,
   Save,
-  AlertCircle
-} from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { supabase } from '@/config/supabase';
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  User,
+  Building,
+  Clock,
+  FileText,
+  Loader2
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { supabase } from '@/config/supabase'
+import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 
 const steps = [
-  { 
-    id: 1, 
-    title: 'Basic Information', 
-    description: 'Personal and identification details',
-    requiredFields: ['full_names', 'citizenship', 'id_passport_number']
-  },
-  { 
-    id: 2, 
-    title: 'Department & Role', 
-    description: 'Work placement information',
-    requiredFields: ['department_id', 'role_type', 'role_id']
-  },
-  { 
-    id: 3, 
-    title: 'Additional Details', 
-    description: 'Role specific information',
-    requiredFields: [] // This will be dynamic based on role_type
-  },
-  { 
-    id: 4, 
-    title: 'Review', 
-    description: 'Verify information',
-    requiredFields: []
-  }
-];
+  { id: 1, title: 'Basic Information', description: 'Personal and identification details' },
+  { id: 2, title: 'Department & Role', description: 'Work placement information' },
+  { id: 3, title: 'Additional Details', description: 'Role specific information' },
+  { id: 4, title: 'Review', description: 'Verify information' }
+]
+
+const SuccessPopup = ({ message, onClose }) => (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4 relative"
+    >
+      <div className="flex items-center space-x-4">
+        <div className="bg-[#0A2647]/10 dark:bg-[#0A2647]/30 p-2 rounded-full">
+          <Check className="h-6 w-6 text-[#0A2647] dark:text-[#0A2647]" />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-lg font-medium text-[#0A2647] dark:text-[#0A2647]">Success</h3>
+          <p className="text-[#0A2647]/70 dark:text-[#0A2647]/90">{message}</p>
+        </div>
+      </div>
+      <div className="mt-6 flex justify-end">
+        <Button
+          onClick={() => {
+            onClose();
+            window.location.reload();
+          }}
+          className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+        >
+          Close
+        </Button>
+      </div>
+    </motion.div>
+  </div>
+)
 
 const NewBackgroundCheck = () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [departments, setDepartments] = useState([]);
-  const [roles, setRoles] = useState([]);
-  const [filteredRoles, setFilteredRoles] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [validationErrors, setValidationErrors] = useState([]);
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
+  
+  const [currentStep, setCurrentStep] = useState(1)
+  const [departments, setDepartments] = useState([])
+  const [roles, setRoles] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState({ type: '', text: '' })
+  const [errors, setErrors] = useState({})
+  
   const [formData, setFormData] = useState({
     full_names: '',
     citizenship: '',
@@ -61,15 +82,30 @@ const NewBackgroundCheck = () => {
     role_id: '',
     role_type: '',
     submitted_date: '',
+    status: 'Pending',
     requested_by: '',
     from_company: '',
     duration: '',
     operating_country: '',
     date_start: '',
     date_end: '',
-    work_with: '',
-    status: 'pending'
-  });
+    work_with: ''
+  })
+
+  // Check permissions
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = checkPermission('/background/new')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
 
   useEffect(() => {
     fetchDepartmentsAndRoles()
@@ -123,38 +159,81 @@ const NewBackgroundCheck = () => {
   }
 
   const validateStep = (step) => {
-    const currentStepData = steps[step - 1];
-    const errors = [];
-    
-    // Add dynamic required fields for step 3 based on role_type
-    if (step === 3) {
-      if (['Staff', 'Apprentice', 'Expert'].includes(formData.role_type)) {
-        currentStepData.requiredFields = ['submitted_date', 'requested_by'];
-      } else if (['Contractor', 'Consultant'].includes(formData.role_type)) {
-        currentStepData.requiredFields = ['duration', 'operating_country', 'from_company', 'submitted_date', 'requested_by'];
-      } else if (formData.role_type === 'Internship') {
-        currentStepData.requiredFields = ['date_start', 'date_end', 'work_with'];
-      }
+    const newErrors = {}
+
+    switch (step) {
+      case 1:
+        if (!formData.full_names) newErrors.full_names = 'Full names are required'
+        if (!formData.citizenship) newErrors.citizenship = 'Citizenship is required'
+        if (!formData.id_passport_number) newErrors.id_passport_number = 'ID/Passport number is required'
+        if (formData.citizenship !== 'Rwandan' && !formData.passport_expiry_date) {
+          newErrors.passport_expiry_date = 'Passport expiry date is required'
+        }
+        break
+
+      case 2:
+        if (!formData.department_id) newErrors.department_id = 'Department is required'
+        if (!formData.role_type) newErrors.role_type = 'Role type is required'
+        break
+
+      case 3:
+        if (['Staff', 'Apprentice'].includes(formData.role_type)) {
+          if (!formData.submitted_date) newErrors.submitted_date = 'Submitted date is required'
+          if (!formData.requested_by) newErrors.requested_by = 'Requested by is required'
+        }
+        else if (formData.role_type === 'Expert') {
+          if (!formData.from_company) newErrors.from_company = 'Company is required'
+          if (!formData.submitted_date) newErrors.submitted_date = 'Submitted date is required'
+          if (!formData.requested_by) newErrors.requested_by = 'Requested by is required'
+        }
+        else if (['Contractor', 'Consultant'].includes(formData.role_type)) {
+          if (!formData.duration) newErrors.duration = 'Duration is required'
+          if (!formData.operating_country) newErrors.operating_country = 'Operating country is required'
+          if (!formData.from_company) newErrors.from_company = 'Company is required'
+          if (!formData.submitted_date) newErrors.submitted_date = 'Submitted date is required'
+          if (!formData.requested_by) newErrors.requested_by = 'Requested by is required'
+        }
+        else if (formData.role_type === 'Internship') {
+          if (!formData.date_start) newErrors.date_start = 'Start date is required'
+          if (!formData.date_end) newErrors.date_end = 'End date is required'
+          if (!formData.work_with) newErrors.work_with = 'Work with is required'
+        }
+        break
     }
 
-    currentStepData.requiredFields.forEach(field => {
-      if (!formData[field]) {
-        errors.push(`${field.replace(/_/g, ' ').toUpperCase()} is required`);
-      }
-    });
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
-    // Special validation for passport expiry date
-    if (step === 1 && 
-        formData.citizenship && 
-        formData.citizenship.toLowerCase() !== 'rwanda' && 
-        formData.citizenship.toLowerCase() !== 'rwandan' && 
-        !formData.passport_expiry_date) {
-      errors.push('Passport expiry date is required for non-Rwandan citizens');
+  const handleSubmit = async () => {
+    if (!validateStep(currentStep)) return
+
+    if (currentStep < steps.length) {
+      setCurrentStep(prev => prev + 1)
+      return
     }
 
-    setValidationErrors(errors);
-    return errors.length === 0;
-  };
+    setIsLoading(true)
+    try {
+      const { error } = await supabase
+        .from('background_checks')
+        .insert([{
+          ...formData,
+          created_by: user.id,
+          updated_by: user.id
+        }])
+
+      if (error) throw error
+
+      setMessage({ type: 'success', text: 'Background check saved successfully!' })
+      handleReset()
+    } catch (error) {
+      console.error('Error:', error)
+      setMessage({ type: 'error', text: 'Error saving background check. Please try again.' })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleReset = () => {
     setFormData({
@@ -163,66 +242,21 @@ const NewBackgroundCheck = () => {
       id_passport_number: '',
       passport_expiry_date: '',
       department_id: '',
-      role_type: '',
       role_id: '',
+      role_type: '',
       submitted_date: '',
+      status: 'Pending',
       requested_by: '',
       from_company: '',
       duration: '',
       operating_country: '',
       date_start: '',
       date_end: '',
-      work_with: '',
-      status: 'pending'
-    });
-    setCurrentStep(1);
-    setValidationErrors([]);
-  };
-
-  const handleSubmit = async () => {
-    if (currentStep < steps.length) {
-      if (validateStep(currentStep)) {
-        setCurrentStep(prev => prev + 1);
-        setValidationErrors([]);
-      }
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from('background_checks')
-        .insert([formData]);
-
-      if (error) throw error;
-      
-      // Handle successful submission
-      handleReset();
-      // Add success notification here
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setValidationErrors(['Failed to submit form. Please try again.']);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const renderValidationErrors = () => {
-    if (validationErrors.length === 0) return null;
-
-    return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          <ul className="list-disc list-inside">
-            {validationErrors.map((error, index) => (
-              <li key={index}>{error}</li>
-            ))}
-          </ul>
-        </AlertDescription>
-      </Alert>
-    );
-  };
+      work_with: ''
+    })
+    setCurrentStep(1)
+    setErrors({})
+  }
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -231,64 +265,78 @@ const NewBackgroundCheck = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Full Names *
+                Full Names
               </label>
               <input
                 type="text"
                 name="full_names"
                 value={formData.full_names}
                 onChange={handleInputChange}
-                className="mt-1 w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
               />
+              {errors.full_names && (
+                <p className="mt-1 text-sm text-red-500">{errors.full_names}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Citizenship *
+                Citizenship
               </label>
-              <input
-                type="text"
+              <select
                 name="citizenship"
                 value={formData.citizenship}
                 onChange={handleInputChange}
-                className="mt-1 w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-              />
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              >
+                <option value="">Select Citizenship</option>
+                <option value="Rwandan">Rwandan</option>
+                <option value="Other">Other</option>
+              </select>
+              {errors.citizenship && (
+                <p className="mt-1 text-sm text-red-500">{errors.citizenship}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                ID/Passport Number *
+                ID/Passport Number
               </label>
               <input
                 type="text"
                 name="id_passport_number"
                 value={formData.id_passport_number}
                 onChange={handleInputChange}
-                className="mt-1 w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
               />
+              {errors.id_passport_number && (
+                <p className="mt-1 text-sm text-red-500">{errors.id_passport_number}</p>
+              )}
             </div>
 
-            {(formData.citizenship.toLowerCase() !== 'rwanda' && 
-              formData.citizenship.toLowerCase() !== 'rwandan') && formData.citizenship && (
+            {formData.citizenship !== 'Rwandan' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Passport Expiry Date *
+                  Passport Expiry Date
                 </label>
                 <input
                   type="date"
                   name="passport_expiry_date"
                   value={formData.passport_expiry_date}
                   onChange={handleInputChange}
-                  className="mt-1 w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
                 />
+                {errors.passport_expiry_date && (
+                  <p className="mt-1 text-sm text-red-500">{errors.passport_expiry_date}</p>
+                )}
               </div>
             )}
           </div>
-        );
+        )
 
       case 2:
         return (
-         <div className="space-y-4">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Department
@@ -621,20 +669,20 @@ const NewBackgroundCheck = () => {
         )
 
       default:
-        return null;
+        return null
     }
-  };
+  }
 
-  if (isLoading) {
+  if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
       </div>
-    );
+    )
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+<div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-12">
         {/* Timeline - Desktop */}
         <div className="hidden lg:block w-64 flex-shrink-0">
@@ -759,7 +807,7 @@ const NewBackgroundCheck = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default NewBackgroundCheck;
+export default NewBackgroundCheck
