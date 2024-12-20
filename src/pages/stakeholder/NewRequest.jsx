@@ -404,6 +404,7 @@ const NewRequest = () => {
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
               />
+              },
               {
       title: 'Description',
       description: 'Detailed request information',
