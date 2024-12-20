@@ -1,14 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Check, ChevronRight, ChevronLeft, User, Building, Clock, Loader2 } from 'lucide-react';
+import { 
+  Calendar, 
+  Check, 
+  ChevronRight, 
+  ChevronLeft, 
+  User, 
+  Building, 
+  Clock, 
+  Loader2,
+  RefreshCw,
+  Save,
+  ChevronUp,
+  ChevronDown
+} from 'lucide-react';
 import { supabase } from '@/config/supabase';
 
 const steps = [
-  { id: 1, title: 'Basic Information', description: 'Personal and identification details' },
-  { id: 2, title: 'Department & Role', description: 'Work placement information' },
-  { id: 3, title: 'Additional Details', description: 'Role specific information' },
-  { id: 4, title: 'Review', description: 'Verify information' }
+  { 
+    id: 1, 
+    title: 'Basic Information', 
+    description: 'Personal and identification details',
+  },
+  { 
+    id: 2, 
+    title: 'Department & Role', 
+    description: 'Work placement information',
+  },
+  { 
+    id: 3, 
+    title: 'Additional Details', 
+    description: 'Role specific information',
+  },
+  { 
+    id: 4, 
+    title: 'Review', 
+    description: 'Verify information',
+  }
 ];
 
 const NewBackgroundCheck = () => {
@@ -16,6 +45,7 @@ const NewBackgroundCheck = () => {
   const [departments, setDepartments] = useState([]);
   const [roles, setRoles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     full_names: '',
     citizenship: '',
@@ -70,8 +100,53 @@ const NewBackgroundCheck = () => {
     }));
   };
 
+  const handleReset = () => {
+    setFormData({
+      full_names: '',
+      citizenship: '',
+      id_passport_number: '',
+      passport_expiry_date: '',
+      department_id: '',
+      role_type: '',
+      submitted_date: '',
+      requested_by: '',
+      from_company: '',
+      duration: '',
+      operating_country: '',
+      date_start: '',
+      date_end: '',
+      work_with: ''
+    });
+    setCurrentStep(1);
+  };
+
+  const handleSubmit = async () => {
+    if (currentStep < steps.length) {
+      setCurrentStep(prev => prev + 1);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('background_checks')
+        .insert([formData]);
+
+      if (error) throw error;
+      
+      // Handle successful submission
+      handleReset();
+      // You might want to add some success notification here
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      // You might want to add some error notification here
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const renderStepContent = () => {
-    switch (currentStep) {
+        switch (currentStep) {
       case 1:
         return (
           <div className="space-y-4">
@@ -414,20 +489,19 @@ const NewBackgroundCheck = () => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex gap-8">
-              {/* Mobile view: Stack timeline and form */}
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Timeline - Hide on small screens */}
           <div className="hidden lg:block relative">
             <div className="absolute top-0 bottom-0 left-4 w-0.5 bg-gray-200 dark:bg-gray-700" />
-            {sections.map((section, index) => (
+            {steps.map((step, index) => (
               <div key={index} className="relative mb-8">
                 <div className={`
                   absolute left-0 w-8 h-8 rounded-full flex items-center justify-center
-                  ${index <= currentSection 
+                  ${index + 1 <= currentStep 
                     ? 'bg-[#0A2647] text-white' 
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}
                 `}>
-                  {index < currentSection ? (
+                  {index + 1 < currentStep ? (
                     <Check className="w-5 h-5" />
                   ) : (
                     <span>{index + 1}</span>
@@ -435,10 +509,10 @@ const NewBackgroundCheck = () => {
                 </div>
                 <div className="ml-12 pt-1">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                    {section.title}
+                    {step.title}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {section.description}
+                    {step.description}
                   </p>
                 </div>
               </div>
@@ -448,28 +522,28 @@ const NewBackgroundCheck = () => {
           {/* Mobile Progress Indicator */}
           <div className="lg:hidden mb-6">
             <div className="flex items-center justify-between px-2">
-              {sections.map((section, index) => (
+              {steps.map((step, index) => (
                 <div 
                   key={index} 
                   className={`flex flex-col items-center ${
-                    index === currentSection 
+                    index + 1 === currentStep 
                       ? 'text-[#0A2647] dark:text-white' 
                       : 'text-gray-400 dark:text-gray-500'
                   }`}
                 >
                   <div className={`
                     w-8 h-8 rounded-full flex items-center justify-center mb-2
-                    ${index <= currentSection 
+                    ${index + 1 <= currentStep 
                       ? 'bg-[#0A2647] text-white' 
                       : 'bg-gray-200 dark:bg-gray-700'}
                   `}>
-                    {index < currentSection ? (
+                    {index + 1 < currentStep ? (
                       <Check className="w-5 h-5" />
                     ) : (
                       <span>{index + 1}</span>
                     )}
                   </div>
-                  <span className="text-xs text-center">{section.title}</span>
+                  <span className="text-xs text-center">{step.title}</span>
                 </div>
               ))}
             </div>
@@ -477,43 +551,43 @@ const NewBackgroundCheck = () => {
 
           {/* Form Content */}
           <div className="flex-1">
-            <Card className="p-4 lg:p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              {sections[currentSection].fields()}
+            <Card className="p-4 lg:p-6">
+              {renderStepContent()}
 
               <div className="mt-6 flex flex-col sm:flex-row justify-between gap-4">
                 <Button
                   type="button"
                   onClick={handleReset}
                   variant="outline"
-                  className="text-[#0A2647] dark:text-white border-[#0A2647] dark:border-white"
+                  className="border-[#0A2647] hover:bg-[#0A2647]/10"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Reset
                 </Button>
 
                 <div className="flex flex-col sm:flex-row gap-2">
-                  {currentSection > 0 && (
+                  {currentStep > 1 && (
                     <Button
                       type="button"
-                      onClick={() => setCurrentSection(prev => prev - 1)}
+                      onClick={() => setCurrentStep(prev => prev - 1)}
                       variant="outline"
-                      className="text-[#0A2647] dark:text-white border-[#0A2647] dark:border-white"
+                      className="border-[#0A2647] hover:bg-[#0A2647]/10"
                     >
-                      <ChevronUp className="w-4 h-4 mr-2" />
+                      <ChevronLeft className="w-4 h-4 mr-2" />
                       Previous
                     </Button>
                   )}
                   <Button
                     onClick={handleSubmit}
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                     className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
                   >
-                    {isLoading ? (
+                    {isSubmitting ? (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                         Saving...
                       </>
-                    ) : currentSection === sections.length - 1 ? (
+                    ) : currentStep === steps.length ? (
                       <>
                         <Save className="w-4 h-4 mr-2" />
                         Submit
@@ -521,7 +595,7 @@ const NewBackgroundCheck = () => {
                     ) : (
                       <>
                         Next
-                        <ChevronDown className="w-4 h-4 ml-2" />
+                        <ChevronRight className="w-4 h-4 ml-2" />
                       </>
                     )}
                   </Button>
@@ -535,4 +609,4 @@ const NewBackgroundCheck = () => {
   );
 };
 
-export default NewBackgroundCheck
+export default NewBackgroundCheck;
