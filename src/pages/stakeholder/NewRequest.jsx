@@ -404,9 +404,14 @@ const NewRequest = () => {
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
               />
-              </div>
+              {errors.otherSubject && (
+                <p className="mt-1 text-sm text-red-500">{errors.otherSubject}</p>
+              )}
+            </div>
           )}
-              },
+        </div>
+      )
+    },
               {
       title: 'Description',
       description: 'Detailed request information',
