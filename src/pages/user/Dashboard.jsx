@@ -75,9 +75,9 @@ const UserDashboard = () => {
     initializeDashboard()
   }, [user, navigate])
 
-  if (pageLoading) {
+if (pageLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="h-[calc(100vh-theme(spacing.16))] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     )
@@ -86,24 +86,26 @@ const UserDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back, {user?.fullname}
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Here's what's happening with your account today
-        </p>
-        
-        {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
-          </div>
-        )}
-      </div>
+      <Card className="border-none shadow-sm">
+        <CardContent className="pt-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Welcome back, {user?.fullname}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Here's what's happening with your account today
+          </p>
+          
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-200">
+              {error}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -114,7 +116,7 @@ const UserDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Requests</CardTitle>
             <Bell className="h-4 w-4 text-muted-foreground" />
@@ -125,7 +127,7 @@ const UserDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Recent Activities</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -138,25 +140,31 @@ const UserDashboard = () => {
       </div>
 
       {/* Recent Activity */}
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {activities.length === 0 ? (
-              <div className="flex items-center justify-center p-6 text-gray-500">
-                <p>No recent activities to display</p>
+              <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400">
+                <Calendar className="w-12 h-12 mb-4 opacity-50" />
+                <p className="text-sm font-medium">No recent activities</p>
+                <p className="text-xs text-center mt-1">
+                  Your recent activities will appear here once you start using the system
+                </p>
               </div>
             ) : (
               activities.map((activity) => (
-                <div key={activity.id} className="flex items-center space-x-4">
-                  <div className="p-2 rounded-full bg-blue-100">
-                    <FileText className="w-4 h-4 text-blue-600" />
+                <div key={activity.id} className="flex items-center space-x-4 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/50">
+                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{activity.description}</p>
-                    <p className="text-xs text-gray-500">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {activity.description}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {format(new Date(activity.created_at), 'MMM d, yyyy - h:mm a')}
                     </p>
                   </div>
