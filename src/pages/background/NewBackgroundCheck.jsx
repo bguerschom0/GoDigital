@@ -222,6 +222,31 @@ const NewBackgroundCheck = () => {
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
                   />
                 </div>
+                                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Submitted Date *
+                  </label>
+                  <input
+                    type="date"
+                    name="submitted_date"
+                    value={formData.submitted_date}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Requested By *
+                  </label>
+                  <input
+                    type="text"
+                    name="requested_by"
+                    value={formData.requested_by}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
               </>
             )}
 
@@ -261,6 +286,31 @@ const NewBackgroundCheck = () => {
                     type="text"
                     name="from_company"
                     value={formData.from_company}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+                                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Submitted Date *
+                  </label>
+                  <input
+                    type="date"
+                    name="submitted_date"
+                    value={formData.submitted_date}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Requested By *
+                  </label>
+                  <input
+                    type="text"
+                    name="requested_by"
+                    value={formData.requested_by}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
                   />
