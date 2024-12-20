@@ -257,6 +257,22 @@ const NewBackgroundCheck = () => {
     setCurrentStep(1)
     setErrors({})
   }
+    const renderValidationErrors = () => {
+    if (validationErrors.length === 0) return null;
+
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          <ul className="list-disc list-inside">
+            {validationErrors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        </AlertDescription>
+      </Alert>
+    );
+  };
 
   const renderStepContent = () => {
     switch (currentStep) {
