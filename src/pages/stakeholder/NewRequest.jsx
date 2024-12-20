@@ -17,6 +17,7 @@ import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
+import DebugWrapper from '@/components/debug/DebugWrapper'
 
 const formatDate = (date) => {
   if (!date) return '';
@@ -55,21 +56,24 @@ const NewRequest = () => {
 
   useEffect(() => {
     const checkAccess = async () => {
-      console.log('Checking access for NewRequest')
+      console.log('NewRequest: Checking access')
       const { canAccess } = checkPermission('/stakeholder/new')
-      console.log('Access check result:', { canAccess })
+      console.log('NewRequest: Access check result:', canAccess)
       
       if (!canAccess) {
-        console.log('Access denied, redirecting...')
         navigate('/')
         return
       }
-      
       setPageLoading(false)
     }
     
     checkAccess()
-  }, [checkPermission, navigate, user])
+  }, [])
+
+  // Add loading state debug
+  useEffect(() => {
+    console.log('NewRequest: Page loading state:', pageLoading)
+  }, [pageLoading])
 
   useEffect(() => {
     fetchAvailableUsers()
@@ -508,6 +512,7 @@ const NewRequest = () => {
   ]
 
   return (
+    <DebugWrapper>
     <div className="p-6">
       <div className="flex justify-center">
         <div className="w-full max-w-4xl">
@@ -680,6 +685,7 @@ const NewRequest = () => {
         )}
       </AnimatePresence>
     </div>
+      </DebugWrapper>
   )
 }
 
