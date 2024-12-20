@@ -28,7 +28,7 @@ const SuccessPopup = ({ message }) => (
   </motion.div>
 )
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 6;
 
 const PendingRequests = () => {
   const navigate = useNavigate()
