@@ -15,6 +15,8 @@ import PagePermissions from './pages/admin/PagePermissions'
 import NewRequest from './pages/stakeholder/NewRequest'
 import PendingRequests from './pages/stakeholder/PendingRequests'
 import UpdateRequest from './pages/stakeholder/UpdateRequest'
+import DeleteRequest from './pages/stakeholder/DeleteRequest'
+import AllRequests from './pages/stakeholder/AllRequests'
 
 // Background Check Pages
 import NewBackgroundCheck from './pages/background/NewBackgroundCheck'
@@ -62,6 +64,8 @@ const UserRoutes = () => (
         <Route path="new" element={<NewRequest />} />
         <Route path="pending" element={<PendingRequests />} />
         <Route path="update" element={<UpdateRequest />} />
+        <Route path="DeleteRequest" element={<DeleteRequest />} />
+        <Route path="AllRequests" element={<AllRequests />} />
       </Route>
 
       {/* User Background Check Routes */}
@@ -97,6 +101,8 @@ const AdminRoutes = () => (
         <Route path="new" element={<NewRequest />} />
         <Route path="pending" element={<PendingRequests />} />
         <Route path="update" element={<UpdateRequest />} />
+        <Route path="DeleteRequest" element={<DeleteRequest />} />
+        <Route path="AllRequests" element={<AllRequests />} />
       </Route>
 
       {/* Admin Background Check Routes */}
