@@ -36,10 +36,7 @@ const SuccessPopup = ({ message, onClose }) => (
       </div>
       <div className="mt-6 flex justify-end">
         <Button
-          onClick={() => {
-            onClose();
-            window.location.reload();
-          }}
+          onClick={onClose}
           className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
         >
           Close
@@ -48,6 +45,7 @@ const SuccessPopup = ({ message, onClose }) => (
     </motion.div>
   </div>
 )
+
 
 const UpdateRequest = () => {
   const navigate = useNavigate()
@@ -156,6 +154,26 @@ const UpdateRequest = () => {
     }
   }
 
+  const resetStates = () => {
+  setSearchTerm('')
+  setSearchResults([])
+  setSelectedRequest(null)
+  setFormData({
+    date_received: '',
+    reference_number: '',
+    sender: '',
+    otherSender: '',
+    subject: '',
+    otherSubject: '',
+    status: 'Pending',
+    response_date: '',
+    answered_by: '',
+    description: ''
+  })
+  setErrors({})
+}
+
+
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
       setMessage({ type: 'error', text: 'Please enter a reference number' })
@@ -256,20 +274,32 @@ const UpdateRequest = () => {
 
       if (error) throw error
 
-      // After successful update, refresh the dropdown options
+      
       await fetchDropdownOptions()
 
-      setMessage({ type: 'success', text: 'Request updated successfully!' })
-      handleSearch() // Refresh the search results
-    } catch (error) {
-      console.error('Error:', error)
-      setMessage({ type: 'error', text: 'Error updating request. Please try again.' })
-    } finally {
-      setIsUpdating(false)
-    }
-  }
+    setMessage({ 
+      type: 'success', 
+      text: 'Request updated successfully!' 
+    })
 
-  const clearMessage = () => setMessage({ type: '', text: '' })
+    
+  } catch (error) {
+    console.error('Error:', error)
+    setMessage({ 
+      type: 'error', 
+      text: 'Error updating request. Please try again.' 
+    })
+  } finally {
+    setIsUpdating(false)
+  }
+}
+
+  const clearMessage = () => {
+  if (message.type === 'success') {
+    resetStates()
+  }
+  setMessage({ type: '', text: '' })
+}
 
   if (pageLoading) {
     return (
