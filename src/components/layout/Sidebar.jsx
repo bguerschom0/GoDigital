@@ -192,7 +192,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {
           title: 'Internship Overview',
           icon: <GraduationCap className="w-5 h-5" />,
-          href: '/admin/background/InternshipOverview'
+          href: '/admin/background/internship'
         },
         {
           title: 'All Requests',
@@ -214,7 +214,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {
           title: 'Background Check Analytics',
           icon: <BarChart2 className="w-5 h-5" />,
-          href: '/admin/reports/BackgroundCheckReport'
+          href: '/admin/reports/background'
         }
       ]
     }
