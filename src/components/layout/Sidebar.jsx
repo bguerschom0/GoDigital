@@ -155,7 +155,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {
           title: 'Delete Request',
           icon: <Clock className="w-5 h-5" />,
-          href: '/admin/stakeholder/DeleteReques'
+          href: '/admin/stakeholder/DeleteRequest'
         },
                 {
           title: 'All Requests',
