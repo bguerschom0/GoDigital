@@ -1,29 +1,61 @@
 // src/components/auth/ProtectedRoute.jsx
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { Loader2 } from 'lucide-react'
 
-const ProtectedRoute = ({ children, requireAdmin }) => {
+const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { user, loading } = useAuth()
-  console.log('ProtectedRoute - User:', user, 'Loading:', loading, 'RequireAdmin:', requireAdmin)
+  const location = useLocation()
 
+  // Show loading state while checking authentication
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-b-2 border-blue-600"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     )
   }
 
+  // Redirect to login if not authenticated
   if (!user) {
-    console.log('ProtectedRoute - No user, redirecting to login')
-    return <Navigate to="/login" replace />
+    console.log('No authenticated user, redirecting to login')
+    return <Navigate to="/login" state={{ from: location }} replace />
   }
 
+  // Check for admin requirement
   if (requireAdmin && user.role !== 'admin') {
-    console.log('ProtectedRoute - User is not admin, redirecting to user dashboard')
+    console.log('Admin access required, redirecting to user dashboard')
     return <Navigate to="/user/dashboard" replace />
   }
 
-  console.log('ProtectedRoute - Rendering protected content')
+  // Check if user is inactive
+  if (user.status !== 'active') {
+    console.log('User account is inactive')
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-lg">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Account Inactive</h2>
+            <p className="text-gray-600 mb-4">
+              Your account is currently inactive. Please contact your administrator for assistance.
+            </p>
+            <button
+              onClick={() => {
+                // You can add a signOut function here if needed
+                window.location.href = '/login'
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Return to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // All checks passed, render the protected content
   return children
 }
+
+export default ProtectedRoute
