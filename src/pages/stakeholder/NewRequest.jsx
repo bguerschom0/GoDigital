@@ -54,20 +54,22 @@ const NewRequest = () => {
   const [senderOptions, setSenderOptions] = useState([])
   const [subjectOptions, setSubjectOptions] = useState([])
 
+  // Initialize data
   useEffect(() => {
-    const checkAccess = async () => {
-      console.log('NewRequest: Checking access')
-      const { canAccess } = checkPermission('/stakeholder/new')
-      console.log('NewRequest: Access check result:', canAccess)
-      
-      if (!canAccess) {
-        navigate('/')
-        return
+    const initializePage = async () => {
+      try {
+        await Promise.all([
+          fetchAvailableUsers(),
+          fetchDropdownOptions()
+        ])
+      } catch (error) {
+        console.error('Error initializing page:', error)
+      } finally {
+        setPageLoading(false)
       }
-      setPageLoading(false)
     }
-    
-    checkAccess()
+
+    initializePage()
   }, [])
 
   // Add loading state debug
@@ -75,10 +77,7 @@ const NewRequest = () => {
     console.log('NewRequest: Page loading state:', pageLoading)
   }, [pageLoading])
 
-  useEffect(() => {
-    fetchAvailableUsers()
-    fetchDropdownOptions()
-  }, [])
+
 
   const fetchAvailableUsers = async () => {
     try {
