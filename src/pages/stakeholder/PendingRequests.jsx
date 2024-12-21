@@ -14,7 +14,7 @@ import { supabase } from '@/config/supabase'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
-import { usePageAccess } from '@/hooks/usePageAccess'
+
 
 const SuccessPopup = ({ message }) => (
   <motion.div
@@ -44,18 +44,20 @@ const PendingRequests = () => {
   const [totalCount, setTotalCount] = useState(0)
 
  
+  // Initialize data
   useEffect(() => {
-    const checkAccess = async () => {
-      const { canAccess, canExport } = checkPermission('/stakeholder/pending')
-      
-      if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
-        return
+    const initializePage = async () => {
+      try {
+        console.log('Initializing NewRequest page')
+        await Promise.all([ ])
+      } catch (error) {
+        console.error('Error initializing page:', error)
+      } finally {
+        setPageLoading(false)
       }
-      setPageLoading(false)
     }
-    
-    checkAccess()
+
+    initializePage()
   }, [])
 
   useEffect(() => {
