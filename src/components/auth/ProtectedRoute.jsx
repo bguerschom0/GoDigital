@@ -1,12 +1,10 @@
 // src/components/auth/ProtectedRoute.jsx
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { usePageAccess } from '@/hooks/usePageAccess'
 
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
+const ProtectedRoute = ({ children, requireAdmin }) => {
   const { user, loading } = useAuth()
-  const { checkPermission } = usePageAccess()
-  const location = useLocation()
+  console.log('ProtectedRoute - User:', user, 'Loading:', loading, 'RequireAdmin:', requireAdmin)
 
   if (loading) {
     return (
@@ -17,28 +15,15 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />
+    console.log('ProtectedRoute - No user, redirecting to login')
+    return <Navigate to="/login" replace />
   }
 
   if (requireAdmin && user.role !== 'admin') {
+    console.log('ProtectedRoute - User is not admin, redirecting to user dashboard')
     return <Navigate to="/user/dashboard" replace />
   }
 
-  if (!requireAdmin && user.role === 'admin') {
-    return <Navigate to="/admin/dashboard" replace />
-  }
-
-  // Check page permission if not admin
-  if (!requireAdmin && user.role !== 'admin') {
-    const path = location.pathname
-    const { canAccess } = checkPermission(path)
-    
-    if (!canAccess) {
-      return <Navigate to="/user/dashboard" replace />
-    }
-  }
-
+  console.log('ProtectedRoute - Rendering protected content')
   return children
 }
-
-export default ProtectedRoute
