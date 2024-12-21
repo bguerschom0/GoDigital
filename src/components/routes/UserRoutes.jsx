@@ -1,12 +1,11 @@
-//src/components/routes/UserRoutes.jsx
+// src/components/routes/UserRoutes.jsx
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { UserLayout } from '@/components/layout'
-import { useAuth } from '@/context/AuthContext'
-import { usePageAccess } from '@/hooks/usePageAccess'
 import { Suspense, lazy } from 'react'
 import { Loader2 } from 'lucide-react'
+import PermissionRoute from './PermissionRoute'
 
-// Lazy load all components
+// Lazy load components
 const UserDashboard = lazy(() => import('@/pages/user/Dashboard'))
 
 // Stakeholder Pages
@@ -35,53 +34,25 @@ const PageLoader = () => (
   </div>
 )
 
-// Protected Route with Permission Check
-const PermissionRoute = ({ element: Component, path }) => {
-  const { checkPermission } = usePageAccess()
-  const { canAccess } = checkPermission(path)
-  
-  console.log(`Checking permission for path: ${path}, access:`, canAccess)
-
-  if (!canAccess) {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <div className="text-red-500 text-xl mb-2">Access Denied</div>
-          <p className="text-gray-600">You don't have permission to access this page.</p>
-          <button 
-            onClick={() => window.history.back()}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  return <Component />
-}
-
-
 const UserRoutes = () => {
-  console.log('UserRoutes rendered, current path:', window.location.pathname)
+  console.log('Current path:', window.location.pathname)
 
   return (
     <Routes>
-      <Route path="/" element={<UserLayout />}>
-        {/* Dashboard - Always accessible */}
-        <Route index element={<Navigate to="/user/dashboard" replace />} />
+      <Route element={<UserLayout />}>
+        {/* Dashboard */}
+        <Route index element={<Navigate to="/user/dashboard" />} />
         <Route 
-          path="user/dashboard" 
+          path="/user/dashboard" 
           element={
             <Suspense fallback={<PageLoader />}>
               <UserDashboard />
             </Suspense>
           } 
         />
-        
+
         {/* Stakeholder Routes */}
-        <Route path="stakeholder">
+        <Route path="/stakeholder">
           <Route 
             path="new" 
             element={
@@ -125,7 +96,7 @@ const UserRoutes = () => {
         </Route>
 
         {/* Background Check Routes */}
-        <Route path="background">
+        <Route path="/background">
           <Route 
             path="new" 
             element={
@@ -177,7 +148,7 @@ const UserRoutes = () => {
         </Route>
 
         {/* Report Routes */}
-        <Route path="reports">
+        <Route path="/reports">
           <Route 
             path="stakeholder" 
             element={
@@ -196,7 +167,7 @@ const UserRoutes = () => {
           />
         </Route>
 
-        {/* Catch all undefined routes */}
+        {/* Catch all route */}
         <Route path="*" element={<Navigate to="/user/dashboard" replace />} />
       </Route>
     </Routes>
