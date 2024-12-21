@@ -16,8 +16,7 @@ import { supabase } from '@/config/supabase'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { useAuth } from '@/context/AuthContext'
-import { usePageAccess } from '@/hooks/usePageAccess'
-import DebugWrapper from '@/components/debug/DebugWrapper'
+
 
 const formatDate = (date) => {
   if (!date) return '';
@@ -57,6 +56,7 @@ const NewRequest = () => {
   useEffect(() => {
     const initializePage = async () => {
       try {
+        console.log('Initializing NewRequest page')
         await Promise.all([
           fetchAvailableUsers(),
           fetchDropdownOptions()
@@ -70,12 +70,6 @@ const NewRequest = () => {
 
     initializePage()
   }, [])
-
-  // Add loading state debug
-  useEffect(() => {
-    console.log('NewRequest: Page loading state:', pageLoading)
-  }, [pageLoading])
-
 
 
   const fetchAvailableUsers = async () => {
@@ -510,10 +504,18 @@ const NewRequest = () => {
   ]
 
   return (
-    <DebugWrapper>
     <div className="p-6">
       <div className="flex justify-center">
         <div className="w-full max-w-4xl">
+                    {/* Page Title */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              New Stakeholder Request
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              Create a new stakeholder request by filling out the form below
+            </p>
+          </div>
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Timeline - Hide on small screens */}
             <div className="hidden lg:block relative">
@@ -683,7 +685,6 @@ const NewRequest = () => {
         )}
       </AnimatePresence>
     </div>
-      </DebugWrapper>
   )
 }
 
