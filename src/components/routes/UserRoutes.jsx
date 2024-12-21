@@ -35,20 +35,20 @@ const PageLoader = () => (
 )
 
 const UserRoutes = () => {
-  console.log('Current path:', window.location.pathname)
+  
 
   return (
     <Routes>
       <Route element={<UserLayout />}>
         {/* Dashboard */}
-        <Route index element={<Navigate to="/user/dashboard" />} />
-        <Route 
-          path="/user/dashboard" 
+        <Route index element={<Navigate to="user/dashboard" replace />} />
+        <Route
+          path="user/dashboard"
           element={
             <Suspense fallback={<PageLoader />}>
               <UserDashboard />
             </Suspense>
-          } 
+          }
         />
 
         {/* Stakeholder Routes */}
@@ -57,7 +57,7 @@ const UserRoutes = () => {
             path="new" 
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/stakeholder/new" element={NewRequest} />
+                <NewRequest />
               </Suspense>
             } 
           />
@@ -65,7 +65,7 @@ const UserRoutes = () => {
             path="pending" 
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/stakeholder/pending" element={PendingRequests} />
+                <PendingRequests />
               </Suspense>
             } 
           />
@@ -73,7 +73,7 @@ const UserRoutes = () => {
             path="update" 
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/stakeholder/update" element={UpdateRequest} />
+                <UpdateRequest />
               </Suspense>
             } 
           />
@@ -81,7 +81,7 @@ const UserRoutes = () => {
             path="delete" 
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/stakeholder/delete" element={DeleteRequest} />
+                <DeleteRequest />
               </Suspense>
             } 
           />
@@ -89,7 +89,7 @@ const UserRoutes = () => {
             path="all" 
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/stakeholder/all" element={AllRequests} />
+                <AllRequests />
               </Suspense>
             } 
           />
@@ -153,7 +153,7 @@ const UserRoutes = () => {
             path="stakeholder" 
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/reports/stakeholder" element={StakeholderReport} />
+                <StakeholderReport />
               </Suspense>
             } 
           />
@@ -161,7 +161,7 @@ const UserRoutes = () => {
             path="background" 
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/reports/background" element={BackgroundCheckReport} />
+                <BackgroundCheckReport />
               </Suspense>
             } 
           />
