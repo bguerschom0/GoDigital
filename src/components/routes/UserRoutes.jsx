@@ -53,14 +53,14 @@ const UserRoutes = () => {
 
         {/* Stakeholder Routes */}
         <Route path="/stakeholder">
-          <Route 
-            path="new" 
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <NewRequest />
-              </Suspense>
-            } 
-          />
+<Route
+  path="/stakeholder/new"
+  element={
+    <Suspense fallback={<PageLoader />}>
+      <NewRequest />
+    </Suspense>
+  }
+/>
           <Route 
             path="pending" 
             element={
