@@ -33,7 +33,7 @@ const ITEMS_PER_PAGE = 6;
 const PendingRequests = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { checkPermission } = usePageAccess()
+
   const [pageLoading, setPageLoading] = useState(true)
   const [pendingRequests, setPendingRequests] = useState([])
   const [isLoading, setIsLoading] = useState(false)
