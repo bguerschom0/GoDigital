@@ -6,7 +6,6 @@ import { Loader2 } from 'lucide-react'
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { user, loading } = useAuth()
   const location = useLocation()
-
   
   console.log('ProtectedRoute Check:', {
     isLoading: loading,
@@ -14,7 +13,6 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     requireAdmin,
     path: location.pathname
   })
-  
 
   // Show loading state while checking authentication
   if (loading) {
@@ -30,17 +28,6 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Check for admin requirement
-  if (requireAdmin && user.role !== 'admin') {
-    return <Navigate to="/user/dashboard" replace />
-  }
-
-    // For non-admin routes, allow normal users and admins
-  if (!requireAdmin && user.role === 'user') {
-    // This is a user route, allow access
-    return children
-  }
-
   // Check if user is inactive
   if (user.status !== 'active') {
     return (
@@ -53,7 +40,6 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
             </p>
             <button
               onClick={() => {
-                // You can add a signOut function here if needed
                 window.location.href = '/login'
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -66,7 +52,14 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     )
   }
 
-  // All checks passed, render the protected content
+  // Handle admin route access
+  if (requireAdmin && user.role !== 'admin') {
+    console.log('Redirecting: Non-admin user attempting to access admin route')
+    return <Navigate to="/user/dashboard" replace />
+  }
+
+  // Allow access to user routes for both regular users and admins
+  console.log('Access granted:', location.pathname)
   return children
 }
 
