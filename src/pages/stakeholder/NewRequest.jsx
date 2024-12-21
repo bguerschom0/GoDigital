@@ -41,7 +41,6 @@ const initialFormData = {
 const NewRequest = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { checkPermission } = usePageAccess()
   
   const [pageLoading, setPageLoading] = useState(true)
   const [availableUsers, setAvailableUsers] = useState([])
