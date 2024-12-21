@@ -15,12 +15,11 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { useAuth } from '@/context/AuthContext'
-import { usePageAccess } from '@/hooks/usePageAccess'
 
 const AllRequests = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { checkPermission } = usePageAccess()
+
   
   const [pageLoading, setPageLoading] = useState(true)
   const [requests, setRequests] = useState([])
@@ -30,19 +29,20 @@ const AllRequests = () => {
   const [itemsPerPage] = useState(10)
   const [sortConfig, setSortConfig] = useState({ key: 'date_received', direction: 'desc' })
 
+  // Initialize data
   useEffect(() => {
-    const checkAccess = async () => {
-      const { canAccess } = checkPermission('/stakeholder/all')
-      
-      if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
-        return
+    const initializePage = async () => {
+      try {
+        console.log('Initializing NewRequest page')
+        await Promise.all([ ])
+      } catch (error) {
+        console.error('Error initializing page:', error)
+      } finally {
+        setPageLoading(false)
       }
-      setPageLoading(false)
     }
-    
-    checkAccess()
-    fetchRequests()
+
+    initializePage()
   }, [])
 
   const fetchRequests = async () => {
