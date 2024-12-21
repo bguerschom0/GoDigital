@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { useAuth } from '@/context/AuthContext'
-import { usePageAccess } from '@/hooks/usePageAccess'
+
 
 const SuccessPopup = ({ message, onClose }) => (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -50,7 +50,6 @@ const SuccessPopup = ({ message, onClose }) => (
 const UpdateRequest = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { checkPermission } = usePageAccess()
   
   // State management
   const [pageLoading, setPageLoading] = useState(true)
@@ -79,24 +78,23 @@ const UpdateRequest = () => {
     description: ''
   })
 
-  // Check page access
+  // Initialize data
   useEffect(() => {
-    const checkAccess = async () => {
-      const { canAccess } = checkPermission('/stakeholder/update')
-      
-      if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
-        return
+    const initializePage = async () => {
+      try {
+        console.log('Initializing NewRequest page')
+        await Promise.all([
+          fetchAvailableUsers(),
+          fetchDropdownOptions()
+        ])
+      } catch (error) {
+        console.error('Error initializing page:', error)
+      } finally {
+        setPageLoading(false)
       }
-      setPageLoading(false)
     }
-    
-    checkAccess()
-  }, [])
 
-  useEffect(() => {
-    fetchAvailableUsers()
-    fetchDropdownOptions()
+    initializePage()
   }, [])
 
   useEffect(() => {
