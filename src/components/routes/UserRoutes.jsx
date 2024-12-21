@@ -1,4 +1,4 @@
-// src/components/routes/UserRoutes.jsx
+//src/components/routes/UserRoutes.jsx
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { UserLayout } from '@/components/layout'
 import { useAuth } from '@/context/AuthContext'
@@ -62,13 +62,14 @@ const PermissionRoute = ({ element: Component, path }) => {
   return <Component />
 }
 
+
 const UserRoutes = () => {
   console.log('UserRoutes rendered, current path:', window.location.pathname)
 
   return (
     <Routes>
       <Route path="/" element={<UserLayout />}>
-        {/* Dashboard */}
+        {/* Dashboard - Always accessible */}
         <Route index element={<Navigate to="/user/dashboard" replace />} />
         <Route 
           path="user/dashboard" 
