@@ -6,7 +6,7 @@ import AuthForm from './components/auth/AuthForm'
 import { AdminLayout, UserLayout } from './components/layout'
 import { useAuth } from './context/AuthContext'
 import UserRoutes from './components/routes/UserRoutes'
-import AdminRoutes from './components/routes/AdminRoutes'
+
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard'
