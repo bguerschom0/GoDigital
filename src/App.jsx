@@ -6,6 +6,7 @@ import AuthForm from './components/auth/AuthForm'
 import { AdminLayout, UserLayout } from './components/layout'
 import { useAuth } from './context/AuthContext'
 import UserRoutes from './components/routes/UserRoutes'
+import AdminRoutes from './components/routes/AdminRoutes'
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard'
@@ -35,7 +36,6 @@ import BackgroundCheckReport from './pages/reports/BackgroundCheckReport'
 const Root = () => {
   const { user, loading } = useAuth()
   
-  console.log('Root component - User:', user, 'Loading:', loading)
 
   if (loading) {
     return (
@@ -46,11 +46,9 @@ const Root = () => {
   }
 
   if (!user) {
-    console.log('No user found, redirecting to login')
     return <Navigate to="/login" replace />
   }
 
-  console.log('User found, redirecting based on role')
   return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard'} replace />
 }
 
@@ -95,7 +93,6 @@ const AdminRoutes = () => (
 )
 
 function App() {
-  console.log('App component rendered')
 
   return (
     <Router>
