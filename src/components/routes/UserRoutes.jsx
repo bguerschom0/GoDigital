@@ -52,15 +52,19 @@ const UserRoutes = () => {
         />
 
         {/* Stakeholder Routes */}
-        <Route path="/stakeholder">
-<Route
-  path="/stakeholder/new"
-  element={
-    <Suspense fallback={<PageLoader />}>
-      <NewRequest />
-    </Suspense>
-  }
-/>
+<Route path="/stakeholder">
+  <Route
+    path="new"
+    element={
+      <Suspense fallback={<PageLoader />}>
+        <PermissionRoute 
+          path="/stakeholder/new" 
+          element={NewRequest} 
+          requireAdmin={false} 
+        />
+      </Suspense>
+    }
+  />
           <Route 
             path="pending" 
             element={
