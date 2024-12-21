@@ -63,26 +63,33 @@ export const usePageAccess = () => {
   }
 
   const checkPermission = (path) => {
-    // Dashboard is always accessible
     if (path === '/user/dashboard') {
-      return { canAccess: true }
+      return { canAccess: true, isVisible: true }
     }
 
-    // Admin has access to everything
     if (user?.role === 'admin') {
-      return { canAccess: true }
+      return { canAccess: true, isVisible: true }
     }
 
-    // Check if page is in permissions
+    const hasPermission = permissions[path]
     return {
-      canAccess: !!permissions[path]
+      canAccess: !!hasPermission,
+      isVisible: !!hasPermission,
+      pageName: hasPermission?.pageName,
+      category: hasPermission?.category
     }
+  }
+
+  const getAccessiblePaths = () => {
+    if (user?.role === 'admin') return ['*']
+    return Object.keys(permissions)
   }
 
   return {
     permissions,
     loading,
     checkPermission,
+    getAccessiblePaths,
     refreshPermissions: fetchUserPermissions
   }
 }
