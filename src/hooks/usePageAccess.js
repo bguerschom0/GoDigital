@@ -81,6 +81,12 @@ export const usePageAccess = () => {
     console.log('Current user:', user)
     console.log('Current permissions:', permissions)
 
+    // Always allow access to dashboard
+    if (path === '/user/dashboard') {
+      console.log('Dashboard access granted by default')
+      return { canAccess: true, canExport: true }
+    }
+
     // Admin has all permissions
     if (user?.role === 'admin') {
       console.log('Admin user, granting access')
