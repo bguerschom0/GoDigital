@@ -5,6 +5,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 import AuthForm from './components/auth/AuthForm'
 import { AdminLayout, UserLayout } from './components/layout'
 import { useAuth } from './context/AuthContext'
+import UserRoutes from './components/routes/UserRoutes'
 
 // Admin-only Pages
 import Users from './pages/admin/Users'
