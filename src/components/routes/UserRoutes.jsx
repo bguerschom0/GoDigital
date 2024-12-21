@@ -3,9 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { UserLayout } from '@/components/layout'
 import { Suspense, lazy } from 'react'
 import { Loader2 } from 'lucide-react'
-import PermissionRoute from './PermissionRoute'
 
-// Lazy load components
+// Lazy load all components for better performance
+// Dashboard
 const UserDashboard = lazy(() => import('@/pages/user/Dashboard'))
 
 // Stakeholder Pages
@@ -27,151 +27,145 @@ const InternshipOverview = lazy(() => import('@/pages/background/InternshipOverv
 const StakeholderReport = lazy(() => import('@/pages/reports/StakeholderReport'))
 const BackgroundCheckReport = lazy(() => import('@/pages/reports/BackgroundCheckReport'))
 
-// Loading component
+// Loading component for Suspense fallback
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+  <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
     <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
   </div>
 )
 
 const UserRoutes = () => {
-  
-
   return (
     <Routes>
       <Route element={<UserLayout />}>
-        {/* Dashboard */}
-        <Route index element={<Navigate to="user/dashboard" replace />} />
+        {/* Dashboard - Always accessible */}
+        <Route index element={<Navigate to="/user/dashboard" replace />} />
         <Route
-          path="user/dashboard"
+          path="/user/dashboard"
           element={
             <Suspense fallback={<PageLoader />}>
               <UserDashboard />
             </Suspense>
           }
         />
-
+        
         {/* Stakeholder Routes */}
-<Route path="/stakeholder">
-  <Route
-    path="new"
-    element={
-      <Suspense fallback={<PageLoader />}>
-        <PermissionRoute 
-          path="/stakeholder/new" 
-          element={NewRequest} 
-          requireAdmin={false} 
-        />
-      </Suspense>
-    }
-  />
-          <Route 
-            path="pending" 
+        <Route path="/stakeholder">
+          <Route
+            path="new"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <NewRequest />
+              </Suspense>
+            }
+          />
+          <Route
+            path="pending"
             element={
               <Suspense fallback={<PageLoader />}>
                 <PendingRequests />
               </Suspense>
-            } 
+            }
           />
-          <Route 
-            path="update" 
+          <Route
+            path="update"
             element={
               <Suspense fallback={<PageLoader />}>
                 <UpdateRequest />
               </Suspense>
-            } 
+            }
           />
-          <Route 
-            path="delete" 
+          <Route
+            path="delete"
             element={
               <Suspense fallback={<PageLoader />}>
                 <DeleteRequest />
               </Suspense>
-            } 
+            }
           />
-          <Route 
-            path="all" 
+          <Route
+            path="all"
             element={
               <Suspense fallback={<PageLoader />}>
                 <AllRequests />
               </Suspense>
-            } 
+            }
           />
         </Route>
 
         {/* Background Check Routes */}
         <Route path="/background">
-          <Route 
-            path="new" 
+          <Route
+            path="new"
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/background/new" element={NewBackgroundCheck} />
+                <NewBackgroundCheck />
               </Suspense>
-            } 
+            }
           />
-          <Route 
-            path="pending" 
+          <Route
+            path="pending"
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/background/pending" element={PendingBackgroundChecks} />
+                <PendingBackgroundChecks />
               </Suspense>
-            } 
+            }
           />
-          <Route 
-            path="update" 
+          <Route
+            path="update"
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/background/update" element={UpdateBackgroundCheck} />
+                <UpdateBackgroundCheck />
               </Suspense>
-            } 
+            }
           />
-          <Route 
-            path="expired" 
+          <Route
+            path="expired"
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/background/expired" element={ExpiredDocuments} />
+                <ExpiredDocuments />
               </Suspense>
-            } 
+            }
           />
-          <Route 
-            path="all" 
+          <Route
+            path="all"
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/background/all" element={AllBackgroundChecks} />
+                <AllBackgroundChecks />
               </Suspense>
-            } 
+            }
           />
-          <Route 
-            path="internship" 
+          <Route
+            path="internship"
             element={
               <Suspense fallback={<PageLoader />}>
-                <PermissionRoute path="/background/internship" element={InternshipOverview} />
+                <InternshipOverview />
               </Suspense>
-            } 
+            }
           />
         </Route>
 
         {/* Report Routes */}
         <Route path="/reports">
-          <Route 
-            path="stakeholder" 
+          <Route
+            path="stakeholder"
             element={
               <Suspense fallback={<PageLoader />}>
                 <StakeholderReport />
               </Suspense>
-            } 
+            }
           />
-          <Route 
-            path="background" 
+          <Route
+            path="background"
             element={
               <Suspense fallback={<PageLoader />}>
                 <BackgroundCheckReport />
               </Suspense>
-            } 
+            }
           />
         </Route>
 
-        {/* Catch all route */}
+        {/* Catch all undefined routes */}
         <Route path="*" element={<Navigate to="/user/dashboard" replace />} />
       </Route>
     </Routes>
