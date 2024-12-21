@@ -6,6 +6,8 @@ import AuthForm from './components/auth/AuthForm'
 import { AdminLayout, UserLayout } from './components/layout'
 import { useAuth } from './context/AuthContext'
 import UserRoutes from './components/routes/UserRoutes'
+import AdminErrorBoundary from '@/components/admin/AdminErrorBoundary'
+
 
 // Admin-only Pages
 import Users from './pages/admin/Users'
@@ -19,7 +21,16 @@ import PendingRequests from './pages/stakeholder/PendingRequests'
 import UpdateRequest from './pages/stakeholder/UpdateRequest'
 import DeleteRequest from './pages/stakeholder/DeleteRequest'
 import AllRequests from './pages/stakeholder/AllRequests'
-// ... import other pages
+import NewBackgroundCheck from './pages/background/NewBackgroundCheck'
+import PendingBackgroundChecks from './pages/background/PendingBackgroundChecks'
+import UpdateBackgroundCheck from './pages/background/UpdateBackgroundCheck'
+import ExpiredDocuments from './pages/background/ExpiredDocuments'
+import AllBackgroundChecks from './pages/background/AllBackgroundChecks'
+import InternshipOverview from './pages/background/InternshipOverview'
+import StakeholderReport from './pages/reports/StakeholderReport'
+import BackgroundCheckReport from './pages/reports/BackgroundCheckReport'
+
+
 
 // Root component to handle initial redirect
 const Root = () => {
@@ -64,7 +75,19 @@ const AdminRoutes = () => {
           <Route path="all" element={<AllRequests />} />
         </Route>
 
-        {/* Other shared routes... */}
+      <Route path="background">
+        <Route path="new" element={<NewBackgroundCheck />} />
+        <Route path="pending" element={<PendingBackgroundChecks />} />
+        <Route path="update" element={<UpdateBackgroundCheck />} />
+        <Route path="expired" element={<ExpiredDocuments />} />
+        <Route path="all" element={<AllBackgroundChecks />} />
+        <Route path="internship" element={<InternshipOverview />} />
+      </Route>
+
+      <Route path="reports">
+        <Route path="stakeholder" element={<StakeholderReport />} />
+        <Route path="background" element={<BackgroundCheckReport />} />
+      </Route>
       </Route>
     </Routes>
   )
@@ -82,26 +105,30 @@ function App() {
           <Route path="/" element={<Root />} />
 
           {/* Admin-only Routes */}
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedRoute requireAdmin>
-                <AdminLayout>
-                  <Users />
-                </AdminLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/permissions"
-            element={
-              <ProtectedRoute requireAdmin>
-                <AdminLayout>
-                  <PagePermissions />
-                </AdminLayout>
-              </ProtectedRoute>
-            }
-          />
+<Route
+  path="/admin/users"
+  element={
+    <ProtectedRoute requireAdmin>
+      <AdminLayout>
+        <AdminErrorBoundary>
+          <Users />
+        </AdminErrorBoundary>
+      </AdminLayout>
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/permissions"
+  element={
+    <ProtectedRoute requireAdmin>
+      <AdminLayout>
+        <AdminErrorBoundary>
+          <PagePermissions />
+        </AdminErrorBoundary>
+      </AdminLayout>
+    </ProtectedRoute>
+  }
+/>
 
           {/* Regular Admin Routes */}
           <Route
