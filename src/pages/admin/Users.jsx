@@ -1,6 +1,6 @@
 // src/pages/admin/Users.jsx
-import React from 'react'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
@@ -25,15 +25,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
-import { 
-  Trash2, 
-  Edit, 
-  Plus, 
-  Key, 
-  Loader2,
-  CheckCircle2,
-  XCircle
-} from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -41,67 +32,67 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { 
+  Trash2, 
+  Edit, 
+  Plus, 
+  Key, 
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle
+} from 'lucide-react'
 
 // Table Components
-const Table = React.forwardRef(({ className, ...props }, ref) => (
+const Table = ({ className, ...props }) => (
   <div className="relative w-full overflow-auto">
     <table
-      ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}
       {...props}
     />
   </div>
-))
-Table.displayName = "Table"
+)
 
-const TableHeader = React.forwardRef(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("bg-gray-50/75", className)} {...props} />
-))
-TableHeader.displayName = "TableHeader"
+const TableHeader = ({ className, ...props }) => (
+  <thead className={cn("bg-gray-50/75", className)} {...props} />
+)
 
-const TableBody = React.forwardRef(({ className, ...props }, ref) => (
+const TableBody = ({ className, ...props }) => (
   <tbody
-    ref={ref}
     className={cn("[&_tr:last-child]:border-0", className)}
     {...props}
   />
-))
-TableBody.displayName = "TableBody"
+)
 
-const TableRow = React.forwardRef(({ className, ...props }, ref) => (
+const TableRow = ({ className, ...props }) => (
   <tr
-    ref={ref}
     className={cn(
       "border-b transition-colors hover:bg-gray-50/50",
       className
     )}
     {...props}
   />
-))
-TableRow.displayName = "TableRow"
+)
 
-const TableCell = React.forwardRef(({ className, ...props }, ref) => (
+const TableCell = ({ className, ...props }) => (
   <td
-    ref={ref}
     className={cn("p-2 align-middle [&:has([role=checkbox])]:pr-0", className)}
     {...props}
   />
-))
-TableCell.displayName = "TableCell"
+)
 
-const TableHead = React.forwardRef(({ className, ...props }, ref) => (
+const TableHead = ({ className, ...props }) => (
   <th
-    ref={ref}
     className={cn(
       "h-10 px-2 text-left align-middle font-medium text-gray-500",
       className
     )}
     {...props}
   />
-))
-TableHead.displayName = "TableHead"
+)
 
 const Users = () => {
+  const navigate = useNavigate()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState(null)
@@ -122,21 +113,15 @@ const Users = () => {
   const { toast } = useToast()
   const { user: currentUser } = useAuth()
 
+  // Add admin check
   useEffect(() => {
-    fetchUsers()
-  }, [])
-
-  useEffect(() => {
-    if (selectedUser && showUserModal) {
-      setFormData({
-        username: selectedUser.username,
-        fullname: selectedUser.fullname,
-        password: '',
-        role: selectedUser.role,
-        status: selectedUser.status
-      })
+    if (!currentUser || currentUser.role !== 'admin') {
+      navigate('/user/dashboard')
+      return
     }
-  }, [selectedUser, showUserModal])
+
+    fetchUsers()
+  }, [currentUser, navigate])
 
   const fetchUsers = async () => {
     try {
@@ -281,6 +266,14 @@ const Users = () => {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+      </div>
+    )
+  }
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -305,93 +298,87 @@ const Users = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[150px]">Username</TableHead>
-                <TableHead className="w-[200px]">Full Name</TableHead>
-                <TableHead className="w-[100px]">Role</TableHead>
-                <TableHead className="w-[100px]">Status</TableHead>
-                <TableHead className="w-[120px] text-right">Actions</TableHead>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Username</TableHead>
+              <TableHead>Full Name</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>{user.username}</TableCell>
+                <TableCell>{user.fullname}</TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    user.role === 'admin' 
+                      ? 'bg-purple-100 text-purple-800' 
+                      : user.role === 'supervisor'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {user.role}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    user.status === 'active' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {user.status === 'active' ? (
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                    ) : (
+                      <XCircle className="w-3 h-3 mr-1" />
+                    )}
+                    {user.status}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-1 h-8 w-8"
+                      onClick={() => {
+                        setSelectedUser(user)
+                        setShowPasswordModal(true)
+                      }}
+                    >
+                      <Key className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-1 h-8 w-8"
+                      onClick={() => {
+                        setSelectedUser(user)
+                        setShowUserModal(true)
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-1 h-8 w-8"
+                      onClick={() => {
+                        setSelectedUser(user)
+                        setShowDeleteDialog(true)
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="py-2">{user.username}</TableCell>
-                  <TableCell className="py-2">{user.fullname}</TableCell>
-                  <TableCell className="py-2">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      user.role === 'admin' 
-                        ? 'bg-purple-100 text-purple-800' 
-                        : user.role === 'supervisor'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {user.role}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      user.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {user.status === 'active' ? (
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                      ) : (
-                        <XCircle className="w-3 h-3 mr-1" />
-                      )}
-                      {user.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-2 text-right">
-                    <div className="flex justify-end space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-1 h-8 w-8"
-                        onClick={() => {
-                          setSelectedUser(user)
-                          setShowPasswordModal(true)
-                        }}
-                      >
-                        <Key className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-1 h-8 w-8"
-                        onClick={() => {
-                          setSelectedUser(user)
-                          setShowUserModal(true)
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-1 h-8 w-8"
-                        onClick={() => {
-                          setSelectedUser(user)
-                          setShowDeleteDialog(true)
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Create/Edit User Modal */}
@@ -459,7 +446,6 @@ const Users = () => {
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
                 </SelectContent>
               </Select>
             </div>
