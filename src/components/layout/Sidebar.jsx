@@ -205,14 +205,11 @@ const Sidebar = ({ isOpen, onClose }) => {
       {
     title: 'Access Control',
     icon: <Shield className="h-4 w-4" />,
-    submenu: [
-      {
-        title: 'Dashboard',
-        path: '/access-control'
-      },
+    id: 'access_control',
+      children: [
       {
         title: 'Controllers',
-        path: '/access-control/controllers'
+        href: '/admin/controllers/ControllersManagement'
       }
     ]
   },
