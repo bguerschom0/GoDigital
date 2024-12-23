@@ -141,9 +141,7 @@ function App() {
   element={
     <ProtectedRoute requireAdmin>
       <AdminLayout>
-        <AdminErrorBoundary>
           <Users />
-        </AdminErrorBoundary>
       </AdminLayout>
     </ProtectedRoute>
   }
@@ -154,9 +152,7 @@ function App() {
   element={
     <ProtectedRoute requireAdmin>
       <AdminLayout>
-        <AdminErrorBoundary>
           <PagePermissions />
-        </AdminErrorBoundary>
       </AdminLayout>
     </ProtectedRoute>
   }
