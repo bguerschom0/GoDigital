@@ -65,6 +65,8 @@ const AdminRoutes = () => {
         {/* Admin Dashboard */}
         <Route index element={<AdminDashboard />} />
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="users" element={<Users />} />
+       <Route path="permissions" element={<PagePermissions />} />
 
         {/* Shared Routes */}
         <Route path="stakeholder">
