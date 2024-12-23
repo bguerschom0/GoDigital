@@ -26,6 +26,9 @@ import BackgroundCheckReport from '@/pages/reports/BackgroundCheckReport'
 
 // Access control
 import ControllersManagement from '@/pages/access-control/controllers/ControllersManagement'
+import Attendance from '@/pages/access-control/attendance/DailyAttendance'
+import DeviceList from '@/pages/access-control/devices/DeviceList'
+import AccessControlDashboard from '@/pages/access-control/index'
 
 const UserRoutes = () => (
   <Routes>
@@ -61,7 +64,10 @@ const UserRoutes = () => (
 
       {/* Access Control */}
       <Route path="access_control">
+        <Route path="access_control_dashboard" element={<AccessControlDashboard />} />
         <Route path="controllers" element={<ControllersManagement />} />
+        <Route path="attendance" element={<Attendance />} />
+        <Route path="device_list" element={<DeviceList />} />
       </Route>
 
       {/* Catch all */}
