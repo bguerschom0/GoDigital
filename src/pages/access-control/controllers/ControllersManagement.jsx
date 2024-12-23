@@ -91,7 +91,7 @@ const ControllersManagement = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('access_controllers')
+        .from('controllers')
         .select('*')
         .order('created_at', { ascending: false });
 
