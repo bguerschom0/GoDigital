@@ -27,7 +27,7 @@ export const controllerStatusService = {
   async updateControllerStatus(controllerId, status) {
     try {
       const { error } = await supabase
-        .from('access_controllers')
+        .from('controllers')
         .update({ 
           status,
           last_online: status === 'online' ? new Date().toISOString() : null
