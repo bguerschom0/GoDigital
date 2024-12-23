@@ -19,7 +19,8 @@ import {
   BarChart2,
   Lock,
   GraduationCap,
-  Menu
+  Menu,
+  Shield
 } from 'lucide-react'
 
 const MenuGroup = ({ item, isOpen, isHovered, expandedMenus, toggleMenu, location, checkPermission }) => {
