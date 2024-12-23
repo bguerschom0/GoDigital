@@ -40,17 +40,10 @@ const DailyAttendance = () => {
     searchTerm: ''
   })
 
-  useEffect(() => {
-    const checkAccess = async () => {
-      const { canAccess } = checkPermission('/access-control/attendance/daily')
-      if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
-        return
-      }
-      setPageLoading(false)
-    }
-    checkAccess()
-  }, [])
+useEffect(() => {
+  setPageLoading(false);
+  fetchControllers();
+}, []);
 
   useEffect(() => {
     if (!pageLoading) {
