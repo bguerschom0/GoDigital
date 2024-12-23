@@ -7,14 +7,6 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { user, loading } = useAuth()
   const location = useLocation()
 
-  console.log('ProtectedRoute Check:', {
-    isLoading: loading,
-    path: location.pathname,
-    requireAdmin,
-    userRole: user?.role,
-    username: user?.username
-  })
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -23,21 +15,15 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     )
   }
 
-  // Check if user is authenticated
   if (!user) {
-    console.log('No authenticated user, redirecting to login')
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Check for admin routes
   if (requireAdmin && user.role !== 'admin') {
-    console.log('Admin access required but user is not admin, redirecting to dashboard')
     return <Navigate to="/user/dashboard" replace />
   }
 
-  // Check user status
   if (user.status !== 'active') {
-    console.log('User account is inactive')
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-lg">
@@ -58,8 +44,6 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     )
   }
 
-  // All checks passed, allow access
-  console.log('Access granted:', location.pathname)
   return children
 }
 
