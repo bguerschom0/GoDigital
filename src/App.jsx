@@ -136,26 +136,31 @@ function App() {
           <Route path="/" element={<Root />} />
 
           {/* Admin Routes - Users and Permissions require admin */}
-  <Route
-    path="/admin/users"
-    element={
-      <ProtectedRoute requireAdmin={true}>
-        <AdminLayout>
+<Route
+  path="/admin/users"
+  element={
+    <ProtectedRoute requireAdmin>
+      <AdminLayout>
+        <AdminErrorBoundary>
           <Users />
-        </AdminLayout>
-      </ProtectedRoute>
-    }
-  />
-  <Route
+        </AdminErrorBoundary>
+      </AdminLayout>
+    </ProtectedRoute>
+  }
+/>
+
+          <Route
     path="/admin/permissions"
-    element={
-      <ProtectedRoute requireAdmin={true}>
-        <AdminLayout>
+  element={
+    <ProtectedRoute requireAdmin>
+      <AdminLayout>
+        <AdminErrorBoundary>
           <PagePermissions />
-        </AdminLayout>
-      </ProtectedRoute>
-    }
-  />
+        </AdminErrorBoundary>
+      </AdminLayout>
+    </ProtectedRoute>
+  }
+/>
 
           {/* Regular Admin Routes */}
           <Route
