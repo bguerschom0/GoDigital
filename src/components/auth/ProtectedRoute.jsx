@@ -28,6 +28,11 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
+    // Handle admin route access
+  if (requireAdmin && user.role !== 'admin') {
+    return <Navigate to="/user/dashboard" replace />
+  }
+
   // Check if user is inactive
   if (user.status !== 'active') {
     return (
@@ -52,14 +57,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     )
   }
 
-  // Handle admin route access
-  if (requireAdmin && user.role !== 'admin') {
-    console.log('Redirecting: Non-admin user attempting to access admin route')
-    return <Navigate to="/user/dashboard" replace />
-  }
 
-  // Allow access to user routes for both regular users and admins
-  console.log('Access granted:', location.pathname)
   return children
 }
 
