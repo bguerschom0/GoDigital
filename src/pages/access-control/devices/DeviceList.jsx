@@ -144,9 +144,9 @@ const DeviceList = () => {
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
 
-  useEffect(() => {
-    fetchDevices()
-  }, [])
+useEffect(() => {
+  fetchDevices();
+}, []);
 
   const fetchDevices = async () => {
     try {
