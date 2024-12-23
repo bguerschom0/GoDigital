@@ -66,7 +66,7 @@ const AdminRoutes = () => (
       </Route>
 
       {/* Access Control */}
-      <Route path="">
+      <Route path="access_control">
         <Route path="/access-control/controllers" element={<ControllersManagement />} />
       </Route>
 
