@@ -26,6 +26,9 @@ import InternshipOverview from '@/pages/background/InternshipOverview'
 import StakeholderReport from '@/pages/reports/StakeholderReport'
 import BackgroundCheckReport from '@/pages/reports/BackgroundCheckReport'
 
+// Access control
+import ControllersManagement from '@/pages/access-control/controllers/ControllersManagement'
+
 const AdminRoutes = () => (
   <Routes>
     <Route path="/" element={<AdminLayout />}>
@@ -60,6 +63,11 @@ const AdminRoutes = () => (
       <Route path="reports">
         <Route path="stakeholder" element={<StakeholderReport />} />
         <Route path="background" element={<BackgroundCheckReport />} />
+      </Route>
+
+      {/* Access Control */}
+      <Route path="">
+        <Route path="/access-control/controllers" element={<ControllersManagement />} />
       </Route>
 
       {/* Catch all */}
