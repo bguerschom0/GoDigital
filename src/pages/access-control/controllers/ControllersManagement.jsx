@@ -1,4 +1,3 @@
-// src/pages/access-control/controllers/ControllersManagement.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,7 +10,6 @@ import {
   RefreshCcw
 } from 'lucide-react';
 
-// Import all required shadcn components
 import {
   Dialog,
   DialogContent,
@@ -41,9 +39,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { Toaster } from '@/components/ui/toaster';
+import HIKSetup from '@/components/hik/HIKSetup';
 
 import { supabase } from '@/config/supabase';
-import { controllerStatusService } from '@/services/controllerStatus';
+import { hikvisionService } from '@/services/hikvision';
 import { useAuth } from '@/context/AuthContext';
 import { usePageAccess } from '@/hooks/usePageAccess';
 
@@ -83,7 +82,9 @@ const ControllersManagement = () => {
 
   useEffect(() => {
     if (controllers.length > 0) {
-      controllerStatusService.startStatusMonitoring(controllers);
+      controllers.forEach(controller => {
+        hikvisionService.initializeController(controller);
+      });
     }
   }, [controllers]);
 
@@ -100,7 +101,7 @@ const ControllersManagement = () => {
 
       // Check initial status for all controllers
       data?.forEach(controller => {
-        controllerStatusService.checkControllerStatus(controller);
+        hikvisionService.getDeviceStatus(controller.id).catch(console.error);
       });
     } catch (error) {
       toast({
@@ -117,7 +118,7 @@ const ControllersManagement = () => {
     e.preventDefault();
     try {
       const { data, error } = await supabase
-        .from('access_controllers')
+        .from('controllers')
         .insert([{
           ...formData,
           added_by: user.id
@@ -144,8 +145,9 @@ const ControllersManagement = () => {
         description: 'Controller added successfully'
       });
 
-      // Check new controller status
-      controllerStatusService.checkControllerStatus(data);
+      // Initialize and check new controller status
+      await hikvisionService.initializeController(data);
+      hikvisionService.getDeviceStatus(data.id).catch(console.error);
     } catch (error) {
       toast({
         title: 'Error',
@@ -158,7 +160,7 @@ const ControllersManagement = () => {
   const handleDeleteController = async () => {
     try {
       const { error } = await supabase
-        .from('access_controllers')
+        .from('controllers')
         .delete()
         .eq('id', selectedController.id);
 
@@ -215,6 +217,7 @@ const ControllersManagement = () => {
         description: `${controller.name} is offline`,
         variant: 'destructive'
       });
+    }
   };
 
   if (pageLoading || loading) {
