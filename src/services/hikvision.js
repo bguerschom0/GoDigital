@@ -4,29 +4,32 @@ import { supabase } from '@/config/supabase';
 
 class HikvisionService {
   constructor() {
-    this.controllers = new Map(); // Store controller connections
+    this.controllers = new Map(); // Store controller instances
   }
 
-  async initializeController(controllerConfig) {
+  createAuthHeader(username, password) {
+    return {
+      Authorization: `Basic ${btoa(`${username}:${password}`)}`
+    };
+  }
+
+  async initializeController(controller) {
     try {
-      const { ip_address, port, username, password } = controllerConfig;
-      const baseURL = `http://${ip_address}:${port}`;
-      
-      const controller = axios.create({
-        baseURL,
-        auth: {
-          username,
-          password
-        },
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const instance = axios.create({
+        baseURL: `http://${controller.ip_address}:${controller.port}`,
+        headers: this.createAuthHeader(controller.username, controller.password),
+        timeout: 5000
       });
 
-      // Test connection
-      await controller.get('/ISAPI/System/status');
+      // Test connection and get capabilities
+      const capabilities = await this.getDeviceCapabilities(instance);
       
-      this.controllers.set(controllerConfig.id, controller);
+      // Store the instance with its capabilities
+      this.controllers.set(controller.id, {
+        instance,
+        capabilities
+      });
+
       return true;
     } catch (error) {
       console.error('Failed to initialize controller:', error);
@@ -34,70 +37,12 @@ class HikvisionService {
     }
   }
 
-  async fetchAttendanceRecords(startTime, endTime, controllerId) {
+  async getDeviceCapabilities(instance) {
     try {
-      const controller = this.controllers.get(controllerId);
-      if (!controller) throw new Error('Controller not initialized');
-
-      const response = await controller.post('/ISAPI/AccessControl/AcsEvent/search', {
-        searchID: Date.now().toString(),
-        timeRange: {
-          startTime,
-          endTime
-        },
-        pageNo: 1,
-        pageSize: 1000
-      });
-
-      return this.processAttendanceRecords(response.data.AcsEvent);
-    } catch (error) {
-      console.error('Error fetching attendance records:', error);
-      throw error;
-    }
-  }
-
-  async grantAccess(controllerId, doorNo, personId) {
-    try {
-      const controller = this.controllers.get(controllerId);
-      if (!controller) throw new Error('Controller not initialized');
-
-      await controller.put(`/ISAPI/AccessControl/RemoteControl/door/${doorNo}`, {
-        remoteControlDoor: {
-          cmd: "open"
-        }
-      });
-
-      // Log access event
-      await this.logAccessEvent(controllerId, doorNo, personId, 'granted');
-      return true;
-    } catch (error) {
-      console.error('Error granting access:', error);
-      throw error;
-    }
-  }
-
-  async addPerson(controllerId, personInfo) {
-    try {
-      const controller = this.controllers.get(controllerId);
-      if (!controller) throw new Error('Controller not initialized');
-
-      const response = await controller.post('/ISAPI/AccessControl/UserInfo/Record', {
-        UserInfo: {
-          employeeNo: personInfo.employeeId,
-          name: personInfo.name,
-          userType: personInfo.userType || "normal",
-          Valid: {
-            enable: true,
-            beginTime: personInfo.beginTime,
-            endTime: personInfo.endTime,
-          },
-          doorRight: personInfo.doorRights
-        }
-      });
-
+      const response = await instance.get('/ISAPI/System/capabilities?format=json');
       return response.data;
     } catch (error) {
-      console.error('Error adding person:', error);
+      console.error('Error fetching capabilities:', error);
       throw error;
     }
   }
@@ -107,41 +52,98 @@ class HikvisionService {
       const controller = this.controllers.get(controllerId);
       if (!controller) throw new Error('Controller not initialized');
 
-      const response = await controller.get('/ISAPI/System/status');
+      const response = await controller.instance.get('/ISAPI/System/status?format=json');
+      
+      // Update status in database
+      await supabase
+        .from('controllers')
+        .update({
+          status: 'online',
+          last_online: new Date().toISOString(),
+          cpu_usage: response.data.cpuUsage,
+          memory_usage: response.data.memoryUsage
+        })
+        .eq('id', controllerId);
+
       return {
-        deviceStatus: response.data.deviceStatus,
-        uptimeSeconds: response.data.uptimeSeconds,
-        memory: response.data.memory
+        isOnline: true,
+        cpuUsage: response.data.cpuUsage,
+        memoryUsage: response.data.memoryUsage,
+        temperature: response.data.temperature,
+        uptimeSeconds: response.data.uptimeSeconds
       };
     } catch (error) {
-      console.error('Error getting device status:', error);
+      // Update offline status in database
+      await supabase
+        .from('controllers')
+        .update({
+          status: 'offline',
+        })
+        .eq('id', controllerId);
+
       throw error;
     }
   }
 
-  private async logAccessEvent(controllerId, doorNo, personId, status) {
+  async validateCredentials(controller) {
     try {
-      await supabase.from('access_logs').insert({
-        controller_id: controllerId,
-        door_no: doorNo,
-        person_id: personId,
-        status,
-        timestamp: new Date().toISOString()
+      const instance = axios.create({
+        baseURL: `http://${controller.ip_address}:${controller.port}`,
+        headers: this.createAuthHeader(controller.username, controller.password),
+        timeout: 5000
       });
+
+      const response = await instance.get('/ISAPI/System/capabilities');
+      return response.status === 200;
     } catch (error) {
-      console.error('Error logging access event:', error);
+      return false;
     }
   }
 
-  private processAttendanceRecords(records) {
-    return records.map(record => ({
-      employeeId: record.employeeNo,
-      employeeName: record.employeeName,
-      checkInTime: record.time,
-      deviceId: record.deviceNo,
-      doorNo: record.doorNo,
-      eventType: record.eventType
-    }));
+  async subscribeToEvents(controllerId, eventTypes = ['All']) {
+    try {
+      const controller = this.controllers.get(controllerId);
+      if (!controller) throw new Error('Controller not initialized');
+
+      const response = await controller.instance.post(
+        '/ISAPI/Event/notification/subscribe?format=json',
+        {
+          eventTypes
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error subscribing to events:', error);
+      throw error;
+    }
+  }
+
+  async getEventHistory(controllerId, options = {}) {
+    try {
+      const controller = this.controllers.get(controllerId);
+      if (!controller) throw new Error('Controller not initialized');
+
+      const { start = 0, count = 50, startTime, endTime } = options;
+
+      const params = new URLSearchParams({
+        format: 'json',
+        start: start.toString(),
+        count: count.toString()
+      });
+
+      if (startTime) params.append('startTime', startTime);
+      if (endTime) params.append('endTime', endTime);
+
+      const response = await controller.instance.get(
+        `/ISAPI/Event/notification/logs?${params.toString()}`
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching event history:', error);
+      throw error;
+    }
   }
 }
 
