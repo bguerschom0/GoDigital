@@ -76,3 +76,33 @@ export const getPendingRequests = async () => {
   if (error) throw error
   return data
 }
+
+
+
+export const getControllerDetails = async (id) => {
+  const { data, error } = await supabase
+    .from('controllers') // Assuming the table name is "controllers"
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) throw new Error('Failed to fetch controller details');
+  return data;
+};
+
+export const addController = async (controller) => {
+  const { error } = await supabase
+    .from('controllers') // Assuming the table name is "controllers"
+    .insert([controller]);
+
+  if (error) throw new Error('Failed to add controller');
+};
+
+export const updateController = async (id, updates) => {
+  const { error } = await supabase
+    .from('controllers')
+    .update(updates)
+    .eq('id', id);
+
+  if (error) throw new Error('Failed to update controller');
+};
