@@ -67,18 +67,10 @@ const ControllersManagement = () => {
     description: ''
   });
 
-  useEffect(() => {
-    const checkAccess = async () => {
-      const { canAccess } = await checkPermission('/access-control/controllers');
-      if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
-        return;
-      }
-      setPageLoading(false);
-      fetchControllers();
-    };
-    checkAccess();
-  }, []);
+useEffect(() => {
+  setPageLoading(false);
+  fetchControllers();
+}, []);
 
   useEffect(() => {
     if (controllers?.length > 0) {
