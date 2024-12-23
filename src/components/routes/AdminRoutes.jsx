@@ -67,7 +67,7 @@ const AdminRoutes = () => (
 
       {/* Access Control */}
       <Route path="access_control">
-        <Route path="/access-control/controllers" element={<ControllersManagement />} />
+        <Route path="controllers" element={<ControllersManagement />} />
       </Route>
 
       {/* Catch all */}
