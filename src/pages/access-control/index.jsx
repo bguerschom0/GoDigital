@@ -29,17 +29,10 @@ const AccessControlDashboard = () => {
   })
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const checkAccess = async () => {
-      const { canAccess } = checkPermission('/access-control')
-      if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
-        return
-      }
-      setPageLoading(false)
-    }
-    checkAccess()
-  }, [])
+useEffect(() => {
+  setPageLoading(false);
+  fetchControllers();
+}, []);
 
   const quickLinks = [
     {
