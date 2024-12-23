@@ -1,3 +1,4 @@
+// src/pages/access-control/controllers/ControllersManagement.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -10,6 +11,7 @@ import {
   RefreshCcw
 } from 'lucide-react';
 
+// Import all required shadcn components
 import {
   Dialog,
   DialogContent,
@@ -42,7 +44,6 @@ import { Toaster } from '@/components/ui/toaster';
 
 import { supabase } from '@/config/supabase';
 import { controllerStatusService } from '@/services/controllerStatus';
-import { hikvisionService } from '@/services/hikvision';
 import { useAuth } from '@/context/AuthContext';
 import { usePageAccess } from '@/hooks/usePageAccess';
 
@@ -67,17 +68,22 @@ const ControllersManagement = () => {
     description: ''
   });
 
-
-useEffect(() => {
-  fetchControllers();
-}, []);
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = await checkPermission('/access-control/controllers');
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+        return;
+      }
+      setPageLoading(false);
+      fetchControllers();
+    };
+    checkAccess();
+  }, []);
 
   useEffect(() => {
-    if (controllers?.length > 0) {
+    if (controllers.length > 0) {
       controllerStatusService.startStatusMonitoring(controllers);
-      return () => {
-        controllerStatusService.stopStatusMonitoring();
-      };
     }
   }, [controllers]);
 
@@ -85,13 +91,14 @@ useEffect(() => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('access_controllers')
+        .from('controllers')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setControllers(data || []);
 
+      // Check initial status for all controllers
       data?.forEach(controller => {
         controllerStatusService.checkControllerStatus(controller);
       });
@@ -137,6 +144,7 @@ useEffect(() => {
         description: 'Controller added successfully'
       });
 
+      // Check new controller status
       controllerStatusService.checkControllerStatus(data);
     } catch (error) {
       toast({
@@ -207,7 +215,6 @@ useEffect(() => {
         description: `${controller.name} is offline`,
         variant: 'destructive'
       });
-    }
   };
 
   if (pageLoading || loading) {
@@ -221,6 +228,7 @@ useEffect(() => {
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <HIKSetup />
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Access Controllers</h1>
@@ -313,6 +321,7 @@ useEffect(() => {
           ))}
         </div>
 
+        {/* Add Controller Dialog */}
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogContent>
             <DialogHeader>
@@ -409,6 +418,7 @@ useEffect(() => {
           </DialogContent>
         </Dialog>
 
+        {/* Delete Confirmation Dialog */}
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
