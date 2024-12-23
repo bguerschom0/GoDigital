@@ -67,8 +67,8 @@ const ControllersManagement = () => {
     description: ''
   });
 
+
 useEffect(() => {
-  setPageLoading(false);
   fetchControllers();
 }, []);
 
