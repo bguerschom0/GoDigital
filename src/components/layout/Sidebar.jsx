@@ -201,6 +201,20 @@ const Sidebar = ({ isOpen, onClose }) => {
         }
       ]
     },
+      {
+    title: 'Access Control',
+    icon: <Shield className="h-4 w-4" />,
+    submenu: [
+      {
+        title: 'Dashboard',
+        path: '/access-control'
+      },
+      {
+        title: 'Controllers',
+        path: '/access-control/controllers'
+      }
+    ]
+  },
     {
       title: 'Reports',
       icon: <BarChart className="w-5 h-5" />,
