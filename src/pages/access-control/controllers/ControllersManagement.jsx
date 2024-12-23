@@ -182,14 +182,39 @@ const ControllersManagement = () => {
   };
 
   const checkStatus = async (controller) => {
-    const isOnline = await controllerStatusService.checkControllerStatus(controller);
-    const updatedControllers = controllers.map(c => {
-      if (c.id === controller.id) {
-        return { ...c, status: isOnline ? 'online' : 'offline' };
-      }
-      return c;
-    });
-    setControllers(updatedControllers);
+    try {
+      const status = await hikvisionService.getDeviceStatus(controller.id);
+      const updatedControllers = controllers.map(c => {
+        if (c.id === controller.id) {
+          return {
+            ...c,
+            status: 'online',
+            cpuUsage: status.cpuUsage,
+            memoryUsage: status.memoryUsage
+          };
+        }
+        return c;
+      });
+      setControllers(updatedControllers);
+
+      toast({
+        title: 'Status Updated',
+        description: `${controller.name} is online`,
+      });
+    } catch (error) {
+      const updatedControllers = controllers.map(c => {
+        if (c.id === controller.id) {
+          return { ...c, status: 'offline' };
+        }
+        return c;
+      });
+      setControllers(updatedControllers);
+
+      toast({
+        title: 'Status Check Failed',
+        description: `${controller.name} is offline`,
+        variant: 'destructive'
+      });
   };
 
   if (pageLoading || loading) {
