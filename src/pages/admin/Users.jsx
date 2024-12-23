@@ -114,11 +114,18 @@ const Users = () => {
   const { user: currentUser } = useAuth()
 
   // Add admin check
-  useEffect(() => {
-    if (!currentUser || currentUser.role !== 'admin') {
-      navigate('/user/dashboard')
-      return
-    }
+useEffect(() => {
+  console.log('Users component - Current user:', {
+    role: currentUser?.role,
+    username: currentUser?.username,
+    isAdmin: currentUser?.role === 'admin'
+  })
+
+  if (!currentUser || currentUser.role !== 'admin') {
+    console.log('Non-admin user attempting to access Users page')
+    navigate('/user/dashboard')
+    return
+  }
 
     fetchUsers()
   }, [currentUser, navigate])
