@@ -41,15 +41,9 @@ const DailyAttendance = () => {
   })
 
 useEffect(() => {
-  setPageLoading(false);
-  fetchControllers();
-}, []);
+  fetchAttendanceData();
+}, [selectedDate, filters]);
 
-  useEffect(() => {
-    if (!pageLoading) {
-      fetchAttendanceData()
-    }
-  }, [selectedDate, filters, pageLoading])
 
   const fetchAttendanceData = async () => {
     try {
