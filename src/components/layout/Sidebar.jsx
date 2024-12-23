@@ -208,8 +208,20 @@ const Sidebar = ({ isOpen, onClose }) => {
     id: 'access_control',
       children: [
       {
+        title: 'Access Control Dashboard',
+        href: '/admin/access-control/index'
+      },
+              {
         title: 'Controllers',
         href: '/admin/controllers/ControllersManagement'
+      },
+              {
+        title: 'Attendance',
+        href: '/admin/attendance/DailyAttendance'
+      },
+              {
+        title: 'DeviceList',
+        href: '/admin/devices/DeviceList'
       }
     ]
   },
