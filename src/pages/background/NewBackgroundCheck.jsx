@@ -273,44 +273,35 @@ const NewBackgroundCheck = () => {
     return Object.keys(newErrors).length === 0
   }
 
-const handleSubmit = async () => {
-  setIsSubmitting(true)
-  try {
-    // Log data before submission to inspect
-    console.log('Submitting Data:', formData)
+  const handleSubmit = async () => {
+    if (!validateStep(currentStep)) return
 
-    const { data, error } = await supabase
-      .from('background_checks')
-      .insert([{
-        ...formData,
-        created_by: user.id,
-        updated_by: user.id
-      }])
-
-    // Log detailed error information
-    if (error) {
-      console.error('Detailed Supabase Error:', error)
-      setMessage({ 
-        type: 'error', 
-        text: `Submission failed: ${error.message || 'Unknown error'}` 
-      })
+    if (currentStep < steps.length) {
+      setCurrentStep(prev => prev + 1)
       return
     }
 
-    // Optional: log successful insert
-    console.log('Insert successful', data)
-    setMessage({ type: 'success', text: 'Background check submitted successfully!' })
-    navigate('/background/list')
-  } catch (error) {
-    console.error('Catch block error:', error)
-    setMessage({ 
-      type: 'error', 
-      text: `Error: ${error.message || 'Unable to submit'}` 
-    })
-  } finally {
-    setIsSubmitting(false)
+    setIsLoading(true)
+    try {
+      const { error } = await supabase
+        .from('background_checks')
+        .insert([{
+          ...formData,
+          created_by: user.id,
+          updated_by: user.id
+        }])
+
+      if (error) throw error
+
+      setMessage({ type: 'success', text: 'Background check saved successfully!' })
+      handleReset()
+    } catch (error) {
+      console.error('Error:', error)
+      setMessage({ type: 'error', text: 'Error saving background check. Please try again.' })
+    } finally {
+      setIsLoading(false)
+    }
   }
-}
 
   const handleReset = () => {
     setFormData({
