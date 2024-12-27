@@ -106,3 +106,53 @@ export const updateController = async (id, updates) => {
 
   if (error) throw new Error('Failed to update controller');
 };
+
+
+// Add this to your existing supabase.js file
+
+export const addBackgroundCheck = async (backgroundCheck) => {
+  const { data, error } = await supabase
+    .from('background_checks')
+    .insert([backgroundCheck])
+    .select() // Return the inserted data
+
+  if (error) {
+    console.error('Supabase Background Check Insert Error:', error)
+    throw error
+  }
+
+  return data
+}
+
+export const getBackgroundChecks = async (filters = {}) => {
+  let query = supabase.from('background_checks').select('*')
+
+  // Apply filters if provided
+  Object.entries(filters).forEach(([key, value]) => {
+    query = query.eq(key, value)
+  })
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Supabase Background Check Fetch Error:', error)
+    throw error
+  }
+
+  return data
+}
+
+export const updateBackgroundCheck = async (id, updates) => {
+  const { data, error } = await supabase
+    .from('background_checks')
+    .update(updates)
+    .eq('id', id)
+    .select()
+
+  if (error) {
+    console.error('Supabase Background Check Update Error:', error)
+    throw error
+  }
+
+  return data
+}
