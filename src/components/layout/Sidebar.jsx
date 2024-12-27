@@ -154,11 +154,6 @@ const Sidebar = ({ isOpen, onClose }) => {
           href: '/admin/stakeholder/update'
         },
                 {
-          title: 'Delete Request',
-          icon: <Clock className="w-5 h-5" />,
-          href: '/admin/stakeholder/DeleteRequest'
-        },
-                {
           title: 'All Requests',
           icon: <Clock className="w-5 h-5" />,
           href: '/admin/stakeholder/AllRequests'
@@ -203,7 +198,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       ]
     },
       {
-    title: 'Access Control',
+    title: 'Security Services',
     icon: <Shield className="h-4 w-4" />,
     id: 'access_control',
       children: [
