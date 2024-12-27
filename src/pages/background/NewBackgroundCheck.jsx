@@ -911,35 +911,35 @@ const handleSubmit = async () => {
       </div>
 
       {/* Success Message Modal */}
-      {message.type === 'success' && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+{message.type === 'success' && (
+  <motion.div 
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+  >
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+      <div className="flex items-center justify-center mb-4">
+        <Check className="w-12 h-12 text-green-500" />
+      </div>
+      <h2 className="text-xl font-semibold text-center mb-2">Success</h2>
+      <p className="text-center text-gray-600 dark:text-gray-300 mb-4">
+        Background check saved successfully!
+      </p>
+      <div className="flex justify-center">
+        <Button 
+          onClick={() => {
+            setMessage({ type: '', text: '' });
+            navigate('/background/list');
+          }}
+          className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
         >
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-            <div className="flex items-center justify-center mb-4">
-              <Check className="w-12 h-12 text-green-500" />
-            </div>
-            <h2 className="text-xl font-semibold text-center mb-2">Success</h2>
-            <p className="text-center text-gray-600 dark:text-gray-300 mb-4">
-              {message.text}
-            </p>
-            <div className="flex justify-center">
-              <Button 
-                onClick={() => {
-                  setMessage({ type: '', text: '' });
-                  navigate('/background/list');
-                }}
-                className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      )}
+          Close
+        </Button>
+      </div>
+    </div>
+  </motion.div>
+)}
 
       {/* Error Message Modal */}
       {message.type === 'error' && (
