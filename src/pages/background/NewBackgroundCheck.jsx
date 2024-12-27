@@ -273,40 +273,44 @@ const NewBackgroundCheck = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async () => {
-    // Validate the current step
-    if (!validateStep(currentStep)) return
+const handleSubmit = async () => {
+  setIsSubmitting(true)
+  try {
+    // Log data before submission to inspect
+    console.log('Submitting Data:', formData)
 
-    // If not on the last step, move to next step
-    if (currentStep < steps.length) {
-      setCurrentStep(prev => prev + 1)
+    const { data, error } = await supabase
+      .from('background_checks')
+      .insert([{
+        ...formData,
+        created_by: user.id,
+        updated_by: user.id
+      }])
+
+    // Log detailed error information
+    if (error) {
+      console.error('Detailed Supabase Error:', error)
+      setMessage({ 
+        type: 'error', 
+        text: `Submission failed: ${error.message || 'Unknown error'}` 
+      })
       return
     }
 
-    // On the last step, submit the form
-    setIsSubmitting(true)
-    try {
-      const { error } = await supabase
-        .from('background_checks')
-        .insert([{
-          ...formData,
-          created_by: user.id,
-          updated_by: user.id
-        }])
-
-      if (error) throw error
-
-      // Reset form or navigate after successful submission
-      setMessage({ type: 'success', text: 'Background check submitted successfully!' })
-      navigate('/background/list') // Optional: navigate to list page
-    } catch (error) {
-      console.error('Error:', error)
-      setMessage({ type: 'error', text: 'Error submitting background check. Please try again.' })
-      setValidationErrors([error.message || 'Submission failed'])
-    } finally {
-      setIsSubmitting(false)
-    }
+    // Optional: log successful insert
+    console.log('Insert successful', data)
+    setMessage({ type: 'success', text: 'Background check submitted successfully!' })
+    navigate('/background/list')
+  } catch (error) {
+    console.error('Catch block error:', error)
+    setMessage({ 
+      type: 'error', 
+      text: `Error: ${error.message || 'Unable to submit'}` 
+    })
+  } finally {
+    setIsSubmitting(false)
   }
+}
 
   const handleReset = () => {
     setFormData({
