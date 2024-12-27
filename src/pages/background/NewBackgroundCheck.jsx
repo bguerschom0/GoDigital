@@ -295,7 +295,7 @@ const handleSubmit = async () => {
       passport_expiry_date: formData.passport_expiry_date || null,
   department_id: formData.department_id || null,
   role_id: formData.role_id || null,
-      submitted_date: formData.submitted_date,
+      submitted_date: formData.submitted_date || null,
       status: 'Pending',
       requested_by: formData.requested_by,
       from_company: formData.from_company || null,
