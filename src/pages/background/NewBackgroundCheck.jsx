@@ -273,35 +273,56 @@ const NewBackgroundCheck = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async () => {
-    if (!validateStep(currentStep)) return
+const handleSubmit = async () => {
+  // Validate the current step
+  if (!validateStep(currentStep)) return
 
-    if (currentStep < steps.length) {
-      setCurrentStep(prev => prev + 1)
+  // Move to next step if not on final step
+  if (currentStep < steps.length) {
+    setCurrentStep(prev => prev + 1)
+    return
+  }
+
+  // Set loading state
+  setIsSubmitting(true)
+
+  try {
+    // Prepare submission data
+    const submissionData = {
+      ...formData,
+      created_by: user.id,
+      updated_by: user.id
+    }
+
+    // Perform insert with detailed error checking
+    const { data, error } = await supabase
+      .from('background_checks')
+      .insert([submissionData])
+      .select()
+
+    // Handle potential errors
+    if (error) {
+      console.error('Supabase Insertion Error:', error)
+      setMessage({ 
+        type: 'error', 
+        text: `Failed to save background check: ${error.message || 'Unknown error'}` 
+      })
       return
     }
 
-    setIsLoading(true)
-    try {
-      const { error } = await supabase
-        .from('background_checks')
-        .insert([{
-          ...formData,
-          created_by: user.id,
-          updated_by: user.id
-        }])
-
-      if (error) throw error
-
-      setMessage({ type: 'success', text: 'Background check saved successfully!' })
-      handleReset()
-    } catch (error) {
-      console.error('Error:', error)
-      setMessage({ type: 'error', text: 'Error saving background check. Please try again.' })
-    } finally {
-      setIsLoading(false)
-    }
+    // Success handling
+    setMessage({ type: 'success', text: 'Background check saved successfully!' })
+    handleReset()
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    setMessage({ 
+      type: 'error', 
+      text: 'Unexpected error occurred. Please try again.' 
+    })
+  } finally {
+    setIsSubmitting(false)
   }
+}
 
   const handleReset = () => {
     setFormData({
