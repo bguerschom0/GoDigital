@@ -287,9 +287,23 @@ const handleSubmit = async () => {
   setIsSubmitting(true)
 
   try {
-    // Prepare submission data
+    // Prepare submission data matching database schema
     const submissionData = {
-      ...formData,
+      full_names: formData.full_names,
+      citizenship: formData.citizenship,
+      id_passport_number: formData.id_passport_number,
+      passport_expiry_date: formData.passport_expiry_date || null,
+      department_id: formData.department_id,
+      role_id: formData.role_id,
+      submitted_date: formData.submitted_date,
+      status: 'Pending',
+      requested_by: formData.requested_by,
+      from_company: formData.from_company || null,
+      duration: formData.duration || null,
+      operating_country: formData.operating_country || null,
+      date_start: formData.date_start || null,
+      date_end: formData.date_end || null,
+      work_with: formData.work_with || null,
       created_by: user.id,
       updated_by: user.id
     }
@@ -313,6 +327,7 @@ const handleSubmit = async () => {
     // Success handling
     setMessage({ type: 'success', text: 'Background check saved successfully!' })
     handleReset()
+    navigate('/background/list')
   } catch (error) {
     console.error('Unexpected error:', error)
     setMessage({ 
