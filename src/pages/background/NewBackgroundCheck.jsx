@@ -25,38 +25,45 @@ const steps = [
   { id: 4, title: 'Review', description: 'Verify information' }
 ]
 
-const SuccessPopup = ({ message, onClose }) => (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4 relative"
-    >
-      <div className="flex items-center space-x-4">
-        <div className="bg-[#0A2647]/10 dark:bg-[#0A2647]/30 p-2 rounded-full">
-          <Check className="h-6 w-6 text-[#0A2647] dark:text-[#0A2647]" />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-medium text-[#0A2647] dark:text-[#0A2647]">Success</h3>
-          <p className="text-[#0A2647]/70 dark:text-[#0A2647]/90">{message}</p>
-        </div>
-      </div>
-      <div className="mt-6 flex justify-end">
-        <Button
-          onClick={() => {
-            onClose();
-            window.location.reload();
-          }}
-          className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
-        >
-          Close
-        </Button>
-      </div>
-    </motion.div>
-  </div>
-)
+const SuccessPopup = ({ message, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose()
+      window.location.reload()
+    }, 30000) // Auto close after 30 seconds
 
+    return () => clearTimeout(timer)
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4 relative"
+      >
+        <div className="flex items-center space-x-4">
+          <div className="bg-[#0A2647]/10 dark:bg-[#0A2647]/30 p-2 rounded-full">
+            <Check className="h-6 w-6 text-[#0A2647] dark:text-[#0A2647]" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-medium text-[#0A2647] dark:text-[#0A2647]">Success</h3>
+            <p className="text-[#0A2647]/70 dark:text-[#0A2647]/90">{message}</p>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end">
+          <Button
+            onClick={onClose}
+            className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+          >
+            Close
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
 
 const NewBackgroundCheck = () => {
   const navigate = useNavigate()
@@ -65,21 +72,23 @@ const NewBackgroundCheck = () => {
   const [pageLoading, setPageLoading] = useState(true)
   
   const [currentStep, setCurrentStep] = useState(1)
-  const [departments, setDepartments] = useState([])
-  const [roles, setRoles] = useState([])
+  const [departmentsByStatus, setDepartmentsByStatus] = useState({})
+  const [rolesByDepartment, setRolesByDepartment] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [validationErrors, setValidationErrors] = useState([])
+  const [departments, setDepartments] = useState([])
+  const [roles, setRoles] = useState([])
   
   const [formData, setFormData] = useState({
     full_names: '',
     citizenship: '',
     id_passport_number: '',
     passport_expiry_date: '',
-  department_id: null,
-  role_id: null,   
+    department_id: '',
+    role_id: '',
     role_type: '',
     submitted_date: '',
     status: 'Pending',
@@ -89,7 +98,9 @@ const NewBackgroundCheck = () => {
     operating_country: '',
     date_start: '',
     date_end: '',
-    work_with: ''
+    work_with: '',
+    additional_info: '',
+    contact_number: ''
   })
 
   // Check permissions
@@ -113,52 +124,87 @@ const NewBackgroundCheck = () => {
 
   const fetchDepartmentsAndRoles = async () => {
     try {
-      // Fetch departments
-      const { data: deptData, error: deptError } = await supabase
+      setIsLoading(true)
+
+      // Fetch active departments
+      const { data: departmentData, error: deptError } = await supabase
         .from('departments')
-        .select('*')
+        .select('id, name, status')
         .eq('status', 'active')
+        .order('name')
 
       if (deptError) throw deptError
-      setDepartments(deptData)
 
-      // Fetch roles
+      // Group departments by status
+      const groupedDepts = departmentData.reduce((acc, dept) => {
+        if (!acc[dept.status]) {
+          acc[dept.status] = []
+        }
+        acc[dept.status].push(dept)
+        return acc
+      }, {})
+
+      setDepartmentsByStatus(groupedDepts)
+      setDepartments(departmentData)
+
+      // Fetch roles with department information
       const { data: roleData, error: roleError } = await supabase
         .from('roles')
-        .select('*')
+        .select('id, name, type, department_id, status')
         .eq('status', 'active')
+        .order('name')
 
       if (roleError) throw roleError
+
+      // Group roles by department
+      const groupedRoles = roleData.reduce((acc, role) => {
+        if (!acc[role.department_id]) {
+          acc[role.department_id] = []
+        }
+        acc[role.department_id].push(role)
+        return acc
+      }, {})
+
+      setRolesByDepartment(groupedRoles)
       setRoles(roleData)
+
     } catch (error) {
-      console.error('Error fetching data:', error)
-      setMessage({ type: 'error', text: 'Failed to load departments and roles.' })
+      console.error('Error fetching departments and roles:', error)
+      setMessage({ 
+        type: 'error', 
+        text: 'Failed to load departments and roles. Please try again.' 
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => {
-      const newData = { ...prev, [name]: value }
-
-      // Clear fields when role changes
-      if (name === 'role_type') {
-        newData.from_company = ''
-        newData.duration = ''
-        newData.operating_country = ''
-        newData.date_start = ''
-        newData.date_end = ''
-        newData.work_with = ''
+    
+    if (name === 'citizenship') {
+      const formattedValue = value.trim()
+      const lowerCaseValue = formattedValue.toLowerCase()
+      if (['rwanda', 'rwandan'].includes(lowerCaseValue)) {
+        const capitalizedValue = formattedValue.charAt(0).toUpperCase() + formattedValue.slice(1).toLowerCase()
+        setFormData(prev => ({
+          ...prev,
+          [name]: capitalizedValue,
+          passport_expiry_date: ''
+        }))
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }))
       }
-
-      // Reset passport expiry date if citizenship is Rwanda/Rwandan
-      if (name === 'citizenship' && 
-          ['rwanda', 'rwandan'].includes(value.trim().toLowerCase())) {
-        newData.passport_expiry_date = ''
-      }
-
-      return newData
-    })
+    } else if (name === 'department_id') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        role_id: '', // Reset role when department changes
+        role_type: '' // Reset role type when department changes
+      }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
 
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
@@ -184,7 +230,6 @@ const NewBackgroundCheck = () => {
           newValidationErrors.push('ID/Passport number is required')
         }
         
-        // Check passport expiry only if citizenship is not Rwanda/Rwandan
         const citizenshipLower = formData.citizenship.trim().toLowerCase()
         if (!['rwanda', 'rwandan'].includes(citizenshipLower) && 
             !formData.passport_expiry_date) {
@@ -197,6 +242,10 @@ const NewBackgroundCheck = () => {
         if (!formData.department_id) {
           newErrors.department_id = 'Department is required'
           newValidationErrors.push('Department is required')
+        }
+        if (!formData.role_id) {
+          newErrors.role_id = 'Role is required'
+          newValidationErrors.push('Role is required')
         }
         if (!formData.role_type) {
           newErrors.role_type = 'Role type is required'
@@ -250,6 +299,10 @@ const NewBackgroundCheck = () => {
             newErrors.requested_by = 'Requested by is required'
             newValidationErrors.push('Requested by is required')
           }
+          if (!formData.additional_info) {
+            newErrors.additional_info = 'Additional information is required'
+            newValidationErrors.push('Additional information is required')
+          }
         }
         else if (formData.role_type === 'Internship') {
           if (!formData.date_start) {
@@ -264,6 +317,10 @@ const NewBackgroundCheck = () => {
             newErrors.work_with = 'Work with is required'
             newValidationErrors.push('Work with is required')
           }
+          if (!formData.contact_number) {
+            newErrors.contact_number = 'Contact number is required'
+            newValidationErrors.push('Contact number is required')
+          }
         }
         break
     }
@@ -273,71 +330,64 @@ const NewBackgroundCheck = () => {
     return Object.keys(newErrors).length === 0
   }
 
-const handleSubmit = async () => {
-  // Validate the current step
-  if (!validateStep(currentStep)) return
+  const handleSubmit = async () => {
+    if (!validateStep(currentStep)) return
 
-  // Move to next step if not on final step
-  if (currentStep < steps.length) {
-    setCurrentStep(prev => prev + 1)
-    return
-  }
-
-  // Set loading state
-  setIsSubmitting(true)
-
-  try {
-    // Prepare submission data matching database schema
-    const submissionData = {
-      full_names: formData.full_names,
-      citizenship: formData.citizenship,
-      id_passport_number: formData.id_passport_number,
-      passport_expiry_date: formData.passport_expiry_date || null,
-  department_id: formData.department_id || null,
-  role_id: formData.role_id || null,
-      submitted_date: formData.submitted_date || null,
-      status: 'Pending',
-      requested_by: formData.requested_by,
-      from_company: formData.from_company || null,
-      duration: formData.duration || null,
-      operating_country: formData.operating_country || null,
-      date_start: formData.date_start || null,
-      date_end: formData.date_end || null,
-      work_with: formData.work_with || null,
-      created_by: user.id,
-      updated_by: user.id
+    if (currentStep < steps.length) {
+      setCurrentStep(prev => prev + 1)
+      return
     }
 
-    // Perform insert with detailed error checking
-    const { data, error } = await supabase
-      .from('background_checks')
-      .insert([submissionData])
-      .select()
+    setIsSubmitting(true)
 
-    // Handle potential errors
-    if (error) {
-      console.error('Supabase Insertion Error:', error)
+    try {
+      const submissionData = {
+        full_names: formData.full_names,
+        citizenship: formData.citizenship,
+        id_passport_number: formData.id_passport_number,
+        passport_expiry_date: formData.passport_expiry_date || null,
+        department_id: formData.department_id || null,
+        role_id: formData.role_id || null,
+        role_type: formData.role_type,
+        submitted_date: formData.submitted_date || null,
+        status: 'Pending',
+        requested_by: formData.requested_by,
+        from_company: formData.from_company || null,
+        duration: formData.duration || null,
+        operating_country: formData.operating_country || null,
+        date_start: formData.date_start || null,
+        date_end: formData.date_end || null,
+        work_with: formData.work_with || null,
+        additional_info: formData.additional_info || null,
+        contact_number: formData.contact_number || null,
+        created_by: user.id,
+        updated_by: user.id
+      }
+
+      const { data, error } = await supabase
+        .from('background_checks')
+        .insert([submissionData])
+        .select()
+
+      if (error) throw error
+
+      setMessage({ 
+        type: 'success', 
+        text: 'Background check saved successfully!' 
+      })
+      
+      // The page will automatically reload after 30 seconds (handled by SuccessPopup)
+      
+    } catch (error) {
+      console.error('Error saving background check:', error)
       setMessage({ 
         type: 'error', 
         text: `Failed to save background check: ${error.message || 'Unknown error'}` 
       })
-      return
+    } finally {
+      setIsSubmitting(false)
     }
-
-    // Success handling
-    setMessage({ type: 'success', text: 'Background check saved successfully!' })
-    handleReset()
-    navigate('/background/list')
-  } catch (error) {
-    console.error('Unexpected error:', error)
-    setMessage({ 
-      type: 'error', 
-      text: 'Unexpected error occurred. Please try again.' 
-    })
-  } finally {
-    setIsSubmitting(false)
   }
-}
 
   const handleReset = () => {
     setFormData({
@@ -356,7 +406,9 @@ const handleSubmit = async () => {
       operating_country: '',
       date_start: '',
       date_end: '',
-      work_with: ''
+      work_with: '',
+      additional_info: '',
+      contact_number: ''
     })
     setCurrentStep(1)
     setErrors({})
@@ -395,6 +447,7 @@ const handleSubmit = async () => {
                 value={formData.full_names}
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                placeholder="Enter full names"
               />
               {errors.full_names && (
                 <p className="mt-1 text-sm text-red-500">{errors.full_names}</p>
@@ -428,6 +481,7 @@ const handleSubmit = async () => {
                 value={formData.id_passport_number}
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                placeholder="Enter ID or passport number"
               />
               {errors.id_passport_number && (
                 <p className="mt-1 text-sm text-red-500">{errors.id_passport_number}</p>
@@ -466,18 +520,19 @@ const handleSubmit = async () => {
                 name="department_id"
                 value={formData.department_id}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700">
-                // Rest of the select tag for departments
-                  <option value="">Select Department</option>
-                  {departments.map(dept => (
-                    <option key={dept.id} value={dept.id}>{dept.name}</option>
-                  ))}
-                </select>
-                {errors.department_id && (
-                  <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>
-                )}
-              </div>
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              >
+                <option value="">Select Department</option>
+                {departments.map(dept => (
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                ))}
+              </select>
+              {errors.department_id && (
+                <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>
+              )}
+            </div>
 
+            {formData.department_id && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Role Type
@@ -500,100 +555,97 @@ const handleSubmit = async () => {
                   <p className="mt-1 text-sm text-red-500">{errors.role_type}</p>
                 )}
               </div>
+            )}
+
+            {formData.department_id && formData.role_type && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Specific Role
+                </label>
+                <select
+                  name="role_id"
+                  value={formData.role_id}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                >
+                  <option value="">Select Specific Role</option>
+                  {roles
+                    .filter(role => 
+                      role.department_id === formData.department_id && 
+                      role.type === formData.role_type
+                    )
+                    .map(role => (
+                      <option key={role.id} value={role.id}>{role.name}</option>
+                    ))
+                  }
+                </select>
+                {errors.role_id && (
+                  <p className="mt-1 text-sm text-red-500">{errors.role_id}</p>
+                )}
+              </div>
+            )}
           </div>
         )
 
       case 3:
         return (
           <div className="space-y-4">
-            {formData.role_type === 'Staff' || formData.role_type === 'Apprentice' ? (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Submitted Date
-                  </label>
-                  <input
-                    type="date"
-                    name="submitted_date"
-                    value={formData.submitted_date}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.submitted_date && (
-                    <p className="mt-1 text-sm text-red-500">{errors.submitted_date}</p>
-                  )}
-                </div>
+            {/* Common fields for all role types */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Submitted Date
+              </label>
+              <input
+                type="date"
+                name="submitted_date"
+                value={formData.submitted_date}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              />
+              {errors.submitted_date && (
+                <p className="mt-1 text-sm text-red-500">{errors.submitted_date}</p>
+              )}
+            </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Requested By
-                  </label>
-                  <input
-                    type="text"
-                    name="requested_by"
-                    value={formData.requested_by}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter requester name"
-                  />
-                  {errors.requested_by && (
-                    <p className="mt-1 text-sm text-red-500">{errors.requested_by}</p>
-                  )}
-                </div>
-              </>
-            ) : formData.role_type === 'Expert' ? (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    From Company
-                  </label>
-                  <input
-                    type="text"
-                    name="from_company"
-                    value={formData.from_company}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter company name"
-                  />
-                  {errors.from_company && (
-                    <p className="mt-1 text-sm text-red-500">{errors.from_company}</p>
-                  )}
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Requested By
+              </label>
+              <input
+                type="text"
+                name="requested_by"
+                value={formData.requested_by}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                placeholder="Enter requester name"
+              />
+              {errors.requested_by && (
+                <p className="mt-1 text-sm text-red-500">{errors.requested_by}</p>
+              )}
+            </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Submitted Date
-                  </label>
-                  <input
-                    type="date"
-                    name="submitted_date"
-                    value={formData.submitted_date}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.submitted_date && (
-                    <p className="mt-1 text-sm text-red-500">{errors.submitted_date}</p>
-                  )}
-                </div>
+            {/* Expert, Contractor, Consultant specific fields */}
+            {['Expert', 'Contractor', 'Consultant'].includes(formData.role_type) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  From Company
+                </label>
+                <input
+                  type="text"
+                  name="from_company"
+                  value={formData.from_company}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                  placeholder="Enter company name"
+                />
+                {errors.from_company && (
+                  <p className="mt-1 text-sm text-red-500">{errors.from_company}</p>
+                )}
+              </div>
+            )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Requested By
-                  </label>
-                  <input
-                    type="text"
-                    name="requested_by"
-                    value={formData.requested_by}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter requester name"
-                  />
-                  {errors.requested_by && (
-                    <p className="mt-1 text-sm text-red-500">{errors.requested_by}</p>
-                  )}
-                </div>
-              </>
-            ) : formData.role_type === 'Contractor' || formData.role_type === 'Consultant' ? (
+            {/* Contractor, Consultant specific fields */}
+            {['Contractor', 'Consultant'].includes(formData.role_type) && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -605,7 +657,7 @@ const handleSubmit = async () => {
                     value={formData.duration}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter duration"
+                    placeholder="Enter duration (e.g., 6 months)"
                   />
                   {errors.duration && (
                     <p className="mt-1 text-sm text-red-500">{errors.duration}</p>
@@ -631,55 +683,25 @@ const handleSubmit = async () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    From Company
+                    Additional Information
                   </label>
-                  <input
-                    type="text"
-                    name="from_company"
-                    value={formData.from_company}
+                  <textarea
+                    name="additional_info"
+                    value={formData.additional_info}
                     onChange={handleInputChange}
+                    rows={4}
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter company name"
+                    placeholder="Enter any additional information..."
                   />
-                  {errors.from_company && (
-                    <p className="mt-1 text-sm text-red-500">{errors.from_company}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Submitted Date
-                  </label>
-                  <input
-                    type="date"
-                    name="submitted_date"
-                    value={formData.submitted_date}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.submitted_date && (
-                    <p className="mt-1 text-sm text-red-500">{errors.submitted_date}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Requested By
-                  </label>
-                  <input
-                    type="text"
-                    name="requested_by"
-                    value={formData.requested_by}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter requester name"
-                  />
-                  {errors.requested_by && (
-                    <p className="mt-1 text-sm text-red-500">{errors.requested_by}</p>
+                  {errors.additional_info && (
+                    <p className="mt-1 text-sm text-red-500">{errors.additional_info}</p>
                   )}
                 </div>
               </>
-            ) : formData.role_type === 'Internship' ? (
+            )}
+
+            {/* Internship specific fields */}
+            {formData.role_type === 'Internship' && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -723,15 +745,32 @@ const handleSubmit = async () => {
                     name="work_with"
                     value={formData.work_with}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
                     placeholder="Enter supervisor/mentor name"
                   />
                   {errors.work_with && (
                     <p className="mt-1 text-sm text-red-500">{errors.work_with}</p>
                   )}
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Contact Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="contact_number"
+                    value={formData.contact_number}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                    placeholder="Enter contact number"
+                  />
+                  {errors.contact_number && (
+                    <p className="mt-1 text-sm text-red-500">{errors.contact_number}</p>
+                  )}
+                </div>
               </>
-            ) : null}
+            )}
           </div>
         )
 
@@ -757,14 +796,43 @@ const handleSubmit = async () => {
                 <div className="space-y-2">
                   <p><span className="font-medium">Department:</span> {departments.find(d => d.id === formData.department_id)?.name}</p>
                   <p><span className="font-medium">Role Type:</span> {formData.role_type}</p>
-                  {formData.from_company && <p><span className="font-medium">Company:</span> {formData.from_company}</p>}
-                  {formData.duration && <p><span className="font-medium">Duration:</span> {formData.duration}</p>}
-                  {formData.operating_country && <p><span className="font-medium">Operating Country:</span> {formData.operating_country}</p>}
-                  {formData.date_start && <p><span className="font-medium">Start Date:</span> {formData.date_start}</p>}
-                  {formData.date_end && <p><span className="font-medium">End Date:</span> {formData.date_end}</p>}
-                  {formData.work_with && <p><span className="font-medium">Work With:</span> {formData.work_with}</p>}
-                  {formData.submitted_date && <p><span className="font-medium">Submitted Date:</span> {formData.submitted_date}</p>}
-                  {formData.requested_by && <p><span className="font-medium">Requested By:</span> {formData.requested_by}</p>}
+                  <p><span className="font-medium">Specific Role:</span> {roles.find(r => r.id === formData.role_id)?.name}</p>
+                  
+                  {formData.submitted_date && (
+                    <p><span className="font-medium">Submitted Date:</span> {formData.submitted_date}</p>
+                  )}
+                  {formData.requested_by && (
+                    <p><span className="font-medium">Requested By:</span> {formData.requested_by}</p>
+                  )}
+                  {formData.from_company && (
+                    <p><span className="font-medium">Company:</span> {formData.from_company}</p>
+                  )}
+                  {formData.duration && (
+                    <p><span className="font-medium">Duration:</span> {formData.duration}</p>
+                  )}
+                  {formData.operating_country && (
+                    <p><span className="font-medium">Operating Country:</span> {formData.operating_country}</p>
+                  )}
+                  {formData.date_start && (
+                    <p><span className="font-medium">Start Date:</span> {formData.date_start}</p>
+                  )}
+                  {formData.date_end && (
+                    <p><span className="font-medium">End Date:</span> {formData.date_end}</p>
+                  )}
+                  {formData.work_with && (
+                    <p><span className="font-medium">Work With:</span> {formData.work_with}</p>
+                  )}
+                  {formData.contact_number && (
+                    <p><span className="font-medium">Contact Number:</span> {formData.contact_number}</p>
+                  )}
+                  {formData.additional_info && (
+                    <div>
+                      <p className="font-medium">Additional Information:</p>
+                      <p className="whitespace-pre-wrap text-gray-600 dark:text-gray-400 mt-1">
+                        {formData.additional_info}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -911,35 +979,17 @@ const handleSubmit = async () => {
       </div>
 
       {/* Success Message Modal */}
-{message.type === 'success' && (
-  <motion.div 
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-  >
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-      <div className="flex items-center justify-center mb-4">
-        <Check className="w-12 h-12 text-green-500" />
-      </div>
-      <h2 className="text-xl font-semibold text-center mb-2">Success</h2>
-      <p className="text-center text-gray-600 dark:text-gray-300 mb-4">
-        Background check saved successfully!
-      </p>
-      <div className="flex justify-center">
-        <Button 
-          onClick={() => {
-            setMessage({ type: '', text: '' });
-            navigate('/background/list');
+      {message.type === 'success' && (
+        <SuccessPopup
+          message={message.text}
+          onClose={() => {
+            setMessage({ type: '', text: '' })
+            setTimeout(() => {
+              window.location.reload()
+            }, 30000)
           }}
-          className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
-        >
-          Close
-        </Button>
-      </div>
-    </div>
-  </motion.div>
-)}
+        />
+      )}
 
       {/* Error Message Modal */}
       {message.type === 'error' && (
