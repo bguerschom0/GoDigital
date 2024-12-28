@@ -829,8 +829,8 @@ case 3:
                   </p>
                   <p>
                     <span className="font-medium">Role:</span>{' '}
-                    {departmentRoles[formData.department_id]?.find(r => r.id === formData.role_id)?.name}
-                    {' '}({departmentRoles[formData.department_id]?.find(r => r.id === formData.role_id)?.type})
+                    {roles.find(r => r.id === formData.role_id)?.name}
+                    {' '}({roles.find(r => r.id === formData.role_id)?.type})
                   </p>
                   
                   {formData.submitted_date && (
