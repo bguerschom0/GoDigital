@@ -82,6 +82,7 @@ const NewBackgroundCheck = () => {
   const [validationErrors, setValidationErrors] = useState([])
   const [duplicateIdFound, setDuplicateIdFound] = useState(false)
   const [idCheckLoading, setIdCheckLoading] = useState(false)
+  const [roleTypes, setRoleTypes] = useState([])
   
   const [formData, setFormData] = useState({
     full_names: '',
