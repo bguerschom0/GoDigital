@@ -29,16 +29,20 @@ const steps = [
 
 const SuccessPopup = ({ message, onClose }) => {
   useEffect(() => {
+    // Auto close and refresh after 10 seconds
     const timer = setTimeout(() => {
-      onClose()
-    }, 30000)
-    return () => clearTimeout(timer)
-  }, [onClose])
+      onClose();
+      window.location.reload();
+    }, 10000); // 10 seconds
 
-  const handleClose = () => {
-    window.location.reload()
-    onClose()
-  }
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  // Function to handle manual close
+  const handleManualClose = () => {
+    onClose();
+    window.location.reload(); // Immediate refresh
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -59,7 +63,7 @@ const SuccessPopup = ({ message, onClose }) => {
         </div>
         <div className="mt-6 flex justify-end">
           <Button
-            onClick={onClose}
+            onClick={handleManualClose}
             className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
           >
             Close
@@ -67,8 +71,8 @@ const SuccessPopup = ({ message, onClose }) => {
         </div>
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
 const NewBackgroundCheck = () => {
   const navigate = useNavigate()
@@ -1017,18 +1021,17 @@ case 3:
         </div>
       </div>
 
-      {/* Success Message Modal */}
-      {message.type === 'success' && (
-        <SuccessPopup
-          message={message.text}
-          onClose={() => {
-            setMessage({ type: '', text: '' })
-            setTimeout(() => {
-              window.location.reload()
-            }, 30000)
-          }}
-        />
-      )}
+{/* Success Message Modal */}
+{message.type === 'success' && (
+  <SuccessPopup
+    message={message.text}
+    onClose={() => {
+      setMessage({ type: '', text: '' });
+      // Reset form data
+      handleReset();
+    }}
+  />
+)}
 
       {/* Error Message Modal */}
       {message.type === 'error' && (
