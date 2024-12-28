@@ -141,50 +141,92 @@ const NewBackgroundCheck = () => {
     }
   }, 500)
 
-  const fetchDepartmentsAndRoles = async () => {
+const fetchDepartmentsAndRoles = async () => {
+  try {
+    setIsLoading(true)
+    console.log('Starting to fetch departments and roles...')
+    
+    // First, try to fetch departments
+    console.log('Fetching departments...')
+    const { data: departmentData, error: deptError } = await supabase
+      .from('departments')
+      .select('id, name, status')
+      .eq('status', 'active')
+
+    // Log department results
+    console.log('Department fetch results:', { departmentData, deptError })
+
+    if (deptError) {
+      console.error('Department fetch error:', deptError)
+      throw new Error(`Department fetch failed: ${deptError.message}`)
+    }
+
+    setDepartments(departmentData || [])
+
+    // Then fetch roles
+    console.log('Fetching roles...')
+    const { data: rolesData, error: rolesError } = await supabase
+      .from('roles')
+      .select('id, name, type, department_id')
+      .eq('status', 'active')
+
+    // Log role results
+    console.log('Role fetch results:', { rolesData, rolesError })
+
+    if (rolesError) {
+      console.error('Role fetch error:', rolesError)
+      throw new Error(`Role fetch failed: ${rolesError.message}`)
+    }
+
+    // Group roles by department
+    const rolesByDept = (rolesData || []).reduce((acc, role) => {
+      if (!acc[role.department_id]) {
+        acc[role.department_id] = []
+      }
+      acc[role.department_id].push(role)
+      return acc
+    }, {})
+
+    console.log('Grouped roles by department:', rolesByDept)
+
+    setDepartmentRoles(rolesByDept)
+
+  } catch (error) {
+    console.error('Error in fetchDepartmentsAndRoles:', error)
+    setMessage({ 
+      type: 'error', 
+      text: `Failed to load data: ${error.message}. Please check console for details.` 
+    })
+  } finally {
+    setIsLoading(false)
+  }
+}
+
+  useEffect(() => {
+  const checkSupabaseConnection = async () => {
     try {
-      setIsLoading(true)
+      console.log('Checking Supabase connection...')
+      const { data, error } = await supabase.from('departments').select('count')
       
-      // Fetch departments
-      const { data: departmentData, error: deptError } = await supabase
-        .from('departments')
-        .select('*')
-        .eq('status', 'active')
-        .order('name')
-
-      if (deptError) throw deptError
-      setDepartments(departmentData || [])
-
-      // Fetch roles with department information
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('roles')
-        .select('id, name, type, department_id')
-        .eq('status', 'active')
-        .order('name')
-
-      if (rolesError) throw rolesError
-
-      // Group roles by department
-      const rolesByDept = rolesData.reduce((acc, role) => {
-        if (!acc[role.department_id]) {
-          acc[role.department_id] = []
-        }
-        acc[role.department_id].push(role)
-        return acc
-      }, {})
-
-      setDepartmentRoles(rolesByDept)
-
+      if (error) {
+        console.error('Supabase connection error:', error)
+        setMessage({
+          type: 'error',
+          text: 'Database connection failed. Please check your credentials.'
+        })
+        return false
+      }
+      
+      console.log('Supabase connection successful')
+      return true
     } catch (error) {
-      console.error('Error fetching data:', error)
-      setMessage({ 
-        type: 'error', 
-        text: 'Failed to load departments and roles.' 
-      })
-    } finally {
-      setIsLoading(false)
+      console.error('Unexpected error checking connection:', error)
+      return false
     }
   }
+
+  checkSupabaseConnection()
+}, [])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
