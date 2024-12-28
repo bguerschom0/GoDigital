@@ -9,7 +9,8 @@ import {
   ChevronLeft, 
   RefreshCw,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Info
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -17,6 +18,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
+import debounce from 'lodash/debounce'
 
 const steps = [
   { id: 1, title: 'Basic Information', description: 'Personal and identification details' },
@@ -30,8 +32,7 @@ const SuccessPopup = ({ message, onClose }) => {
     const timer = setTimeout(() => {
       onClose()
       window.location.reload()
-    }, 30000) // Auto close after 30 seconds
-
+    }, 30000)
     return () => clearTimeout(timer)
   }, [onClose])
 
@@ -69,19 +70,18 @@ const NewBackgroundCheck = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { checkPermission } = usePageAccess()
-  const [pageLoading, setPageLoading] = useState(true)
   
+  const [pageLoading, setPageLoading] = useState(true)
   const [currentStep, setCurrentStep] = useState(1)
-  const [departmentsByStatus, setDepartmentsByStatus] = useState({})
-  const [rolesByDepartment, setRolesByDepartment] = useState({})
+  const [departments, setDepartments] = useState([])
+  const [departmentRoles, setDepartmentRoles] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [validationErrors, setValidationErrors] = useState([])
-  const [departments, setDepartments] = useState([])
-  const [roles, setRoles] = useState([])
-  const [roleTypes, setRoleTypes] = useState([])
+  const [duplicateIdFound, setDuplicateIdFound] = useState(false)
+  const [idCheckLoading, setIdCheckLoading] = useState(false)
   
   const [formData, setFormData] = useState({
     full_names: '',
@@ -90,7 +90,6 @@ const NewBackgroundCheck = () => {
     passport_expiry_date: '',
     department_id: '',
     role_id: '',
-    role_type: '',
     submitted_date: '',
     status: 'Pending',
     requested_by: '',
@@ -107,15 +106,13 @@ const NewBackgroundCheck = () => {
   // Check permissions
   useEffect(() => {
     const checkAccess = async () => {
-      const { canAccess } = checkPermission('/background/new')
-      
+      const { canAccess } = await checkPermission('/background/new')
       if (!canAccess) {
         navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
         return
       }
       setPageLoading(false)
     }
-    
     checkAccess()
   }, [])
 
@@ -123,55 +120,85 @@ const NewBackgroundCheck = () => {
     fetchDepartmentsAndRoles()
   }, [])
 
-const fetchDepartmentsAndRoles = async () => {
-  try {
-    setIsLoading(true)
+  const checkForDuplicateId = debounce(async (idNumber) => {
+    if (!idNumber) return
     
-    // Fetch departments
-    const { data: departmentData, error: deptError } = await supabase
-      .from('departments')
-      .select('*')
-      .eq('status', 'active')
-      .order('name')
+    setIdCheckLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('background_checks')
+        .select('id_passport_number')
+        .eq('id_passport_number', idNumber)
+        .limit(1)
 
-    if (deptError) {
-      console.error('Department fetch error:', deptError)
-      throw deptError
+      if (error) throw error
+
+      setDuplicateIdFound(data && data.length > 0)
+    } catch (error) {
+      console.error('Error checking for duplicate ID:', error)
+    } finally {
+      setIdCheckLoading(false)
     }
+  }, 500)
 
-    setDepartments(departmentData || [])
+  const fetchDepartmentsAndRoles = async () => {
+    try {
+      setIsLoading(true)
+      
+      // Fetch departments
+      const { data: departmentData, error: deptError } = await supabase
+        .from('departments')
+        .select('*')
+        .eq('status', 'active')
+        .order('name')
 
-    // Fetch unique role types from roles table
-    const { data: roleTypeData, error: roleError } = await supabase
-      .from('roles')
-      .select('type')
-      .eq('status', 'active')
-      .order('type')
+      if (deptError) throw deptError
+      setDepartments(departmentData || [])
 
-    if (roleError) {
-      console.error('Role type fetch error:', roleError)
-      throw roleError
+      // Fetch roles with department information
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('roles')
+        .select('id, name, type, department_id')
+        .eq('status', 'active')
+        .order('name')
+
+      if (rolesError) throw rolesError
+
+      // Group roles by department
+      const rolesByDept = rolesData.reduce((acc, role) => {
+        if (!acc[role.department_id]) {
+          acc[role.department_id] = []
+        }
+        acc[role.department_id].push(role)
+        return acc
+      }, {})
+
+      setDepartmentRoles(rolesByDept)
+
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      setMessage({ 
+        type: 'error', 
+        text: 'Failed to load departments and roles.' 
+      })
+    } finally {
+      setIsLoading(false)
     }
-
-    // Get unique role types
-    const uniqueTypes = [...new Set(roleTypeData.map(role => role.type))]
-    setRoleTypes(uniqueTypes)
-
-  } catch (error) {
-    console.error('Error fetching data:', error)
-    setMessage({ 
-      type: 'error', 
-      text: 'Failed to load departments and roles.' 
-    })
-  } finally {
-    setIsLoading(false)
   }
-}
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
     
-    if (name === 'citizenship') {
+    if (name === 'id_passport_number') {
+      setFormData(prev => ({ ...prev, [name]: value }))
+      checkForDuplicateId(value)
+    } else if (name === 'department_id') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        role_id: '' // Reset role when department changes
+      }))
+    } else if (name === 'citizenship') {
       const formattedValue = value.trim()
       const lowerCaseValue = formattedValue.toLowerCase()
       if (['rwanda', 'rwandan'].includes(lowerCaseValue)) {
@@ -184,13 +211,6 @@ const fetchDepartmentsAndRoles = async () => {
       } else {
         setFormData(prev => ({ ...prev, [name]: value }))
       }
-    } else if (name === 'department_id') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        role_id: '', // Reset role when department changes
-        role_type: '' // Reset role type when department changes
-      }))
     } else {
       setFormData(prev => ({ ...prev, [name]: value }))
     }
@@ -228,18 +248,23 @@ const fetchDepartmentsAndRoles = async () => {
         break
 
       case 2:
-      if (!formData.department_id) {
-        newErrors.department_id = 'Department is required'
-        newValidationErrors.push('Department is required')
-      }
-      if (!formData.role_type) {
-        newErrors.role_type = 'Role type is required'
-        newValidationErrors.push('Role type is required')
-      }
-      break
+        if (!formData.department_id) {
+          newErrors.department_id = 'Department is required'
+          newValidationErrors.push('Department is required')
+        }
+        if (!formData.role_id) {
+          newErrors.role_id = 'Role is required'
+          newValidationErrors.push('Role is required')
+        }
+        break
 
       case 3:
-        if (['Staff', 'Apprentice'].includes(formData.role_type)) {
+        const selectedRole = departmentRoles[formData.department_id]?.find(
+          role => role.id === formData.role_id
+        )
+        const roleType = selectedRole?.type
+
+        if (['Staff', 'Apprentice'].includes(roleType)) {
           if (!formData.submitted_date) {
             newErrors.submitted_date = 'Submitted date is required'
             newValidationErrors.push('Submitted date is required')
@@ -249,7 +274,7 @@ const fetchDepartmentsAndRoles = async () => {
             newValidationErrors.push('Requested by is required')
           }
         }
-        else if (formData.role_type === 'Expert') {
+        else if (roleType === 'Expert') {
           if (!formData.from_company) {
             newErrors.from_company = 'Company is required'
             newValidationErrors.push('Company is required')
@@ -263,7 +288,7 @@ const fetchDepartmentsAndRoles = async () => {
             newValidationErrors.push('Requested by is required')
           }
         }
-        else if (['Contractor', 'Consultant'].includes(formData.role_type)) {
+        else if (['Contractor', 'Consultant'].includes(roleType)) {
           if (!formData.duration) {
             newErrors.duration = 'Duration is required'
             newValidationErrors.push('Duration is required')
@@ -289,7 +314,7 @@ const fetchDepartmentsAndRoles = async () => {
             newValidationErrors.push('Additional information is required')
           }
         }
-        else if (formData.role_type === 'Internship') {
+        else if (roleType === 'Internship') {
           if (!formData.date_start) {
             newErrors.date_start = 'Start date is required'
             newValidationErrors.push('Start date is required')
@@ -326,13 +351,17 @@ const fetchDepartmentsAndRoles = async () => {
     setIsSubmitting(true)
 
     try {
+      const selectedRole = departmentRoles[formData.department_id]?.find(
+        role => role.id === formData.role_id
+      )
+
       const submissionData = {
         full_names: formData.full_names,
         citizenship: formData.citizenship,
         id_passport_number: formData.id_passport_number,
         passport_expiry_date: formData.passport_expiry_date || null,
-        department_id: formData.department_id || null,
-        role_type: formData.role_type,
+        department_id: formData.department_id,
+        role_id: formData.role_id,
         submitted_date: formData.submitted_date || null,
         status: 'Pending',
         requested_by: formData.requested_by,
@@ -360,14 +389,12 @@ const fetchDepartmentsAndRoles = async () => {
         text: 'Background check saved successfully!' 
       })
       
-      // The page will automatically reload after 30 seconds (handled by SuccessPopup)
-      
     } catch (error) {
       console.error('Error saving background check:', error)
       setMessage({ 
         type: 'error', 
-        text: `Failed to save background check: ${error.message || 'Unknown error'}` 
-      })
+        text: `Failed to save background check: ${error.message}`
+        })
     } finally {
       setIsSubmitting(false)
     }
@@ -380,8 +407,7 @@ const fetchDepartmentsAndRoles = async () => {
       id_passport_number: '',
       passport_expiry_date: '',
       department_id: '',
-
-      role_type: '',
+      role_id: '',
       submitted_date: '',
       status: 'Pending',
       requested_by: '',
@@ -397,6 +423,7 @@ const fetchDepartmentsAndRoles = async () => {
     setCurrentStep(1)
     setErrors({})
     setValidationErrors([])
+    setDuplicateIdFound(false)
   }
 
   const renderValidationErrors = () => {
@@ -417,13 +444,18 @@ const fetchDepartmentsAndRoles = async () => {
   }
 
   const renderStepContent = () => {
+    const selectedRole = departmentRoles[formData.department_id]?.find(
+      role => role.id === formData.role_id
+    )
+    const roleType = selectedRole?.type
+
     switch (currentStep) {
       case 1:
         return (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Full Names
+                Full Names <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -440,7 +472,7 @@ const fetchDepartmentsAndRoles = async () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Citizenship
+                Citizenship <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -457,18 +489,36 @@ const fetchDepartmentsAndRoles = async () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                ID/Passport Number
+                ID/Passport Number <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                name="id_passport_number"
-                value={formData.id_passport_number}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                placeholder="Enter ID or passport number"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  name="id_passport_number"
+                  value={formData.id_passport_number}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700 ${
+                    idCheckLoading ? 'pr-10' : ''
+                  }`}
+                  placeholder="Enter ID or passport number"
+                />
+                {idCheckLoading && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  </div>
+                )}
+              </div>
               {errors.id_passport_number && (
                 <p className="mt-1 text-sm text-red-500">{errors.id_passport_number}</p>
+              )}
+              {duplicateIdFound && (
+                <div className="mt-2 flex items-start gap-2 text-blue-600 dark:text-blue-400">
+                  <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm">
+                    This ID/Passport number already exists in the database.
+                    You can still proceed with the submission.
+                  </p>
+                </div>
               )}
             </div>
 
@@ -476,7 +526,7 @@ const fetchDepartmentsAndRoles = async () => {
              !['Rwanda', 'Rwandan'].includes(formData.citizenship.trim()) && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Passport Expiry Date
+                  Passport Expiry Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -493,58 +543,61 @@ const fetchDepartmentsAndRoles = async () => {
           </div>
         )
 
-case 2:
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Department <span className="text-red-500">*</span>
-        </label>
-        <select
-          name="department_id"
-          value={formData.department_id}
-          onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-        >
-          <option value="">Select Department</option>
-          {departments.map(dept => (
-            <option key={dept.id} value={dept.id}>{dept.name}</option>
-          ))}
-        </select>
-        {errors.department_id && (
-          <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>
-        )}
-      </div>
+      case 2:
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Department <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="department_id"
+                value={formData.department_id}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              >
+                <option value="">Select Department</option>
+                {departments.map(dept => (
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                ))}
+              </select>
+              {errors.department_id && (
+                <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>
+              )}
+            </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Role Type <span className="text-red-500">*</span>
-        </label>
-        <select
-          name="role_type"
-          value={formData.role_type}
-          onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-        >
-          <option value="">Select Role Type</option>
-          {roleTypes.map(type => (
-            <option key={type} value={type}>{type}</option>
-          ))}
-        </select>
-        {errors.role_type && (
-          <p className="mt-1 text-sm text-red-500">{errors.role_type}</p>
-        )}
-      </div>
-    </div>
-  )
+            {formData.department_id && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Role <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="role_id"
+                  value={formData.role_id}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                >
+                  <option value="">Select Role</option>
+                  {departmentRoles[formData.department_id]?.map(role => (
+                    <option key={role.id} value={role.id}>
+                      {role.name} ({role.type})
+                    </option>
+                  ))}
+                </select>
+                {errors.role_id && (
+                  <p className="mt-1 text-sm text-red-500">{errors.role_id}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )
 
       case 3:
         return (
           <div className="space-y-4">
-            {/* Common fields for all role types */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Submitted Date
+                Submitted Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -560,7 +613,7 @@ case 2:
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Requested By
+                Requested By <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -575,11 +628,11 @@ case 2:
               )}
             </div>
 
-            {/* Expert, Contractor, Consultant specific fields */}
-            {['Expert', 'Contractor', 'Consultant'].includes(formData.role_type) && (
+            {/* Expert, Contractor, Consultant fields */}
+            {['Expert', 'Contractor', 'Consultant'].includes(roleType) && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  From Company
+                  From Company <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -595,12 +648,12 @@ case 2:
               </div>
             )}
 
-            {/* Contractor, Consultant specific fields */}
-            {['Contractor', 'Consultant'].includes(formData.role_type) && (
+            {/* Contractor & Consultant specific fields */}
+            {['Contractor', 'Consultant'].includes(roleType) && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Duration
+                    Duration <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -617,7 +670,7 @@ case 2:
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Operating Country
+                    Operating Country <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -634,7 +687,7 @@ case 2:
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Additional Information
+                    Additional Information <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     name="additional_info"
@@ -652,11 +705,11 @@ case 2:
             )}
 
             {/* Internship specific fields */}
-            {formData.role_type === 'Internship' && (
+            {roleType === 'Internship' && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Start Date
+                    Start Date <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -672,7 +725,7 @@ case 2:
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    End Date
+                    End Date <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -689,14 +742,14 @@ case 2:
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Work With
+                    Work With <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="work_with"
                     value={formData.work_with}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
                     placeholder="Enter supervisor/mentor name"
                   />
                   {errors.work_with && (
@@ -706,7 +759,7 @@ case 2:
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Contact Number
+                    Contact Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
@@ -745,9 +798,15 @@ case 2:
               <div>
                 <h3 className="text-lg font-medium mb-4">Role Information</h3>
                 <div className="space-y-2">
-                  <p><span className="font-medium">Department:</span> {departments.find(d => d.id === formData.department_id)?.name}</p>
-                  <p><span className="font-medium">Role Type:</span> {formData.role_type}</p>
-                  <p><span className="font-medium">Specific Role:</span> {roles.find(r => r.id === formData.role_id)?.name}</p>
+                  <p>
+                    <span className="font-medium">Department:</span>{' '}
+                    {departments.find(d => d.id === formData.department_id)?.name}
+                  </p>
+                  <p>
+                    <span className="font-medium">Role:</span>{' '}
+                    {departmentRoles[formData.department_id]?.find(r => r.id === formData.role_id)?.name}
+                    {' '}({departmentRoles[formData.department_id]?.find(r => r.id === formData.role_id)?.type})
+                  </p>
                   
                   {formData.submitted_date && (
                     <p><span className="font-medium">Submitted Date:</span> {formData.submitted_date}</p>
