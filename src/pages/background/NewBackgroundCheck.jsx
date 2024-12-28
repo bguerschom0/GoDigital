@@ -147,88 +147,48 @@ const fetchDepartmentsAndRoles = async () => {
     setIsLoading(true)
     console.log('Starting to fetch departments and roles...')
     
-    // First, try to fetch departments
-    console.log('Fetching departments...')
+    // First fetch departments
     const { data: departmentData, error: deptError } = await supabase
       .from('departments')
-      .select('id, name, status')
+      .select('id, name')
       .eq('status', 'active')
-
-    // Log department results
-    console.log('Department fetch results:', { departmentData, deptError })
+      .order('name')
 
     if (deptError) {
       console.error('Department fetch error:', deptError)
-      throw new Error(`Department fetch failed: ${deptError.message}`)
+      throw deptError
     }
 
     setDepartments(departmentData || [])
 
     // Then fetch roles
-    console.log('Fetching roles...')
     const { data: rolesData, error: rolesError } = await supabase
       .from('roles')
-      .select('id, name, type, department_id')
+      .select('id, name, type')
       .eq('status', 'active')
-
-    // Log role results
-    console.log('Role fetch results:', { rolesData, rolesError })
+      .order('name')
 
     if (rolesError) {
       console.error('Role fetch error:', rolesError)
-      throw new Error(`Role fetch failed: ${rolesError.message}`)
+      throw rolesError
     }
 
-    // Group roles by department
-    const rolesByDept = (rolesData || []).reduce((acc, role) => {
-      if (!acc[role.department_id]) {
-        acc[role.department_id] = []
-      }
-      acc[role.department_id].push(role)
-      return acc
-    }, {})
+    setRoles(rolesData || [])
 
-    console.log('Grouped roles by department:', rolesByDept)
-
-    setDepartmentRoles(rolesByDept)
+    // Get unique role types
+    const uniqueTypes = [...new Set(rolesData.map(role => role.type))]
+    setRoleTypes(uniqueTypes)
 
   } catch (error) {
-    console.error('Error in fetchDepartmentsAndRoles:', error)
+    console.error('Error fetching data:', error)
     setMessage({ 
       type: 'error', 
-      text: `Failed to load data: ${error.message}. Please check console for details.` 
+      text: 'Failed to load departments and roles.' 
     })
   } finally {
     setIsLoading(false)
   }
 }
-
-// Add this useEffect to verify Supabase connection
-useEffect(() => {
-  const checkSupabaseConnection = async () => {
-    try {
-      console.log('Checking Supabase connection...')
-      const { data, error } = await supabase.from('departments').select('count')
-      
-      if (error) {
-        console.error('Supabase connection error:', error)
-        setMessage({
-          type: 'error',
-          text: 'Database connection failed. Please check your credentials.'
-        })
-        return false
-      }
-      
-      console.log('Supabase connection successful')
-      return true
-    } catch (error) {
-      console.error('Unexpected error checking connection:', error)
-      return false
-    }
-  }
-
-  checkSupabaseConnection()
-}, [])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -588,53 +548,51 @@ useEffect(() => {
         )
 
       case 2:
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Department <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="department_id"
-                value={formData.department_id}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-              >
-                <option value="">Select Department</option>
-                {departments.map(dept => (
-                  <option key={dept.id} value={dept.id}>{dept.name}</option>
-                ))}
-              </select>
-              {errors.department_id && (
-                <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>
-              )}
-            </div>
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Department <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="department_id"
+          value={formData.department_id}
+          onChange={handleInputChange}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+        >
+          <option value="">Select Department</option>
+          {departments.map(dept => (
+            <option key={dept.id} value={dept.id}>{dept.name}</option>
+          ))}
+        </select>
+        {errors.department_id && (
+          <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>
+        )}
+      </div>
 
-            {formData.department_id && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Role <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="role_id"
-                  value={formData.role_id}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                >
-                  <option value="">Select Role</option>
-                  {departmentRoles[formData.department_id]?.map(role => (
-                    <option key={role.id} value={role.id}>
-                      {role.name} ({role.type})
-                    </option>
-                  ))}
-                </select>
-                {errors.role_id && (
-                  <p className="mt-1 text-sm text-red-500">{errors.role_id}</p>
-                )}
-              </div>
-            )}
-          </div>
-        )
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Role <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="role_id"
+          value={formData.role_id}
+          onChange={handleInputChange}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+        >
+          <option value="">Select Role</option>
+          {roles.map(role => (
+            <option key={role.id} value={role.id}>
+              {role.name} ({role.type})
+            </option>
+          ))}
+        </select>
+        {errors.role_id && (
+          <p className="mt-1 text-sm text-red-500">{errors.role_id}</p>
+        )}
+      </div>
+    </div>
+  )
 
       case 3:
         return (
