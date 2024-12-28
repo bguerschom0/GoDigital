@@ -593,191 +593,215 @@ const handleInputChange = (e) => {
     </div>
   )
 
-      case 3:
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Submitted Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                name="submitted_date"
-                value={formData.submitted_date}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-              />
-              {errors.submitted_date && (
-                <p className="mt-1 text-sm text-red-500">{errors.submitted_date}</p>
-              )}
-            </div>
+case 3:
+  const selectedRole = roles.find(role => role.id === formData.role_id)
+  const roleType = selectedRole?.type
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Requested By <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="requested_by"
-                value={formData.requested_by}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                placeholder="Enter requester name"
-              />
-              {errors.requested_by && (
-                <p className="mt-1 text-sm text-red-500">{errors.requested_by}</p>
-              )}
-            </div>
+  console.log('Selected Role:', selectedRole) // Debug
+  console.log('Role Type:', roleType) // Debug
 
-            {/* Expert, Contractor, Consultant fields */}
-            {['Expert', 'Contractor', 'Consultant'].includes(roleType) && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  From Company <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="from_company"
-                  value={formData.from_company}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  placeholder="Enter company name"
-                />
-                {errors.from_company && (
-                  <p className="mt-1 text-sm text-red-500">{errors.from_company}</p>
-                )}
-              </div>
-            )}
+  return (
+    <div className="space-y-4">
+      {/* Common fields for all role types */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Submitted Date <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="date"
+          name="submitted_date"
+          value={formData.submitted_date}
+          onChange={handleInputChange}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+        />
+        {errors.submitted_date && (
+          <p className="mt-1 text-sm text-red-500">{errors.submitted_date}</p>
+        )}
+      </div>
 
-            {/* Contractor & Consultant specific fields */}
-            {['Contractor', 'Consultant'].includes(roleType) && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Duration <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="duration"
-                    value={formData.duration}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter duration (e.g., 6 months)"
-                  />
-                  {errors.duration && (
-                    <p className="mt-1 text-sm text-red-500">{errors.duration}</p>
-                  )}
-                </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Requested By <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          name="requested_by"
+          value={formData.requested_by}
+          onChange={handleInputChange}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+          placeholder="Enter requester name"
+        />
+        {errors.requested_by && (
+          <p className="mt-1 text-sm text-red-500">{errors.requested_by}</p>
+        )}
+      </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Operating Country <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="operating_country"
-                    value={formData.operating_country}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter operating country"
-                  />
-                  {errors.operating_country && (
-                    <p className="mt-1 text-sm text-red-500">{errors.operating_country}</p>
-                  )}
-                </div>
+      {/* Expert specific fields */}
+      {roleType === 'Expert' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            From Company <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="from_company"
+            value={formData.from_company}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+            placeholder="Enter company name"
+          />
+          {errors.from_company && (
+            <p className="mt-1 text-sm text-red-500">{errors.from_company}</p>
+          )}
+        </div>
+      )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Additional Information <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    name="additional_info"
-                    value={formData.additional_info}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter any additional information..."
-                  />
-                  {errors.additional_info && (
-                    <p className="mt-1 text-sm text-red-500">{errors.additional_info}</p>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Internship specific fields */}
-            {roleType === 'Internship' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Start Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="date_start"
-                    value={formData.date_start}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.date_start && (
-                    <p className="mt-1 text-sm text-red-500">{errors.date_start}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    End Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="date_end"
-                    value={formData.date_end}
-                    onChange={handleInputChange}
-                    min={formData.date_start}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                  />
-                  {errors.date_end && (
-                    <p className="mt-1 text-sm text-red-500">{errors.date_end}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Work With <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="work_with"
-                    value={formData.work_with}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter supervisor/mentor name"
-                  />
-                  {errors.work_with && (
-                    <p className="mt-1 text-sm text-red-500">{errors.work_with}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Contact Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    name="contact_number"
-                    value={formData.contact_number}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                    placeholder="Enter contact number"
-                  />
-                  {errors.contact_number && (
-                    <p className="mt-1 text-sm text-red-500">{errors.contact_number}</p>
-                  )}
-                </div>
-              </>
+      {/* Contractor & Consultant specific fields */}
+      {(roleType === 'Contractor' || roleType === 'Consultant') && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              From Company <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="from_company"
+              value={formData.from_company}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter company name"
+            />
+            {errors.from_company && (
+              <p className="mt-1 text-sm text-red-500">{errors.from_company}</p>
             )}
           </div>
-        )
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Duration <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="duration"
+              value={formData.duration}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter duration (e.g., 6 months)"
+            />
+            {errors.duration && (
+              <p className="mt-1 text-sm text-red-500">{errors.duration}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Operating Country <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="operating_country"
+              value={formData.operating_country}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter operating country"
+            />
+            {errors.operating_country && (
+              <p className="mt-1 text-sm text-red-500">{errors.operating_country}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Additional Information <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              name="additional_info"
+              value={formData.additional_info}
+              onChange={handleInputChange}
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter any additional information..."
+            />
+            {errors.additional_info && (
+              <p className="mt-1 text-sm text-red-500">{errors.additional_info}</p>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Internship specific fields */}
+      {roleType === 'Internship' && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Start Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="date_start"
+              value={formData.date_start}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+            />
+            {errors.date_start && (
+              <p className="mt-1 text-sm text-red-500">{errors.date_start}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              End Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="date_end"
+              value={formData.date_end}
+              onChange={handleInputChange}
+              min={formData.date_start}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+            />
+            {errors.date_end && (
+              <p className="mt-1 text-sm text-red-500">{errors.date_end}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Work With <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="work_with"
+              value={formData.work_with}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter supervisor/mentor name"
+            />
+            {errors.work_with && (
+              <p className="mt-1 text-sm text-red-500">{errors.work_with}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Contact Number <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              name="contact_number"
+              value={formData.contact_number}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              placeholder="Enter contact number"
+            />
+            {errors.contact_number && (
+              <p className="mt-1 text-sm text-red-500">{errors.contact_number}</p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
 
       case 4:
         return (
