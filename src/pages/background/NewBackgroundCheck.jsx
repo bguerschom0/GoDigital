@@ -144,89 +144,47 @@ const NewBackgroundCheck = () => {
 const fetchDepartmentsAndRoles = async () => {
   try {
     setIsLoading(true)
-    console.log('Starting to fetch departments and roles...')
     
-    // First, try to fetch departments
-    console.log('Fetching departments...')
+    // Fetch departments
     const { data: departmentData, error: deptError } = await supabase
       .from('departments')
-      .select('id, name, status')
+      .select('*')
       .eq('status', 'active')
-
-    // Log department results
-    console.log('Department fetch results:', { departmentData, deptError })
+      .order('name')
 
     if (deptError) {
       console.error('Department fetch error:', deptError)
-      throw new Error(`Department fetch failed: ${deptError.message}`)
+      throw deptError
     }
 
     setDepartments(departmentData || [])
 
-    // Then fetch roles
-    console.log('Fetching roles...')
-    const { data: rolesData, error: rolesError } = await supabase
+    // Fetch unique role types from roles table
+    const { data: roleTypeData, error: roleError } = await supabase
       .from('roles')
-      .select('id, name, type, department_id')
+      .select('type')
       .eq('status', 'active')
+      .order('type')
 
-    // Log role results
-    console.log('Role fetch results:', { rolesData, rolesError })
-
-    if (rolesError) {
-      console.error('Role fetch error:', rolesError)
-      throw new Error(`Role fetch failed: ${rolesError.message}`)
+    if (roleError) {
+      console.error('Role type fetch error:', roleError)
+      throw roleError
     }
 
-    // Group roles by department
-    const rolesByDept = (rolesData || []).reduce((acc, role) => {
-      if (!acc[role.department_id]) {
-        acc[role.department_id] = []
-      }
-      acc[role.department_id].push(role)
-      return acc
-    }, {})
-
-    console.log('Grouped roles by department:', rolesByDept)
-
-    setDepartmentRoles(rolesByDept)
+    // Get unique role types
+    const uniqueTypes = [...new Set(roleTypeData.map(role => role.type))]
+    setRoleTypes(uniqueTypes)
 
   } catch (error) {
-    console.error('Error in fetchDepartmentsAndRoles:', error)
+    console.error('Error fetching data:', error)
     setMessage({ 
       type: 'error', 
-      text: `Failed to load data: ${error.message}. Please check console for details.` 
+      text: 'Failed to load departments and roles.' 
     })
   } finally {
     setIsLoading(false)
   }
 }
-
-  useEffect(() => {
-  const checkSupabaseConnection = async () => {
-    try {
-      console.log('Checking Supabase connection...')
-      const { data, error } = await supabase.from('departments').select('count')
-      
-      if (error) {
-        console.error('Supabase connection error:', error)
-        setMessage({
-          type: 'error',
-          text: 'Database connection failed. Please check your credentials.'
-        })
-        return false
-      }
-      
-      console.log('Supabase connection successful')
-      return true
-    } catch (error) {
-      console.error('Unexpected error checking connection:', error)
-      return false
-    }
-  }
-
-  checkSupabaseConnection()
-}, [])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
