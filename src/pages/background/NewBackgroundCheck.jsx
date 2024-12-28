@@ -31,10 +31,14 @@ const SuccessPopup = ({ message, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose()
-      window.location.reload()
     }, 30000)
     return () => clearTimeout(timer)
   }, [onClose])
+
+  const handleClose = () => {
+    window.location.reload()
+    onClose()
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
