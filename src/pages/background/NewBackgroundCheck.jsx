@@ -81,6 +81,7 @@ const NewBackgroundCheck = () => {
   const [validationErrors, setValidationErrors] = useState([])
   const [departments, setDepartments] = useState([])
   const [roles, setRoles] = useState([])
+  const [roleTypes, setRoleTypes] = useState([])
   
   const [formData, setFormData] = useState({
     full_names: '',
@@ -122,62 +123,50 @@ const NewBackgroundCheck = () => {
     fetchDepartmentsAndRoles()
   }, [])
 
-  const fetchDepartmentsAndRoles = async () => {
-    try {
-      setIsLoading(true)
+const fetchDepartmentsAndRoles = async () => {
+  try {
+    setIsLoading(true)
+    
+    // Fetch departments
+    const { data: departmentData, error: deptError } = await supabase
+      .from('departments')
+      .select('*')
+      .eq('status', 'active')
+      .order('name')
 
-      // Fetch active departments
-      const { data: departmentData, error: deptError } = await supabase
-        .from('departments')
-        .select('id, name, status')
-        .eq('status', 'active')
-        .order('name')
-
-      if (deptError) throw deptError
-
-      // Group departments by status
-      const groupedDepts = departmentData.reduce((acc, dept) => {
-        if (!acc[dept.status]) {
-          acc[dept.status] = []
-        }
-        acc[dept.status].push(dept)
-        return acc
-      }, {})
-
-      setDepartmentsByStatus(groupedDepts)
-      setDepartments(departmentData)
-
-      // Fetch roles with department information
-      const { data: roleData, error: roleError } = await supabase
-        .from('roles')
-        .select('id, name, type, department_id, status')
-        .eq('status', 'active')
-        .order('name')
-
-      if (roleError) throw roleError
-
-      // Group roles by department
-      const groupedRoles = roleData.reduce((acc, role) => {
-        if (!acc[role.department_id]) {
-          acc[role.department_id] = []
-        }
-        acc[role.department_id].push(role)
-        return acc
-      }, {})
-
-      setRolesByDepartment(groupedRoles)
-      setRoles(roleData)
-
-    } catch (error) {
-      console.error('Error fetching departments and roles:', error)
-      setMessage({ 
-        type: 'error', 
-        text: 'Failed to load departments and roles. Please try again.' 
-      })
-    } finally {
-      setIsLoading(false)
+    if (deptError) {
+      console.error('Department fetch error:', deptError)
+      throw deptError
     }
+
+    setDepartments(departmentData || [])
+
+    // Fetch unique role types from roles table
+    const { data: roleTypeData, error: roleError } = await supabase
+      .from('roles')
+      .select('type')
+      .eq('status', 'active')
+      .order('type')
+
+    if (roleError) {
+      console.error('Role type fetch error:', roleError)
+      throw roleError
+    }
+
+    // Get unique role types
+    const uniqueTypes = [...new Set(roleTypeData.map(role => role.type))]
+    setRoleTypes(uniqueTypes)
+
+  } catch (error) {
+    console.error('Error fetching data:', error)
+    setMessage({ 
+      type: 'error', 
+      text: 'Failed to load departments and roles.' 
+    })
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -239,19 +228,15 @@ const NewBackgroundCheck = () => {
         break
 
       case 2:
-        if (!formData.department_id) {
-          newErrors.department_id = 'Department is required'
-          newValidationErrors.push('Department is required')
-        }
-        if (!formData.role_id) {
-          newErrors.role_id = 'Role is required'
-          newValidationErrors.push('Role is required')
-        }
-        if (!formData.role_type) {
-          newErrors.role_type = 'Role type is required'
-          newValidationErrors.push('Role type is required')
-        }
-        break
+      if (!formData.department_id) {
+        newErrors.department_id = 'Department is required'
+        newValidationErrors.push('Department is required')
+      }
+      if (!formData.role_type) {
+        newErrors.role_type = 'Role type is required'
+        newValidationErrors.push('Role type is required')
+      }
+      break
 
       case 3:
         if (['Staff', 'Apprentice'].includes(formData.role_type)) {
@@ -347,7 +332,6 @@ const NewBackgroundCheck = () => {
         id_passport_number: formData.id_passport_number,
         passport_expiry_date: formData.passport_expiry_date || null,
         department_id: formData.department_id || null,
-        role_id: formData.role_id || null,
         role_type: formData.role_type,
         submitted_date: formData.submitted_date || null,
         status: 'Pending',
@@ -396,7 +380,7 @@ const NewBackgroundCheck = () => {
       id_passport_number: '',
       passport_expiry_date: '',
       department_id: '',
-      role_id: '',
+
       role_type: '',
       submitted_date: '',
       status: 'Pending',
@@ -509,83 +493,50 @@ const NewBackgroundCheck = () => {
           </div>
         )
 
-      case 2:
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Department
-              </label>
-              <select
-                name="department_id"
-                value={formData.department_id}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-              >
-                <option value="">Select Department</option>
-                {departments.map(dept => (
-                  <option key={dept.id} value={dept.id}>{dept.name}</option>
-                ))}
-              </select>
-              {errors.department_id && (
-                <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>
-              )}
-            </div>
+case 2:
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Department <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="department_id"
+          value={formData.department_id}
+          onChange={handleInputChange}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+        >
+          <option value="">Select Department</option>
+          {departments.map(dept => (
+            <option key={dept.id} value={dept.id}>{dept.name}</option>
+          ))}
+        </select>
+        {errors.department_id && (
+          <p className="mt-1 text-sm text-red-500">{errors.department_id}</p>
+        )}
+      </div>
 
-            {formData.department_id && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Role Type
-                </label>
-                <select
-                  name="role_type"
-                  value={formData.role_type}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                >
-                  <option value="">Select Role Type</option>
-                  <option value="Staff">Staff</option>
-                  <option value="Expert">Expert</option>
-                  <option value="Contractor">Contractor</option>
-                  <option value="Consultant">Consultant</option>
-                  <option value="Internship">Internship</option>
-                  <option value="Apprentice">Apprentice</option>
-                </select>
-                {errors.role_type && (
-                  <p className="mt-1 text-sm text-red-500">{errors.role_type}</p>
-                )}
-              </div>
-            )}
-
-            {formData.department_id && formData.role_type && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Specific Role
-                </label>
-                <select
-                  name="role_id"
-                  value={formData.role_id}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
-                >
-                  <option value="">Select Specific Role</option>
-                  {roles
-                    .filter(role => 
-                      role.department_id === formData.department_id && 
-                      role.type === formData.role_type
-                    )
-                    .map(role => (
-                      <option key={role.id} value={role.id}>{role.name}</option>
-                    ))
-                  }
-                </select>
-                {errors.role_id && (
-                  <p className="mt-1 text-sm text-red-500">{errors.role_id}</p>
-                )}
-              </div>
-            )}
-          </div>
-        )
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Role Type <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="role_type"
+          value={formData.role_type}
+          onChange={handleInputChange}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+        >
+          <option value="">Select Role Type</option>
+          {roleTypes.map(type => (
+            <option key={type} value={type}>{type}</option>
+          ))}
+        </select>
+        {errors.role_type && (
+          <p className="mt-1 text-sm text-red-500">{errors.role_type}</p>
+        )}
+      </div>
+    </div>
+  )
 
       case 3:
         return (
