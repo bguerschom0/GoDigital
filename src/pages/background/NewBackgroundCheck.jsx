@@ -71,38 +71,38 @@ const NewBackgroundCheck = () => {
   const { user } = useAuth()
   const { checkPermission } = usePageAccess()
   
-  const [pageLoading, setPageLoading] = useState(true)
-  const [currentStep, setCurrentStep] = useState(1)
-  const [departments, setDepartments] = useState([])
-  const [departmentRoles, setDepartmentRoles] = useState({})
-  const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState({ type: '', text: '' })
-  const [errors, setErrors] = useState({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [validationErrors, setValidationErrors] = useState([])
-  const [duplicateIdFound, setDuplicateIdFound] = useState(false)
-  const [idCheckLoading, setIdCheckLoading] = useState(false)
-  const [roleTypes, setRoleTypes] = useState([])
-  
-  const [formData, setFormData] = useState({
-    full_names: '',
-    citizenship: '',
-    id_passport_number: '',
-    passport_expiry_date: '',
-    department_id: '',
-    role_id: '',
-    submitted_date: '',
-    status: 'Pending',
-    requested_by: '',
-    from_company: '',
-    duration: '',
-    operating_country: '',
-    date_start: '',
-    date_end: '',
-    work_with: '',
-    additional_info: '',
-    contact_number: ''
-  })
+const [pageLoading, setPageLoading] = useState(true)
+const [currentStep, setCurrentStep] = useState(1)
+const [departments, setDepartments] = useState([])
+const [roles, setRoles] = useState([])
+const [roleTypes, setRoleTypes] = useState([])
+const [isLoading, setIsLoading] = useState(false)
+const [message, setMessage] = useState({ type: '', text: '' })
+const [errors, setErrors] = useState({})
+const [isSubmitting, setIsSubmitting] = useState(false)
+const [validationErrors, setValidationErrors] = useState([])
+const [duplicateIdFound, setDuplicateIdFound] = useState(false)
+const [idCheckLoading, setIdCheckLoading] = useState(false)
+
+const [formData, setFormData] = useState({
+  full_names: '',
+  citizenship: '',
+  id_passport_number: '',
+  passport_expiry_date: '',
+  department_id: '',
+  role_id: '',
+  submitted_date: '',
+  status: 'Pending',
+  requested_by: '',
+  from_company: '',
+  duration: '',
+  operating_country: '',
+  date_start: '',
+  date_end: '',
+  work_with: '',
+  additional_info: '',
+  contact_number: ''
+})
 
   // Check permissions
   useEffect(() => {
@@ -190,39 +190,39 @@ const fetchDepartmentsAndRoles = async () => {
   }
 }
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    
-    if (name === 'id_passport_number') {
-      setFormData(prev => ({ ...prev, [name]: value }))
-      checkForDuplicateId(value)
-    } else if (name === 'department_id') {
+const handleInputChange = (e) => {
+  const { name, value } = e.target
+  
+  if (name === 'id_passport_number') {
+    setFormData(prev => ({ ...prev, [name]: value }))
+    checkForDuplicateId(value)
+  } else if (name === 'role_id') {
+    const selectedRole = roles.find(role => role.id === value)
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }))
+  } else if (name === 'citizenship') {
+    const formattedValue = value.trim()
+    const lowerCaseValue = formattedValue.toLowerCase()
+    if (['rwanda', 'rwandan'].includes(lowerCaseValue)) {
+      const capitalizedValue = formattedValue.charAt(0).toUpperCase() + formattedValue.slice(1).toLowerCase()
       setFormData(prev => ({
         ...prev,
-        [name]: value,
-        role_id: '' // Reset role when department changes
+        [name]: capitalizedValue,
+        passport_expiry_date: ''
       }))
-    } else if (name === 'citizenship') {
-      const formattedValue = value.trim()
-      const lowerCaseValue = formattedValue.toLowerCase()
-      if (['rwanda', 'rwandan'].includes(lowerCaseValue)) {
-        const capitalizedValue = formattedValue.charAt(0).toUpperCase() + formattedValue.slice(1).toLowerCase()
-        setFormData(prev => ({
-          ...prev,
-          [name]: capitalizedValue,
-          passport_expiry_date: ''
-        }))
-      } else {
-        setFormData(prev => ({ ...prev, [name]: value }))
-      }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }))
     }
-
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
+  } else {
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
+
+  if (errors[name]) {
+    setErrors(prev => ({ ...prev, [name]: '' }))
+  }
+}
 
   const validateStep = (step) => {
     const newErrors = {}
@@ -263,10 +263,8 @@ const fetchDepartmentsAndRoles = async () => {
         break
 
       case 3:
-        const selectedRole = departmentRoles[formData.department_id]?.find(
-          role => role.id === formData.role_id
-        )
-        const roleType = selectedRole?.type
+  const selectedRole = roles.find(role => role.id === formData.role_id)
+  const roleType = selectedRole?.type
 
         if (['Staff', 'Apprentice'].includes(roleType)) {
           if (!formData.submitted_date) {
