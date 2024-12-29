@@ -357,121 +357,390 @@ const UpdateBackgroundCheck = () => {
             </CardContent>
           </Card>
 
-          {/* Update Form */}
-          {selectedRequest && (
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-lg font-medium">Update Request Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Status
-                    </label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Closed">Closed</option>
-                    </select>
-                  </div>
-
-                  {formData.status === 'Closed' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Closed Date <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        name="closed_date"
-                        value={formData.closed_date}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                        required
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex justify-end space-x-4">
-                    <Button
-                      onClick={resetForm}
-                      variant="outline"
-                      className="border-[#0A2647] hover:bg-[#0A2647]/10"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleUpdate}
-                      disabled={isUpdating}
-                      className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
-                    >
-                      {isUpdating ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Updating...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 mr-2" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Success Message Modal */}
-          {message.type === 'success' && (
-            <SuccessPopup
-              message={message.text}
-              onClose={() => {
-                setMessage({ type: '', text: '' })
-                resetForm()
-              }}
+{/* Update Form */}
+{selectedRequest && (
+  <Card className="mt-6">
+    <CardHeader>
+      <CardTitle className="text-lg font-medium">Update Background Check</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+        {/* Personal Information */}
+        <div className="space-y-4">
+          <h3 className="font-medium text-gray-900 dark:text-white">Personal Information</h3>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Full Names <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="full_names"
+              value={formData.full_names}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
             />
-          )}
+          </div>
 
-          {/* Error Message Modal */}
-          {message.type === 'error' && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-            >
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-                <div className="flex items-center justify-center mb-4">
-                  <AlertCircle className="w-12 h-12 text-red-500" />
-                </div>
-                <h2 className="text-xl font-semibold text-center mb-2">Error</h2>
-                <p className="text-center text-gray-600 dark:text-gray-300 mb-4">
-                  {message.text}
-                </p>
-                <div className="flex justify-center">
-                  <Button 
-                    onClick={() => setMessage({ type: '', text: '' })}
-                    className="bg-red-500 hover:bg-red-600 text-white"
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Citizenship <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="citizenship"
+              value={formData.citizenship}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+            />
+          </div>
 
-          {/* Info Message */}
-          {message.type === 'info' && (
-            <div className="mt-4 p-4 bg-blue-50 text-blue-700 rounded-lg">
-              <p className="text-center">{message.text}</p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              ID/Passport Number <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="id_passport_number"
+              value={formData.id_passport_number}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+            />
+          </div>
+
+          {formData.citizenship && 
+           !['Rwanda', 'Rwandan'].includes(formData.citizenship.trim()) && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Passport Expiry Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                name="passport_expiry_date"
+                value={formData.passport_expiry_date}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+              />
             </div>
           )}
+        </div>
+
+        {/* Department and Role */}
+        <div className="space-y-4 pt-4">
+          <h3 className="font-medium text-gray-900 dark:text-white">Department and Role</h3>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Department <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="department_id"
+              value={formData.department_id}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+            >
+              <option value="">Select Department</option>
+              {departments.map(dept => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Role <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="role_id"
+              value={formData.role_id}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+            >
+              <option value="">Select Role</option>
+              {roles.map(role => (
+                <option key={role.id} value={role.id}>{role.name} ({role.type})</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Submitted Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="submitted_date"
+              value={formData.submitted_date}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Requested By <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="requested_by"
+              value={formData.requested_by}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+            />
+          </div>
+        </div>
+
+        {/* Role Specific Information */}
+        {getSelectedRole() && (
+          <div className="space-y-4 pt-4">
+            <h3 className="font-medium text-gray-900 dark:text-white">Additional Information</h3>
+            
+            {/* Expert Fields */}
+            {getSelectedRole() === 'Expert' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  From Company <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="from_company"
+                  value={formData.from_company}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+                />
+              </div>
+            )}
+
+            {/* Contractor & Consultant Fields */}
+            {['Contractor', 'Consultant'].includes(getSelectedRole()) && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    From Company <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="from_company"
+                    value={formData.from_company}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Duration <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="duration"
+                    value={formData.duration}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Operating Country <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="operating_country"
+                    value={formData.operating_country}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Additional Information <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    name="additional_info"
+                    value={formData.additional_info}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Internship Fields */}
+            {getSelectedRole() === 'Internship' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Start Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="date_start"
+                    value={formData.date_start}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    End Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="date_end"
+                    value={formData.date_end}
+                    onChange={handleInputChange}
+                    min={formData.date_start}
+                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Work With <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="work_with"
+                    value={formData.work_with}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Contact Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="contact_number"
+                    value={formData.contact_number}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Status Section - Always at the bottom */}
+        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="font-medium text-gray-900 dark:text-white">Status Information</h3>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Status
+            </label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+            >
+              <option value="Pending">Pending</option>
+              <option value="Closed">Closed</option>
+            </select>
+          </div>
+
+          {formData.status === 'Closed' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Closed Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                name="closed_date"
+                value={formData.closed_date}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+                required
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-4 pt-6">
+          <Button
+            onClick={resetForm}
+            variant="outline"
+            className="border-[#0A2647] hover:bg-[#0A2647]/10"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleUpdate}
+            disabled={isUpdating}
+            className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+          >
+            {isUpdating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    </CardContent>
+  </Card>
+)}
+
+{/* Success Message Modal */}
+{message.type === 'success' && (
+  <SuccessPopup
+    message={message.text}
+    onClose={() => {
+      setMessage({ type: '', text: '' })
+      resetForm()
+    }}
+  />
+)}
+
+{/* Error Message Modal */}
+{message.type === 'error' && (
+  <motion.div 
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+  >
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+      <div className="flex items-center justify-center mb-4">
+        <AlertCircle className="w-12 h-12 text-red-500" />
+      </div>
+      <h2 className="text-xl font-semibold text-center mb-2">Error</h2>
+      <p className="text-center text-gray-600 dark:text-gray-300 mb-4">
+        {message.text}
+      </p>
+      <div className="flex justify-center">
+        <Button 
+          onClick={() => setMessage({ type: '', text: '' })}
+          className="bg-red-500 hover:bg-red-600 text-white"
+        >
+          Close
+        </Button>
+      </div>
+    </div>
+  </motion.div>
+)}
+
+{/* Info Message */}
+{message.type === 'info' && (
+  <div className="mt-4 p-4 bg-blue-50 text-blue-700 rounded-lg">
+    <p className="text-center">{message.text}</p>
+  </div>
+)}
         </div>
       </div>
     </div>
