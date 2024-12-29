@@ -97,29 +97,44 @@ const ExpiredDocuments = () => {
           : false
       }))
 
+      console.log('Raw data:', data);
+      console.log('Processed data:', processedData);
+
       // Filter by document type (internship or passport)
       const typeFilteredData = processedData.filter(doc => {
         if (documentType === 'internship') {
-          return doc.roles?.type === 'intern' && doc.date_end
+          // More lenient check for internships - check if role name or type contains 'intern'
+          const isIntern = 
+            doc.roles?.type?.toLowerCase().includes('intern') ||
+            doc.roles?.name?.toLowerCase().includes('intern');
+          return isIntern;
         }
         if (documentType === 'passport') {
-          return doc.passport_expiry_date
+          return true; // Show all records for passport filter
         }
-        return true
-      })
+        return true;
+      });
+      
+      console.log('Type filtered data:', typeFilteredData);
 
       // Filter by status
       const statusFilteredData = typeFilteredData.filter(doc => {
         if (filter === 'expired') {
-          return (documentType === 'passport' && doc.isExpired) || 
-                 (documentType === 'internship' && doc.contractExpired)
+          if (documentType === 'passport') {
+            return doc.isExpired;
+          }
+          return doc.contractExpired;
         }
         if (filter === 'expiring-soon') {
-          return (documentType === 'passport' && doc.isExpiringSoon && !doc.isExpired) || 
-                 (documentType === 'internship' && doc.contractExpiringSoon && !doc.contractExpired)
+          if (documentType === 'passport') {
+            return doc.isExpiringSoon && !doc.isExpired;
+          }
+          return doc.contractExpiringSoon && !doc.contractExpired;
         }
-        return true
-      })
+        return true;
+      });
+      
+      console.log('Status filtered data:', statusFilteredData);
 
       setDocuments(statusFilteredData)
     } catch (error) {
