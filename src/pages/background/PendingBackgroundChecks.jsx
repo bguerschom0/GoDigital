@@ -45,7 +45,7 @@ const PendingBackgroundChecks = () => {
 
   const fetchDepartments = async () => {
     try {
-      const { , error } = await supabase
+      const { data, error } = await supabase
         .from('departments')
         .select('*')
         .eq('status', 'active')
