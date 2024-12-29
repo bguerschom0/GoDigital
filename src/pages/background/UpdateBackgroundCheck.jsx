@@ -500,32 +500,6 @@ const handleUpdate = async (e) => {
               ))}
             </select>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Submitted Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              name="submitted_date"
-              value={formData.submitted_date}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Requested By <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="requested_by"
-              value={formData.requested_by}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-            />
-          </div>
         </div>
 
 {/* Role Specific Information */}
