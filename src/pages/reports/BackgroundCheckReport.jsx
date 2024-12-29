@@ -12,9 +12,7 @@ import {
   Users,
   Clock,
   Building2,
-  Loader2,
-  BadgeCheck,
-  AlertCircle
+  Loader2
 } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 import { Button } from '@/components/ui/button'
@@ -41,16 +39,15 @@ const BackgroundCheckReport = () => {
   const { checkPermission } = usePageAccess()
   const [pageLoading, setPageLoading] = useState(true)
   const chartsRef = useRef(null)
+  const printRef = useRef(null)
 
   const [filters, setFilters] = useState({
     dateRange: 'all',
-    startDate: '',
-    endDate: '',
-    requested_by: '',
-    citizenship: 'all',
-    from_company: '',
+    startDate: null,
+    endDate: null,
     department: 'all',
-    roleType: 'all'
+    roleType: 'all',
+    citizenship: 'all'
   })
 
   // States for data
@@ -61,10 +58,7 @@ const BackgroundCheckReport = () => {
   const [stats, setStats] = useState({
     totalChecks: 0,
     pendingChecks: 0,
-    closedChecks: 0,
-    totalInternships: 0,
-    activeInternships: 0,
-    expiredInternships: 0
+    closedChecks: 0
   })
   const [statusDistribution, setStatusDistribution] = useState([])
   const [rawData, setRawData] = useState([])
@@ -135,24 +129,21 @@ const BackgroundCheckReport = () => {
           roles(name, type)
         `)
 
-      // Apply filters
-      if (filters.dateRange !== 'all') {
-        if (filters.startDate) {
-          query = query.gte('submitted_date', filters.startDate)
-        }
-        if (filters.endDate) {
-          query = query.lte('submitted_date', filters.endDate)
-        }
+      // Apply date range filter
+      if (filters.startDate) {
+        query = query.gte('submitted_date', filters.startDate.toISOString())
+      }
+      if (filters.endDate) {
+        query = query.lte('submitted_date', filters.endDate.toISOString())
       }
 
+      // Apply other filters
       if (filters.department !== 'all') {
         query = query.eq('department_id', filters.department)
       }
-
       if (filters.roleType !== 'all') {
         query = query.eq('roles.type', filters.roleType)
       }
-
       if (filters.citizenship !== 'all') {
         query = query.eq('citizenship', filters.citizenship)
       }
@@ -162,7 +153,6 @@ const BackgroundCheckReport = () => {
       
       setRawData(data)
       processData(data)
-      await fetchInternshipStats()
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -171,68 +161,58 @@ const BackgroundCheckReport = () => {
   }
 
   const processData = (data) => {
-    // Basic stats
+    // Update stats based on filtered data
     const totalChecks = data.length
     const pendingChecks = data.filter(check => check.status === 'Pending').length
     const closedChecks = data.filter(check => check.status === 'Closed').length
 
-    setStats(prev => ({ 
-      ...prev,
+    setStats({ 
       totalChecks, 
       pendingChecks, 
       closedChecks
-    }))
+    })
 
-    // Process status distribution
+    // Update status distribution
     const statusData = [
-      { name: 'Pending', value: pendingChecks, percentage: ((pendingChecks/totalChecks) * 100).toFixed(1) },
-      { name: 'Closed', value: closedChecks, percentage: ((closedChecks/totalChecks) * 100).toFixed(1) }
+      { name: 'Pending', value: pendingChecks, percentage: totalChecks ? ((pendingChecks/totalChecks) * 100).toFixed(1) : 0 },
+      { name: 'Closed', value: closedChecks, percentage: totalChecks ? ((closedChecks/totalChecks) * 100).toFixed(1) : 0 }
     ]
     setStatusDistribution(statusData)
   }
 
-  const fetchInternshipStats = async () => {
+  const exportToExcel = async () => {
     try {
-      const currentDate = new Date().toISOString()
+      // Fetch all data for export
       const { data, error } = await supabase
         .from('background_checks')
-        .select('date_end')
-        .eq('roles.type', 'Internship')
+        .select(`
+          *,
+          departments(name),
+          roles(name, type)
+        `)
 
       if (error) throw error
 
-      const totalInternships = data.length
-      const activeInternships = data.filter(intern => 
-        new Date(intern.date_end) >= new Date()
-      ).length
-      const expiredInternships = totalInternships - activeInternships
-
-      setStats(prev => ({
-        ...prev,
-        totalInternships,
-        activeInternships,
-        expiredInternships
+      // Prepare data for export
+      const exportData = data.map(record => ({
+        'Department': record.departments?.name,
+        'Role': record.roles?.name,
+        'Role Type': record.roles?.type,
+        'Full Name': record.full_names,
+        'Status': record.status,
+        'Citizenship': record.citizenship,
+        'Date Submitted': new Date(record.submitted_date).toLocaleDateString(),
+        'Company': record.from_company,
+        'Working With': record.work_with
       }))
+
+      const workbook = XLSX.utils.book_new()
+      const worksheet = XLSX.utils.json_to_sheet(exportData)
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Background Checks")
+      XLSX.writeFile(workbook, `background-checks-${new Date().toISOString().split('T')[0]}.xlsx`)
     } catch (error) {
-      console.error('Error fetching internship stats:', error)
+      console.error('Error exporting to Excel:', error)
     }
-  }
-
-  const exportToExcel = () => {
-    // Prepare data for export
-    const exportData = rawData.map(record => ({
-      'Department': record.departments?.name,
-      'Role Type': record.roles?.type,
-      'Status': record.status,
-      'Citizenship': record.citizenship,
-      'Date Submitted': record.submitted_date,
-      'Background Check Status': record.status
-    }))
-
-    const workbook = XLSX.utils.book_new()
-    const worksheet = XLSX.utils.json_to_sheet(exportData)
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Background Checks")
-    XLSX.writeFile(workbook, `background-checks-${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
   const exportToPDF = async () => {
@@ -251,7 +231,6 @@ const BackgroundCheckReport = () => {
     })
 
     const pageWidth = pdf.internal.pageSize.getWidth()
-    const pageHeight = pdf.internal.pageSize.getHeight()
     const margin = 10
     
     pdf.setFontSize(16)
@@ -278,8 +257,18 @@ const BackgroundCheckReport = () => {
     pdf.save('background-check-report.pdf')
   }
 
-  const handlePrint = () => {
-    window.print()
+  const handlePrint = async () => {
+    if (!printRef.current) return
+    const content = printRef.current
+    const printWindow = window.open('', '', 'width=800,height=600')
+    printWindow.document.write('<html><head><title>Print</title>')
+    printWindow.document.write('</head><body>')
+    printWindow.document.write(content.innerHTML)
+    printWindow.document.write('</body></html>')
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+    printWindow.close()
   }
 
   if (pageLoading) {
@@ -339,6 +328,35 @@ const BackgroundCheckReport = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Date Range Pickers */}
+                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Start Date
+                    </label>
+                    <DatePicker
+                      selected={filters.startDate}
+                      onChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+                      placeholderText="Select start date"
+                      maxDate={filters.endDate || new Date()}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      End Date
+                    </label>
+                    <DatePicker
+                      selected={filters.endDate}
+                      onChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+                      placeholderText="Select end date"
+                      minDate={filters.startDate}
+                      maxDate={new Date()}
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Department
@@ -391,13 +409,11 @@ const BackgroundCheckReport = () => {
                   <Button 
                     onClick={() => setFilters({
                       dateRange: 'all',
-                      startDate: '',
-                      endDate: '',
-                      requested_by: '',
-                      citizenship: 'all',
-                      from_company: '',
+                      startDate: null,
+                      endDate: null,
                       department: 'all',
-                      roleType: 'all'
+                      roleType: 'all',
+                      citizenship: 'all'
                     })}
                     variant="outline"
                     className="w-full"
@@ -409,57 +425,19 @@ const BackgroundCheckReport = () => {
             </CardContent>
           </Card>
 
+          {/* Charts container for PDF export */}
           <div id="charts-container" ref={chartsRef}>
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Background Checks</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Checks</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.totalChecks}</div>
                   <p className="text-xs text-muted-foreground">
-                    All background checks
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Internships</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalInternships}</div>
-                  <p className="text-xs text-muted-foreground">
-                    All time internships
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Internships</CardTitle>
-                  <BadgeCheck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.activeInternships}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Currently active
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Expired Internships</CardTitle>
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.expiredInternships}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Past internships
+                    Total background checks
                   </p>
                 </CardContent>
               </Card>
@@ -508,7 +486,7 @@ const BackgroundCheckReport = () => {
                         cy="50%"
                         outerRadius={100}
                         fill="#0A2647"
-                        label={({ value, percentage }) => `${value} (${percentage}%)`}
+                        label={({ name, value, percentage }) => `${name}: ${value} (${percentage}%)`}
                       >
                         {statusDistribution.map((entry, index) => (
                           <Cell 
@@ -524,6 +502,57 @@ const BackgroundCheckReport = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Print content container - hidden by default */}
+          <div className="hidden">
+            <div ref={printRef}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {/* Stats Cards for printing */}
+                <div className="border p-4 rounded-lg">
+                  <div className="font-medium">Total Checks</div>
+                  <div className="text-2xl font-bold">{stats.totalChecks}</div>
+                </div>
+
+                <div className="border p-4 rounded-lg">
+                  <div className="font-medium">Pending Checks</div>
+                  <div className="text-2xl font-bold">{stats.pendingChecks}</div>
+                </div>
+
+                <div className="border p-4 rounded-lg">
+                  <div className="font-medium">Completed Checks</div>
+                  <div className="text-2xl font-bold">{stats.closedChecks}</div>
+                </div>
+              </div>
+
+              {/* Status Distribution for printing */}
+              <div className="border p-4 rounded-lg mt-6">
+                <div className="font-medium mb-4">Status Distribution</div>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statusDistribution}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        fill="#0A2647"
+                        label={({ name, value, percentage }) => `${name}: ${value} (${percentage}%)`}
+                      >
+                        {statusDistribution.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={COLORS[index % COLORS.length]} 
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
