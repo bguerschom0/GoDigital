@@ -203,20 +203,14 @@ const Sidebar = ({ isOpen, onClose }) => {
     id: 'access_control',
       children: [
       {
-        title: 'Access Control Dashboard',
-        href: '/admin/access-control/index'
+        title: 'New Request',
+        icon: <FileText className="w-5 h-5" />,
+        href: '/admin/security-services/SecurityServiceRequest'
       },
               {
-        title: 'Controllers',
-        href: '/admin/controllers/ControllersManagement'
-      },
-              {
-        title: 'Attendance',
-        href: '/admin/attendance/DailyAttendance'
-      },
-              {
-        title: 'DeviceList',
-        href: '/admin/devices/DeviceList'
+        title: 'Tasks',
+        icon: <Clock className="w-5 h-5" />,
+        href: '/admin/security-services/TasksPage'
       }
     ]
   },
