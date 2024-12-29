@@ -70,13 +70,24 @@ const PendingBackgroundChecks = () => {
           roles:role_id(name, type)
         `)
         .eq('status', 'Pending')
-        // Filter out internship roles
-        .not('roles.type', 'eq', 'internship')
         .order('submitted_date', { ascending: false })
 
       if (selectedDepartment !== 'all') {
         query = query.eq('department_id', selectedDepartment)
       }
+
+      const { data, error } = await query
+      
+      if (error) throw error
+      
+      // Filter out internships after fetching
+      const filteredData = data?.filter(check => 
+        check.roles?.type?.toLowerCase() !== 'internship'
+      ) || []
+      
+      setPendingChecks(filteredData)
+      return
+    
 
       const { data, error } = await query
 
