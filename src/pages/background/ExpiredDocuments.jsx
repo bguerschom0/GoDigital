@@ -1,4 +1,3 @@
-// src/pages/background/ExpiredDocuments.jsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -26,9 +25,10 @@ const ExpiredDocuments = () => {
   const [pageLoading, setPageLoading] = useState(true)
   const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState('expiring-soon')
   const [searchTerm, setSearchTerm] = useState('')
   const [timeframe, setTimeframe] = useState('30')
+  const [documentType, setDocumentType] = useState('internship')
 
   // Check permissions
   useEffect(() => {
@@ -49,7 +49,7 @@ const ExpiredDocuments = () => {
     if (!pageLoading) {
       fetchDocuments()
     }
-  }, [filter, timeframe, pageLoading])
+  }, [filter, timeframe, documentType, pageLoading])
 
   const fetchDocuments = async () => {
     setLoading(true)
@@ -97,18 +97,31 @@ const ExpiredDocuments = () => {
           : false
       }))
 
-      const filteredData = processedData.filter(doc => {
-        if (filter === 'expired') {
-          return doc.isExpired || doc.contractExpired
+      // Filter by document type (internship or passport)
+      const typeFilteredData = processedData.filter(doc => {
+        if (documentType === 'internship') {
+          return doc.roles?.type === 'intern' && doc.date_end
         }
-        if (filter === 'expiring-soon') {
-          return (doc.isExpiringSoon && !doc.isExpired) || 
-                 (doc.contractExpiringSoon && !doc.contractExpired)
+        if (documentType === 'passport') {
+          return doc.passport_expiry_date
         }
         return true
       })
 
-      setDocuments(filteredData)
+      // Filter by status
+      const statusFilteredData = typeFilteredData.filter(doc => {
+        if (filter === 'expired') {
+          return (documentType === 'passport' && doc.isExpired) || 
+                 (documentType === 'internship' && doc.contractExpired)
+        }
+        if (filter === 'expiring-soon') {
+          return (documentType === 'passport' && doc.isExpiringSoon && !doc.isExpired) || 
+                 (documentType === 'internship' && doc.contractExpiringSoon && !doc.contractExpired)
+        }
+        return true
+      })
+
+      setDocuments(statusFilteredData)
     } catch (error) {
       console.error('Error fetching documents:', error)
     } finally {
@@ -155,6 +168,20 @@ const ExpiredDocuments = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-4">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Document Type
+                    </label>
+                    <select
+                      value={documentType}
+                      onChange={(e) => setDocumentType(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                    >
+                      <option value="internship">Internship</option>
+                      <option value="passport">Passport</option>
+                    </select>
+                  </div>
+
                   <div className="flex-1 min-w-[200px]">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Status
@@ -220,14 +247,17 @@ const ExpiredDocuments = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredDocuments.map((doc) => (
                     <Card key={doc.id} className={`
-                      ${doc.isExpired || doc.contractExpired ? 'border-red-500' : 
-                        doc.isExpiringSoon || doc.contractExpiringSoon ? 'border-yellow-500' : 
+                      ${(documentType === 'passport' && doc.isExpired) || 
+                        (documentType === 'internship' && doc.contractExpired) ? 'border-red-500' : 
+                        (documentType === 'passport' && doc.isExpiringSoon) || 
+                        (documentType === 'internship' && doc.contractExpiringSoon) ? 'border-yellow-500' : 
                         'border-gray-200'}
                     `}>
                       <CardContent className="p-6">
                         <div className="flex justify-between items-start mb-4">
                           <h3 className="font-medium text-lg">{doc.full_names}</h3>
-                          {(doc.isExpired || doc.contractExpired) && (
+                          {((documentType === 'passport' && doc.isExpired) || 
+                            (documentType === 'internship' && doc.contractExpired)) && (
                             <AlertTriangle className="h-5 w-5 text-red-500" />
                           )}
                         </div>
@@ -242,7 +272,7 @@ const ExpiredDocuments = () => {
                             <span>{doc.departments?.name}</span>
                           </div>
                           
-                          {doc.passport_expiry_date && (
+                          {documentType === 'passport' && doc.passport_expiry_date && (
                             <div className="flex justify-between items-center">
                               <span className="text-gray-500">Passport Expiry:</span>
                               <div className="flex items-center">
@@ -255,7 +285,7 @@ const ExpiredDocuments = () => {
                             </div>
                           )}
 
-                          {doc.date_end && (
+                          {documentType === 'internship' && doc.date_end && (
                             <div className="flex justify-between items-center">
                               <span className="text-gray-500">Contract End:</span>
                               <div className="flex items-center">
