@@ -36,7 +36,28 @@ import * as XLSX from 'xlsx'
 const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D']
 
 const BackgroundCheckReport = () => {
-  // ... (keep existing setup code)
+    const navigate = useNavigate()
+  const { user } = useAuth()
+  const { checkPermission } = usePageAccess()
+  const [pageLoading, setPageLoading] = useState(true)
+  const chartsRef = useRef(null)
+
+  const [filters, setFilters] = useState({
+    dateRange: 'all',
+    startDate: '',
+    endDate: '',
+    requested_by: '',
+    citizenship: 'all',
+    from_company: '',
+    department: 'all',
+    roleType: 'all'
+  })
+
+  // States for data
+  const [loading, setLoading] = useState(true)
+  const [departments, setDepartments] = useState([])
+  const [roles, setRoles] = useState([])
+  const [citizenships, setCitizenships] = useState([])
 
   const [stats, setStats] = useState({
     // Background check stats
