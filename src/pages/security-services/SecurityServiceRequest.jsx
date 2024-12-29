@@ -9,9 +9,7 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
-  CardFooter
 } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
@@ -126,250 +124,182 @@ const SecurityServiceRequest = () => {
         }
       ]
     },
-    // ... rest of your services array
+    { 
+      value: 'check_number_online', 
+      label: 'Request to look if the number is on Air',
+      description: 'Check if a phone number is currently active',
+      fields: [
+        { 
+          name: 'incident_date', 
+          type: 'date', 
+          label: 'Date of Incident'
+        },
+        { 
+          name: 'imei', 
+          type: 'text', 
+          label: 'IMEI Number',
+          maxLength: 15,
+          placeholder: 'Enter 15-digit IMEI number'
+        }
+      ]
+    },
+    { 
+      value: 'unblock_number', 
+      label: 'Request to unblock Number/MoMo Account',
+      description: 'Get assistance with unblocking your number or mobile money account',
+      fields: [
+        { 
+          name: 'phone_number', 
+          type: 'tel', 
+          label: 'Phone Number',
+          placeholder: 'Enter blocked number',
+          maxLength: 10
+        },
+        { 
+          name: 'details', 
+          type: 'textarea', 
+          label: 'Details',
+          placeholder: 'Provide additional information'
+        }
+      ]
+    },
+    { 
+      value: 'money_refund', 
+      label: 'Request Money Refund',
+      description: 'Request assistance for money refund transactions',
+      fields: [
+        { 
+          name: 'from_phone', 
+          type: 'tel', 
+          label: 'Source Phone Number',
+          maxLength: 10,
+          placeholder: 'Enter sender number'
+        },
+        { 
+          name: 'to_phone', 
+          type: 'tel', 
+          label: 'Destination Phone Number',
+          maxLength: 10,
+          placeholder: 'Enter receiver number'
+        },
+        { 
+          name: 'incident_date', 
+          type: 'date', 
+          label: 'Date of Incident'
+        },
+        { 
+          name: 'details', 
+          type: 'textarea', 
+          label: 'Detailed Description',
+          placeholder: 'Explain what happened'
+        }
+      ]
+    },
+    { 
+      value: 'other_issues', 
+      label: 'Other Issues',
+      description: 'Report any other security-related concerns',
+      fields: [
+        { 
+          name: 'details', 
+          type: 'textarea', 
+          label: 'Describe Your Issue',
+          placeholder: 'Provide details of your issue'
+        }
+      ]
+    }
   ]
 
-  const handleServiceChange = (e) => {
-    const service = e.target.value
-    setSelectedService(service)
-    setFormData({})
-    setErrors({})
-    setMessage({ type: '', text: '' })
-  }
+  // ... handleServiceChange, handleInputChange, validateForm remain the same ...
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-    // Clear error when field is edited
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  const validateForm = () => {
-    const newErrors = {}
-    const currentService = services.find(s => s.value === selectedService)
-    
-    if (!selectedService) {
-      newErrors.service = 'Please select a service'
-    }
-    
-    if (currentService) {
-      currentService.fields.forEach(field => {
-        if (!formData[field.name]) {
-          newErrors[field.name] = `${field.label} is required`
-        } else if (field.type === 'tel' && formData[field.name].length !== 10) {
-          newErrors[field.name] = 'Phone number must be 10 digits'
-        }
-      })
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = async () => {
-    if (!validateForm()) return
-
-    setIsLoading(true)
-    try {
-      const { error } = await supabase
-        .from('service_requests')
-        .insert([{
-          service_type: selectedService,
-          client_details: formData,
-          created_by: user.id,
-          status: 'Pending',
-          created_at: new Date().toISOString()
-        }])
-
-      if (error) throw error
-
-      setMessage({
-        type: 'success',
-        text: 'Service request submitted successfully!'
-      })
-
-    } catch (error) {
-      console.error('Submission error:', error)
-      setMessage({
-        type: 'error',
-        text: 'Failed to submit request. Please try again.'
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handlePrint = () => {
-    window.print()
-  }
-
-  const handleReset = () => {
-    setSelectedService('')
-    setFormData({})
-    setErrors({})
-    setMessage({ type: '', text: '' })
-  }
-
-  const renderServiceFields = () => {
-    const currentService = services.find(s => s.value === selectedService)
-    if (!currentService) return null
-
-    return (
-      <div className="space-y-6">
-        <div className="border-b pb-4 mb-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-            {currentService.label}
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {currentService.description}
-          </p>
-        </div>
-
-        {currentService.fields.map(field => (
-          <div key={field.name} className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {field.label} <span className="text-red-500">*</span>
-            </label>
-            
-            {field.type === 'select' ? (
-              <select
-                name={field.name}
-                value={formData[field.name] || ''}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
-              >
-                <option value="">Select {field.label}</option>
-                {field.options.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            ) : field.type === 'textarea' ? (
-              <textarea
-                name={field.name}
-                value={formData[field.name] || ''}
-                onChange={handleInputChange}
-                placeholder={field.placeholder}
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
-              />
-            ) : (
-              <input
-                type={field.type}
-                name={field.name}
-                value={formData[field.name] || ''}
-                onChange={handleInputChange}
-                placeholder={field.placeholder}
-                maxLength={field.maxLength}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
-              />
-            )}
-            
-            {errors[field.name] && (
-              <p className="text-sm text-red-500">{errors[field.name]}</p>
-            )}
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  if (pageLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    )
-  }
-
+  // Updated render method
   return (
     <div className="max-w-2xl mx-auto p-6">
       <Card>
         <CardHeader>
           <CardTitle>Security Service Request</CardTitle>
-          <CardDescription>
+          <p className="text-sm text-gray-500 mt-2">
             Select a service type and fill in the required information
-          </CardDescription>
+          </p>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          {/* Service Selection */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Select Service <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={selectedService}
-              onChange={handleServiceChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
-            >
-              <option value="">Select a service</option>
-              {services.map(service => (
-                <option key={service.value} value={service.value}>
-                  {service.label}
-                </option>
-              ))}
-            </select>
-            {errors.service && (
-              <p className="text-sm text-red-500">{errors.service}</p>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Service Selection */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Select Service <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={selectedService}
+                onChange={handleServiceChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
+              >
+                <option value="">Select a service</option>
+                {services.map(service => (
+                  <option key={service.value} value={service.value}>
+                    {service.label}
+                  </option>
+                ))}
+              </select>
+              {errors.service && (
+                <p className="text-sm text-red-500">{errors.service}</p>
+              )}
+            </div>
+
+            {/* Service Fields */}
+            {selectedService && renderServiceFields()}
+
+            {/* Messages */}
+            {message.type === 'error' && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{message.text}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Action Buttons */}
+            {selectedService && (
+              <div className="flex flex-col sm:flex-row gap-4 pt-6">
+                <Button 
+                  onClick={handleReset}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Reset
+                </Button>
+                
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Submit
+                    </>
+                  )}
+                </Button>
+                
+                <Button 
+                  onClick={handlePrint}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print
+                </Button>
+              </div>
             )}
           </div>
-
-          {/* Service Fields */}
-          {selectedService && renderServiceFields()}
-
-          {/* Messages */}
-          {message.type === 'error' && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{message.text}</AlertDescription>
-            </Alert>
-          )}
         </CardContent>
-
-        {selectedService && (
-          <CardFooter className="flex flex-col sm:flex-row gap-4">
-            <Button 
-              onClick={handleReset}
-              variant="outline"
-              className="w-full sm:w-auto"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Reset
-            </Button>
-            
-            <Button 
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Submit
-                </>
-              )}
-            </Button>
-            
-            <Button 
-              onClick={handlePrint}
-              variant="outline"
-              className="w-full sm:w-auto"
-            >
-              <Printer className="mr-2 h-4 w-4" />
-              Print
-            </Button>
-          </CardFooter>
-        )}
       </Card>
 
       {/* Success Popup */}
