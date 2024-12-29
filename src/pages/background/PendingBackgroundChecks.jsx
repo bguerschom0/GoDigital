@@ -52,7 +52,7 @@ const PendingBackgroundChecks = () => {
         .order('name')
 
       if (error) throw error
-      setDepartments( || [])
+      setDepartments(data || [])
     } catch (error) {
       console.error('Error fetching departments:', error)
     }
@@ -76,18 +76,21 @@ const PendingBackgroundChecks = () => {
         query = query.eq('department_id', selectedDepartment)
       }
 
-      const { data, error } = await query
+      const response = await query
       
-      if (error) throw error
+      if (response.error) {
+        throw response.error
+      }
       
       // Filter out internships after fetching
-      const filteredData = data?.filter(check => 
+      const filteredData = response.data?.filter(check => 
         check.roles?.type?.toLowerCase() !== 'internship'
       ) || []
       
       setPendingChecks(filteredData)
-      return
     
+
+      const { data, error } = await query
 
       if (error) throw error
       setPendingChecks(data || [])
