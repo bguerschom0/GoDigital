@@ -1,15 +1,8 @@
-// src/pages/background/InternshipOverview.jsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { 
-  Calendar,
   Loader2, 
-  Filter,
-  Download,
-  Clock,
-  BadgeCheck,
-  AlertCircle
+  Download
 } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 import { Button } from '@/components/ui/button'
@@ -19,6 +12,7 @@ import "react-datepicker/dist/react-datepicker.css"
 import { format } from 'date-fns'
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
+import Papa from 'papaparse'
 
 const InternshipOverview = () => {
   const navigate = useNavigate()
@@ -98,6 +92,31 @@ const InternshipOverview = () => {
     return end >= today ? 'Active' : 'Expired'
   }
 
+  const handleExport = () => {
+    // Prepare data for export
+    const exportData = internships.map(intern => ({
+      'Full Name': intern.full_names,
+      'Department': intern.departments?.name,
+      'Start Date': format(new Date(intern.date_start), 'MMM d, yyyy'),
+      'End Date': format(new Date(intern.date_end), 'MMM d, yyyy'),
+      'Working With': intern.work_with,
+      'Status': calculateStatus(intern.date_end)
+    }))
+
+    // Convert to CSV
+    const csv = Papa.unparse(exportData)
+    
+    // Create blob and download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `internships_${format(new Date(), 'yyyy-MM-dd')}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -111,45 +130,6 @@ const InternshipOverview = () => {
       <div className="flex justify-center">
         <div className="w-full max-w-[90%]">
           <div className="flex flex-col space-y-6">
-            {/* Header with Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Internships</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {internships.length}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Active Internships</CardTitle>
-                  <BadgeCheck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {internships.filter(intern => calculateStatus(intern.date_end) === 'Active').length}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Expired Internships</CardTitle>
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {internships.filter(intern => calculateStatus(intern.date_end) === 'Expired').length}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
             {/* Filters */}
             <Card>
               <CardHeader>
@@ -214,7 +194,10 @@ const InternshipOverview = () => {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-lg font-medium">Internship List</CardTitle>
-                  <Button className="bg-[#0A2647]">
+                  <Button 
+                    className="bg-[#0A2647]"
+                    onClick={handleExport}
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Export
                   </Button>
