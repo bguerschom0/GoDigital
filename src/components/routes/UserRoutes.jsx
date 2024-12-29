@@ -77,10 +77,10 @@ const UserRoutes = () => (
       </Route>
 
       {/* Security Services */}
-      <Route path="security_services">
-        <Route path="security_service_request" element={<SecurityServiceRequest />} />
-        <Route path="task_page" element={<TasksPage />} />
-      </Route>
+<Route path="security_services">
+  <Route path="security_service_request" element={<SecurityServiceRequest />} />
+  <Route path="task_page" element={<TasksPage />} />
+</Route>
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/user/dashboard" replace />} />
