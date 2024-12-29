@@ -1,3 +1,4 @@
+// src/pages/security-services/SecurityServiceRequest.jsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -18,11 +19,10 @@ import {
   RefreshCw,
   AlertCircle,
   Loader2,
-  CheckCircle,
-  Info
+  CheckCircle
 } from 'lucide-react'
 
-// Success Popup Component
+// Success Message Component
 const SuccessPopup = ({ message, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -80,17 +80,30 @@ const SecurityServiceRequest = () => {
 
   useEffect(() => {
     const checkAccess = async () => {
-      const { canAccess } = checkPermission('/security_services/security_service_request')
+      let permissionPath;
+      
+      // Check if user is accessing from admin or user routes
+      if (window.location.pathname.includes('/admin/')) {
+        permissionPath = '/admin/security_services/security_service_request'
+      } else {
+        permissionPath = '/security_services/security_service_request'
+      }
+      
+      const { canAccess } = checkPermission(permissionPath)
       
       if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        if (user?.role === 'admin') {
+          navigate('/admin/dashboard')
+        } else {
+          navigate('/user/dashboard')
+        }
         return
       }
       setPageLoading(false)
     }
     
     checkAccess()
-  }, [])
+  }, [checkPermission, navigate, user])
 
   const phoneModels = [
     'iPhone', 'Samsung', 'Techno', 'Infinix', 
@@ -102,7 +115,6 @@ const SecurityServiceRequest = () => {
       value: 'request_serial_number', 
       label: 'Request Serial Number of Stolen phone',
       description: 'Get help retrieving the serial number of your stolen phone',
-      icon: 'Phone',
       fields: [
         { 
           name: 'phone_number', 
@@ -159,7 +171,7 @@ const SecurityServiceRequest = () => {
           name: 'details', 
           type: 'textarea', 
           label: 'Details',
-          placeholder: 'Provide additional information'
+          placeholder: 'Provide additional information about the blocking'
         }
       ]
     },
@@ -191,7 +203,7 @@ const SecurityServiceRequest = () => {
           name: 'details', 
           type: 'textarea', 
           label: 'Detailed Description',
-          placeholder: 'Explain what happened'
+          placeholder: 'Explain what happened with the transaction'
         }
       ]
     },
@@ -204,15 +216,173 @@ const SecurityServiceRequest = () => {
           name: 'details', 
           type: 'textarea', 
           label: 'Describe Your Issue',
-          placeholder: 'Provide details of your issue'
+          placeholder: 'Provide detailed information about your security concern'
         }
       ]
     }
   ]
 
-  // ... handleServiceChange, handleInputChange, validateForm remain the same ...
+  const handleServiceChange = (e) => {
+    const service = e.target.value
+    setSelectedService(service)
+    setFormData({})
+    setErrors({})
+    setMessage({ type: '', text: '' })
+  }
 
-  // Updated render method
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+    // Clear error when field is edited
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors = {}
+    const currentService = services.find(s => s.value === selectedService)
+    
+    if (!selectedService) {
+      newErrors.service = 'Please select a service'
+    }
+    
+    if (currentService) {
+      currentService.fields.forEach(field => {
+        if (!formData[field.name]) {
+          newErrors[field.name] = `${field.label} is required`
+        } else if (field.type === 'tel' && formData[field.name].length !== 10) {
+          newErrors[field.name] = `${field.label} must be 10 digits`
+        } else if (field.name === 'imei' && formData[field.name].length !== 15) {
+          newErrors[field.name] = 'IMEI number must be 15 digits'
+        }
+      })
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return
+
+    setIsLoading(true)
+    try {
+      const { error } = await supabase
+        .from('service_requests')
+        .insert([{
+          service_type: selectedService,
+          client_details: formData,
+          status: 'Pending',
+          created_by: user.id,
+          created_at: new Date().toISOString(),
+          updated_by: user.id,
+          updated_at: new Date().toISOString()
+        }])
+
+      if (error) throw error
+
+      setMessage({
+        type: 'success',
+        text: 'Your service request has been submitted successfully!'
+      })
+
+    } catch (error) {
+      console.error('Submission error:', error)
+      setMessage({
+        type: 'error',
+        text: 'Failed to submit request. Please try again.'
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handlePrint = () => {
+    window.print()
+  }
+
+  const handleReset = () => {
+    setSelectedService('')
+    setFormData({})
+    setErrors({})
+    setMessage({ type: '', text: '' })
+  }
+
+  const renderServiceFields = () => {
+    const currentService = services.find(s => s.value === selectedService)
+    if (!currentService) return null
+
+    return (
+      <div className="space-y-6">
+        <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            {currentService.label}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {currentService.description}
+          </p>
+        </div>
+
+        {currentService.fields.map(field => (
+          <div key={field.name} className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {field.label} <span className="text-red-500">*</span>
+            </label>
+            
+            {field.type === 'select' ? (
+              <select
+                name={field.name}
+                value={formData[field.name] || ''}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
+              >
+                <option value="">Select {field.label}</option>
+                {field.options.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            ) : field.type === 'textarea' ? (
+              <textarea
+                name={field.name}
+                value={formData[field.name] || ''}
+                onChange={handleInputChange}
+                placeholder={field.placeholder}
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
+              />
+            ) : (
+              <input
+                type={field.type}
+                name={field.name}
+                value={formData[field.name] || ''}
+                onChange={handleInputChange}
+                placeholder={field.placeholder}
+                maxLength={field.maxLength}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
+              />
+            )}
+            
+            {errors[field.name] && (
+              <p className="text-sm text-red-500">{errors[field.name]}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-6">
       <Card>
