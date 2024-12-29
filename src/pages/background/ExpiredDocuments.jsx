@@ -194,6 +194,23 @@ const ExpiredDocuments = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-4">
+                  <div className="w-full flex justify-end mb-4">
+                    <Button
+                      onClick={() => {
+                        setDocumentType('internship')
+                        setFilter('expiring-soon')
+                        setTimeframe('30')
+                        setSearchTerm('')
+                      }}
+                      className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-600"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 12c0-4.97 4.03-9 9-9s9 4.03 9 9-4.03 9-9 9-9-4.03-9-9z"/>
+                        <path d="M13 8l-4 4 4 4"/>
+                      </svg>
+                      Reset Filters
+                    </Button>
+                  </div>
                   <div className="flex-1 min-w-[200px]">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Document Type
