@@ -152,37 +152,62 @@ const UpdateBackgroundCheck = () => {
     }
   }
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      setMessage({ type: 'error', text: 'Please enter an ID/Passport number' })
-      return
-    }
-
-    setIsLoading(true)
-    setSearchResults([])
-    try {
-      const { data, error } = await supabase
-        .from('background_checks')
-        .select(`
-          *,
-          departments (name),
-          roles (name, type)
-        `)
-        .ilike('id_passport_number', `%${searchTerm}%`)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-
-      setSearchResults(data)
-      if (data.length === 0) {
-        setMessage({ type: 'info', text: 'No records found' })
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Error searching records' })
-    } finally {
-      setIsLoading(false)
-    }
+const handleSearch = async () => {
+  if (!searchTerm.trim()) {
+    setMessage({ type: 'error', text: 'Please enter an ID/Passport number' })
+    return
   }
+
+  setIsLoading(true)
+  setSearchResults([])
+  try {
+    // First get the background check record
+    const { data: bgChecks, error } = await supabase
+      .from('background_checks')
+      .select('*')
+      .ilike('id_passport_number', `%${searchTerm}%`)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    if (bgChecks && bgChecks.length > 0) {
+      // Get department and role details for each record
+      const enrichedData = await Promise.all(
+        bgChecks.map(async (check) => {
+          // Get department details
+          const { data: deptData } = await supabase
+            .from('departments')
+            .select('name')
+            .eq('id', check.department_id)
+            .single()
+
+          // Get role details
+          const { data: roleData } = await supabase
+            .from('roles')
+            .select('name, type')
+            .eq('id', check.role_id)
+            .single()
+
+          return {
+            ...check,
+            department_name: deptData?.name || 'Unknown',
+            role_name: roleData?.name || 'Unknown',
+            role_type: roleData?.type || 'Unknown'
+          }
+        })
+      )
+
+      setSearchResults(enrichedData)
+    } else {
+      setMessage({ type: 'info', text: 'No records found' })
+    }
+  } catch (error) {
+    console.error('Error searching records:', error)
+    setMessage({ type: 'error', text: 'Error searching records' })
+  } finally {
+    setIsLoading(false)
+  }
+}
 
   const handleSelect = (record) => {
     setSelectedRequest(record)
@@ -247,19 +272,29 @@ const handleUpdate = async (e) => {
 
   setIsUpdating(true)
   try {
+    // Only include fields that exist in the database table
     const updateData = {
-      ...formData,
+      full_names: formData.full_names,
+      citizenship: formData.citizenship,
+      id_passport_number: formData.id_passport_number,
+      passport_expiry_date: formData.passport_expiry_date || null,
+      department_id: formData.department_id,
+      role_id: formData.role_id,
+      submitted_date: formData.submitted_date || null,
+      status: formData.status,
+      requested_by: formData.requested_by || null,
+      from_company: formData.from_company || null,
+      duration: formData.duration || null,
+      operating_country: formData.operating_country || null,
+      date_start: formData.date_start || null,
+      date_end: formData.date_end || null,
+      work_with: formData.work_with || null,
+      contact_number: formData.contact_number || null,
+      additional_info: formData.additional_info || null,
+      closed_date: formData.status === 'Closed' ? formData.closed_date : null,
+      closed_by: formData.status === 'Closed' ? user.id : null,
       updated_by: user.id,
       updated_at: new Date().toISOString()
-    }
-
-    // Add closed_by if status is being set to Closed
-    if (formData.status === 'Closed') {
-      updateData.closed_by = user.id
-    } else {
-      // Reset closed fields if status is not Closed
-      updateData.closed_date = null
-      updateData.closed_by = null
     }
 
     const { error } = await supabase
