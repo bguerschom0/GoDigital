@@ -28,6 +28,7 @@ const AllBackgroundChecks = () => {
   const [loading, setLoading] = useState(true)
   const [exportLoading, setExportLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [canExportData, setCanExportData] = useState(false)
   
   // Initialize date range to last 3 months
   const [filters, setFilters] = useState({
@@ -50,17 +51,27 @@ const AllBackgroundChecks = () => {
   // Check permissions
   useEffect(() => {
     const checkAccess = async () => {
+      // Admin automatically has access and export rights
+      if (user?.role === 'admin') {
+        setCanExportData(true)
+        setPageLoading(false)
+        return
+      }
+
+      // Check permissions for non-admin users
       const { canAccess, canExport } = await checkPermission('/background/all')
       
       if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        navigate('/dashboard')
         return
       }
+
+      setCanExportData(canExport)
       setPageLoading(false)
     }
     
     checkAccess()
-  }, [])
+  }, [user])
 
   useEffect(() => {
     if (!pageLoading) {
