@@ -21,7 +21,9 @@ const PendingBackgroundChecks = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedDepartment, setSelectedDepartment] = useState('all')
+  const [selectedRole, setSelectedRole] = useState('all')
   const [departments, setDepartments] = useState([])
+  const [roles, setRoles] = useState([])
   
   useEffect(() => {
     const checkAccess = async () => {
@@ -37,11 +39,12 @@ const PendingBackgroundChecks = () => {
 
   useEffect(() => {
     fetchDepartments()
+    fetchRoles()
   }, [])
 
   useEffect(() => {
     fetchPendingChecks()
-  }, [selectedDepartment])
+  }, [selectedDepartment, selectedRole])
 
   const fetchDepartments = async () => {
     try {
@@ -70,10 +73,15 @@ const PendingBackgroundChecks = () => {
           roles:role_id(name, type)
         `)
         .eq('status', 'Pending')
+        .neq('roles.type', 'internship')  // Exclude internship roles
         .order('submitted_date', { ascending: false })
 
       if (selectedDepartment !== 'all') {
         query = query.eq('department_id', selectedDepartment)
+      }
+
+      if (selectedRole !== 'all') {
+        query = query.eq('role_id', selectedRole)
       }
 
       const response = await query
@@ -82,12 +90,7 @@ const PendingBackgroundChecks = () => {
         throw response.error
       }
       
-      // Filter out internships after fetching
-      const filteredData = response.data?.filter(check => 
-        check.roles?.type?.toLowerCase() !== 'internship'
-      ) || []
-      
-      setPendingChecks(filteredData)
+      setPendingChecks(response.data || [])
     
 
       const { data, error } = await query
@@ -160,6 +163,17 @@ const PendingBackgroundChecks = () => {
                 <option value="all">All Departments</option>
                 {departments.map(dept => (
                   <option key={dept.id} value={dept.id}>{dept.name}</option>
+                ))}
+              </select>
+
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+              >
+                <option value="all">All Roles</option>
+                {roles.map(role => (
+                  <option key={role.id} value={role.id}>{role.name}</option>
                 ))}
               </select>
             </div>
