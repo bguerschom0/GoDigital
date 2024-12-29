@@ -81,55 +81,66 @@ const ExpiredDocuments = () => {
 
       if (error) throw error
 
-      const processedData = data.map(doc => ({
-        ...doc,
-        isExpired: doc.passport_expiry_date 
-          ? isBefore(parseISO(doc.passport_expiry_date), new Date())
-          : false,
-        isExpiringSoon: doc.passport_expiry_date 
-          ? isBefore(parseISO(doc.passport_expiry_date), addDays(new Date(), parseInt(timeframe)))
-          : false,
-        contractExpired: doc.date_end 
-          ? isBefore(parseISO(doc.date_end), new Date())
-          : false,
-        contractExpiringSoon: doc.date_end 
-          ? isBefore(parseISO(doc.date_end), addDays(new Date(), parseInt(timeframe)))
-          : false
-      }))
+      const THREE_MONTHS_IN_MS = 90 * 24 * 60 * 60 * 1000; // 90 days in milliseconds
+      
+      const processedData = data.map(doc => {
+        if (documentType === 'passport' && doc.passport_expiry_date) {
+          const expiryDate = parseISO(doc.passport_expiry_date);
+          const today = new Date();
+          const timeToExpiry = expiryDate.getTime() - today.getTime();
+          
+          return {
+            ...doc,
+            isExpired: isBefore(expiryDate, today),
+            isExpiringSoon: timeToExpiry > 0 && timeToExpiry <= THREE_MONTHS_IN_MS
+          };
+        } else if (documentType === 'internship') {
+          return {
+            ...doc,
+            contractExpired: doc.date_end ? isBefore(parseISO(doc.date_end), new Date()) : false,
+            contractExpiringSoon: doc.date_end 
+              ? isBefore(parseISO(doc.date_end), addDays(new Date(), parseInt(timeframe)))
+              : false
+          };
+        }
+        return doc;
+      });
 
       console.log('Raw data:', data);
       console.log('Processed data:', processedData);
 
       // Filter by document type (internship or passport)
       const typeFilteredData = processedData.filter(doc => {
-        if (documentType === 'internship') {
-          // More lenient check for internships - check if role name or type contains 'intern'
-          const isIntern = 
-            doc.roles?.type?.toLowerCase().includes('intern') ||
-            doc.roles?.name?.toLowerCase().includes('intern');
-          return isIntern;
-        }
         if (documentType === 'passport') {
-          return true; // Show all records for passport filter
+          return doc.passport_expiry_date != null; // Only show records with passport expiry dates
+        }
+        if (documentType === 'internship') {
+          return doc.roles?.type?.toLowerCase().includes('intern') ||
+                 doc.roles?.name?.toLowerCase().includes('intern');
         }
         return true;
       });
       
       console.log('Type filtered data:', typeFilteredData);
 
-      // Filter by status
+      // Filter by status for passport and internship separately
       const statusFilteredData = typeFilteredData.filter(doc => {
-        if (filter === 'expired') {
-          if (documentType === 'passport') {
+        if (documentType === 'passport') {
+          if (filter === 'expired') {
             return doc.isExpired;
           }
-          return doc.contractExpired;
-        }
-        if (filter === 'expiring-soon') {
-          if (documentType === 'passport') {
+          if (filter === 'expiring-soon') {
             return doc.isExpiringSoon && !doc.isExpired;
           }
-          return doc.contractExpiringSoon && !doc.contractExpired;
+          return true; // 'all' filter
+        } else if (documentType === 'internship') {
+          if (filter === 'expired') {
+            return doc.contractExpired;
+          }
+          if (filter === 'expiring-soon') {
+            return doc.contractExpiringSoon && !doc.contractExpired;
+          }
+          return true; // 'all' filter
         }
         return true;
       });
