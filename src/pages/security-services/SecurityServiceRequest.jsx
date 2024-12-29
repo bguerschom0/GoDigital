@@ -78,32 +78,41 @@ const SecurityServiceRequest = () => {
   const [message, setMessage] = useState({ type: '', text: '' })
   const [pageLoading, setPageLoading] = useState(true)
 
-  useEffect(() => {
-    const checkAccess = async () => {
-      let permissionPath;
-      
-      // Check if user is accessing from admin or user routes
-      if (window.location.pathname.includes('/admin/')) {
-        permissionPath = '/admin/security_services/security_service_request'
-      } else {
-        permissionPath = '/security_services/security_service_request'
-      }
-      
-      const { canAccess } = checkPermission(permissionPath)
-      
-      if (!canAccess) {
-        if (user?.role === 'admin') {
-          navigate('/admin/dashboard')
-        } else {
-          navigate('/user/dashboard')
-        }
-        return
-      }
-      setPageLoading(false)
+useEffect(() => {
+  const checkAccess = async () => {
+    let permissionPath;
+    
+    // Get the current full path
+    const currentPath = window.location.pathname;
+    console.log('Current Path:', currentPath);
+    
+    if (user?.role === 'admin') {
+      // For admin users
+      permissionPath = '/admin/security_services/security_service_request';
+    } else {
+      // For regular users
+      permissionPath = '/security_services/security_service_request';
     }
     
-    checkAccess()
-  }, [checkPermission, navigate, user])
+    console.log('Checking permission for path:', permissionPath);
+    const { canAccess } = checkPermission(permissionPath);
+    console.log('Permission result:', { canAccess });
+
+    if (!canAccess) {
+      console.log('Access denied, redirecting to dashboard');
+      if (user?.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/user/dashboard');
+      }
+      return;
+    }
+    
+    setPageLoading(false);
+  };
+  
+  checkAccess();
+}, []);
 
   const phoneModels = [
     'iPhone', 'Samsung', 'Techno', 'Infinix', 
