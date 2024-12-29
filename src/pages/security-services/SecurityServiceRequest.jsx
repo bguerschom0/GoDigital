@@ -8,6 +8,7 @@ import {
   Printer, 
   RefreshCw 
 } from 'lucide-react'
+import { usePageAccess } from '@/hooks/usePageAccess'
 
 const SecurityServiceRequest = () => {
   const { user } = useAuth()
@@ -15,6 +16,25 @@ const SecurityServiceRequest = () => {
   const [selectedService, setSelectedService] = useState('')
   const [formData, setFormData] = useState({})
   const [errors, setErrors] = useState({})
+
+    useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = checkPermission('/background/update')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    
+    checkAccess()
+  }, [])
+
+  useEffect(() => {
+    fetchDepartments()
+    fetchRoles()
+  }, [])
 
   const phoneModels = [
     'iPhone', 'Samsung', 'Techno', 'Infinix', 
