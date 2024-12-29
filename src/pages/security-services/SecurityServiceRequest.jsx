@@ -16,6 +16,7 @@ const SecurityServiceRequest = () => {
   const [selectedService, setSelectedService] = useState('')
   const [formData, setFormData] = useState({})
   const [errors, setErrors] = useState({})
+    const { checkPermission } = usePageAccess()
 
     useEffect(() => {
     const checkAccess = async () => {
