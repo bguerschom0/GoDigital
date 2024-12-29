@@ -61,6 +61,22 @@ const PendingBackgroundChecks = () => {
     }
   }
 
+  const fetchRoles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('*')
+        .eq('status', 'active')
+        .neq('type', 'internship') // Exclude internship roles
+        .order('name')
+
+      if (error) throw error
+      setRoles(data || [])
+    } catch (error) {
+      console.error('Error fetching roles:', error)
+    }
+  }
+
   const fetchPendingChecks = async () => {
     setIsLoading(true)
     setError(null)
