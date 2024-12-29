@@ -78,32 +78,19 @@ const SecurityServiceRequest = () => {
   const [message, setMessage] = useState({ type: '', text: '' })
   const [pageLoading, setPageLoading] = useState(true)
 
-useEffect(() => {
-  const checkAccess = async () => {
-    let permissionPath;
-    
-    // Check if user is accessing from admin or user routes
-    if (window.location.pathname.includes('/admin/')) {
-      permissionPath = '/admin/security_services/security_service_request';
-    } else {
-      permissionPath = '/security_services/security_service_request';
-    }
-    
-    const { canAccess } = checkPermission(permissionPath)
-    
-    if (!canAccess) {
-      if (user?.role === 'admin') {
-        navigate('/admin/dashboard')
-      } else {
-        navigate('/user/dashboard')
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = checkPermission('/security_services/security_service_request')
+      
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
       }
-      return
+      setPageLoading(false)
     }
-    setPageLoading(false)
-  }
-  
-  checkAccess()
-}, [checkPermission, navigate, user])
+    
+    checkAccess()
+  }, [])
 
   const phoneModels = [
     'iPhone', 'Samsung', 'Techno', 'Infinix', 
