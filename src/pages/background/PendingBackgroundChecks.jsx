@@ -63,15 +63,16 @@ const PendingBackgroundChecks = () => {
 
   const fetchRoles = async () => {
     try {
-      const { data, error } = await supabase
+      // First get all roles excluding internships
+      const { data: rolesData, error: rolesError } = await supabase
         .from('roles')
         .select('*')
+        .not('type', 'ilike', 'internship')  // Case-insensitive comparison
         .eq('status', 'active')
-        .neq('type', 'internship') // Exclude internship roles
         .order('name')
 
-      if (error) throw error
-      setRoles(data || [])
+      if (rolesError) throw rolesError
+      setRoles(rolesData || [])
     } catch (error) {
       console.error('Error fetching roles:', error)
     }
@@ -81,6 +82,17 @@ const PendingBackgroundChecks = () => {
     setIsLoading(true)
     setError(null)
     try {
+      // First get roles that aren't internships
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('roles')
+        .select('id')
+        .not('type', 'ilike', 'internship')
+      
+      if (rolesError) throw rolesError
+      
+      // Get the IDs of non-internship roles
+      const nonInternshipRoleIds = rolesData.map(role => role.id)
+      
       let query = supabase
         .from('background_checks')
         .select(`
@@ -89,7 +101,7 @@ const PendingBackgroundChecks = () => {
           roles:role_id(name, type)
         `)
         .eq('status', 'Pending')
-        .neq('roles.type', 'internship')  // Exclude internship roles
+        .in('role_id', nonInternshipRoleIds)  // Only get background checks for non-internship roles
         .order('submitted_date', { ascending: false })
 
       if (selectedDepartment !== 'all') {
@@ -100,17 +112,8 @@ const PendingBackgroundChecks = () => {
         query = query.eq('role_id', selectedRole)
       }
 
-      const response = await query
-      
-      if (response.error) {
-        throw response.error
-      }
-      
-      setPendingChecks(response.data || [])
-    
-
       const { data, error } = await query
-
+      
       if (error) throw error
       setPendingChecks(data || [])
     } catch (error) {
@@ -168,7 +171,6 @@ const PendingBackgroundChecks = () => {
     <div className="flex justify-center">
       <div className="w-full max-w-[90%] px-4">
         <div className="flex flex-col space-y-6">
-          {/* Header with Filters and Export Button */}
           <div className="flex justify-between items-center pt-8">
             <div className="flex space-x-4">
               <select
@@ -203,7 +205,6 @@ const PendingBackgroundChecks = () => {
             </Button>
           </div>
 
-          {/* Content */}
           <Card>
             <CardContent className="p-0">
               {isLoading ? (
