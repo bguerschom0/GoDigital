@@ -30,6 +30,12 @@ import Attendance from '@/pages/access-control/attendance/DailyAttendance'
 import DeviceList from '@/pages/access-control/devices/DeviceList'
 import AccessControlDashboard from '@/pages/access-control/index'
 
+// Security Services
+import SecurityServiceRequest from '@/pages/security-services/SecurityServiceRequest'
+import TasksPage from '@/pages/security-services/TasksPage'
+
+
+
 const UserRoutes = () => (
   <Routes>
     <Route path="/" element={<UserLayout />}>
@@ -68,6 +74,12 @@ const UserRoutes = () => (
         <Route path="controllers" element={<ControllersManagement />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="device_list" element={<DeviceList />} />
+      </Route>
+
+      {/* Security Services */}
+      <Route path="security_services">
+        <Route path="security_service_request" element={<SecurityServiceRequest />} />
+        <Route path="task_page" element={<TasksPage />} />
       </Route>
 
       {/* Catch all */}
