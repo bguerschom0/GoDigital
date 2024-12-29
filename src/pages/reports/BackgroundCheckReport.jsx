@@ -36,7 +36,7 @@ import * as XLSX from 'xlsx'
 const COLORS = ['#0A2647', '#144272', '#205295', '#2C74B3', '#427D9D']
 
 const BackgroundCheckReport = () => {
-    const navigate = useNavigate()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { checkPermission } = usePageAccess()
   const [pageLoading, setPageLoading] = useState(true)
@@ -44,13 +44,11 @@ const BackgroundCheckReport = () => {
 
   const [filters, setFilters] = useState({
     dateRange: 'all',
-    startDate: '',
-    endDate: '',
-    requested_by: '',
-    citizenship: 'all',
-    from_company: '',
+    startDate: null,
+    endDate: null,
     department: 'all',
-    roleType: 'all'
+    roleType: 'all',
+    citizenship: 'all'
   })
 
   // States for data
@@ -58,20 +56,76 @@ const BackgroundCheckReport = () => {
   const [departments, setDepartments] = useState([])
   const [roles, setRoles] = useState([])
   const [citizenships, setCitizenships] = useState([])
-
   const [stats, setStats] = useState({
-    // Background check stats
     totalChecks: 0,
     pendingChecks: 0,
     closedChecks: 0,
-    // Internship stats
     totalInternships: 0,
     activeInternships: 0,
     expiredInternships: 0
   })
-
   const [statusDistribution, setStatusDistribution] = useState([])
   const [internshipStatusDistribution, setInternshipStatusDistribution] = useState([])
+  const [rawData, setRawData] = useState([])
+
+  // Check permissions
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { canAccess } = checkPermission('/reports/background')
+      if (!canAccess) {
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+        return
+      }
+      setPageLoading(false)
+    }
+    checkAccess()
+  }, [])
+
+  // Fetch data when filters change
+  useEffect(() => {
+    if (!pageLoading) {
+      fetchData()
+      fetchDepartmentsAndRoles()
+      fetchCitizenships()
+    }
+  }, [filters, pageLoading])
+
+  const fetchCitizenships = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('background_checks')
+        .select('citizenship')
+        .not('citizenship', 'is', null)
+      
+      if (error) throw error
+      const uniqueCitizenships = [...new Set(data.map(item => item.citizenship))]
+      setCitizenships(uniqueCitizenships.sort())
+    } catch (error) {
+      console.error('Error fetching citizenships:', error)
+    }
+  }
+
+  const fetchDepartmentsAndRoles = async () => {
+    try {
+      const { data: deptData, error: deptError } = await supabase
+        .from('departments')
+        .select('id, name')
+        .eq('status', 'active')
+
+      if (deptError) throw deptError
+      setDepartments(deptData || [])
+
+      const { data: roleData, error: roleError } = await supabase
+        .from('roles')
+        .select('id, name, type')
+        .eq('status', 'active')
+
+      if (roleError) throw roleError
+      setRoles(roleData || [])
+    } catch (error) {
+      console.error('Error fetching departments and roles:', error)
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -127,7 +181,6 @@ const BackgroundCheckReport = () => {
   }
 
   const processBackgroundCheckData = (data) => {
-    // Process non-internship background checks
     const totalChecks = data.length
     const pendingChecks = data.filter(check => check.status === 'Pending').length
     const closedChecks = data.filter(check => check.status === 'Closed').length
@@ -166,7 +219,108 @@ const BackgroundCheckReport = () => {
     setInternshipStatusDistribution(statusData)
   }
 
-  // Render functions for different stat cards
+  const exportToExcel = async () => {
+    try {
+      // Fetch all data for export
+      const { data, error } = await supabase
+        .from('background_checks')
+        .select(`
+          *,
+          departments(name),
+          roles(name, type)
+        `)
+
+      if (error) throw error
+
+      // Prepare data for export
+      const exportData = data.map(record => ({
+        'Department': record.departments?.name,
+        'Role': record.roles?.name,
+        'Role Type': record.roles?.type,
+        'Full Name': record.full_names,
+        'Status': record.status,
+        'Citizenship': record.citizenship,
+        'Date Submitted': new Date(record.submitted_date).toLocaleDateString(),
+        'Company': record.from_company,
+        'Working With': record.work_with
+      }))
+
+      const workbook = XLSX.utils.book_new()
+      const worksheet = XLSX.utils.json_to_sheet(exportData)
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Background Checks")
+      XLSX.writeFile(workbook, `background-checks-${new Date().toISOString().split('T')[0]}.xlsx`)
+    } catch (error) {
+      console.error('Error exporting to Excel:', error)
+    }
+  }
+
+  const exportToPDF = async () => {
+    if (!chartsRef.current) return
+
+    const canvas = await html2canvas(chartsRef.current, {
+      scale: 2,
+      backgroundColor: '#ffffff'
+    })
+    
+    const imgData = canvas.toDataURL('image/png')
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const margin = 10
+    const imgWidth = pageWidth - (margin * 2)
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    
+    pdf.addImage(
+      imgData,
+      'PNG',
+      margin,
+      margin,
+      imgWidth,
+      imgHeight
+    )
+    
+    pdf.save('background-check-report.pdf')
+  }
+
+  const handlePrint = () => {
+    if (!chartsRef.current) return;
+    
+    const printContent = chartsRef.current;
+    const printStyles = `
+      <style>
+        @media print {
+          body { padding: 20px; }
+          .card { 
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+          }
+          .hidden { display: none !important; }
+          @page { margin: 20px; }
+        }
+      </style>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html><head><title>Background Check Report</title>');
+    printWindow.document.write(printStyles);
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(printContent.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  }
+
   const renderBackgroundCheckStats = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       <Card>
@@ -291,11 +445,20 @@ const BackgroundCheckReport = () => {
     </Card>
   )
 
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))]">
       <div className="flex-1 flex justify-center">
         <div className="w-full max-w-[90%] px-4 pb-8">
-           <div className="flex justify-between items-center pt-2 mb-6">
+          {/* Header with export buttons */}
+          <div className="flex justify-between items-center pt-2 mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Background Check Report
             </h1>
@@ -332,7 +495,7 @@ const BackgroundCheckReport = () => {
 
           {/* Filters */}
           <Card className="mb-6">
-             <CardHeader>
+            <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center">
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
@@ -340,6 +503,35 @@ const BackgroundCheckReport = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Date Range Pickers */}
+                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Start Date
+                    </label>
+                    <DatePicker
+                      selected={filters.startDate}
+                      onChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+                      placeholderText="Select start date"
+                      maxDate={filters.endDate || new Date()}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      End Date
+                    </label>
+                    <DatePicker
+                      selected={filters.endDate}
+                      onChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+                      placeholderText="Select end date"
+                      minDate={filters.startDate}
+                      maxDate={new Date()}
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Department
@@ -355,35 +547,71 @@ const BackgroundCheckReport = () => {
                     ))}
                   </select>
                 </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Role Type
-              </label>
-              <select
-                value={filters.roleType}
-                onChange={(e) => setFilters(prev => ({ ...prev, roleType: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
-              >
-                <option value="all">All Roles</option>
-                {[...new Set(roles.map(role => role.type))].map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Role Type
+                  </label>
+                  <select
+                    value={filters.roleType}
+                    onChange={(e) => setFilters(prev => ({ ...prev, roleType: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+                  >
+                    <option value="all">All Roles</option>
+                    {[...new Set(roles.map(role => role.type))].map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Citizenship
+                  </label>
+                  <select
+                    value={filters.citizenship}
+                    onChange={(e) => setFilters(prev => ({ ...prev, citizenship: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+                  >
+                    <option value="all">All Countries</option>
+                    {citizenships.map(country => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-4 flex justify-end">
+                  <Button 
+                    onClick={() => setFilters({
+                      dateRange: 'all',
+                      startDate: null,
+                      endDate: null,
+                      department: 'all',
+                      roleType: 'all',
+                      citizenship: 'all'
+                    })}
+                    variant="outline"
+                    className="w-32"
+                  >
+                    Reset Filters
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
           </Card>
 
-          {/* Dynamic Stats and Charts */}
+          {/* Charts container for export and print */}
           <div id="charts-container" ref={chartsRef}>
-            {filters.roleType === 'Internship' ? renderInternshipStats() : renderBackgroundCheckStats()}
-            {renderStatusDistribution()}
-          </div>
-
-          {/* Print content container */}
-          <div className="hidden">
-            <div ref={printRef}>
-              {filters.roleType === 'Internship' ? renderInternshipStats() : renderBackgroundCheckStats()}
-              {renderStatusDistribution()}
-            </div>
+            {loading ? (
+              <div className="flex justify-center items-center h-48">
+                <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+              </div>
+            ) : (
+              <>
+                {filters.roleType === 'Internship' ? renderInternshipStats() : renderBackgroundCheckStats()}
+                {renderStatusDistribution()}
+              </>
+            )}
           </div>
         </div>
       </div>
