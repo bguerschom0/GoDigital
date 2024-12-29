@@ -200,17 +200,17 @@ const Sidebar = ({ isOpen, onClose }) => {
       {
     title: 'Security Services',
     icon: <Shield className="h-4 w-4" />,
-    id: 'access_control',
+    id: 'security_services',
       children: [
       {
         title: 'New Request',
         icon: <FileText className="w-5 h-5" />,
-        href: '/admin/security-services/SecurityServiceRequest'
+        href: '/admin/security_services/security_service_request'
       },
               {
         title: 'Tasks',
         icon: <Clock className="w-5 h-5" />,
-        href: '/admin/security-services/TasksPage'
+        href: '/admin/security_services/task_page'
       }
     ]
   },
