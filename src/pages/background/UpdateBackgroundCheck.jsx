@@ -387,46 +387,46 @@ const handleUpdate = async (e) => {
               </div>
 
               {/* Search Results */}
-              {searchResults.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="text-lg font-medium mb-2">Search Results</h3>
-                  <div className="space-y-4">
-                    {searchResults.map((record) => (
-                      <div
-                        key={record.id}
-                        className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                        onClick={() => handleSelect(record)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium">{record.full_names}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              ID/Passport: {record.id_passport_number}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Department: {record.departments?.name} | Role: {record.roles?.name} ({record.roles?.type})
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className={`
-                              px-2 py-1 rounded-full text-xs font-medium
-                              ${record.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                              ${record.status === 'Closed' ? 'bg-green-100 text-green-800' : ''}
-                            `}>
-                              {record.status}
-                            </span>
-                            {record.closed_date && (
-                              <span className="text-xs text-gray-500 mt-1">
-                                Closed on: {format(new Date(record.closed_date), 'dd MMM yyyy')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+{searchResults.length > 0 && (
+  <div className="mt-4">
+    <h3 className="text-lg font-medium mb-2">Search Results</h3>
+    <div className="space-y-4">
+      {searchResults.map((record) => (
+        <div
+          key={record.id}
+          className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+          onClick={() => handleSelect(record)}
+        >
+          <div className="flex justify-between items-start">
+            <div>
+              <h4 className="font-medium">{record.full_names}</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                ID/Passport: {record.id_passport_number}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Department: {record.department_name} | Role: {record.role_name} ({record.role_type})
+              </p>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className={`
+                px-2 py-1 rounded-full text-xs font-medium
+                ${record.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                ${record.status === 'Closed' ? 'bg-green-100 text-green-800' : ''}
+              `}>
+                {record.status}
+              </span>
+              {record.closed_date && (
+                <span className="text-xs text-gray-500 mt-1">
+                  Closed on: {format(new Date(record.closed_date), 'dd MMM yyyy')}
+                </span>
               )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
             </CardContent>
           </Card>
 
