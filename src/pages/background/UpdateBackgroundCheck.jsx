@@ -202,52 +202,90 @@ const UpdateBackgroundCheck = () => {
     return selectedRole?.type || ''
   }
 
-  const handleUpdate = async (e) => {
-    e.preventDefault()
-    setIsUpdating(true)
-    
-    try {
-      const updateData = {
-        ...formData,
-        updated_by: user.id,
-        updated_at: new Date().toISOString()
-      }
+const handleUpdate = async (e) => {
+  e.preventDefault()
+  
+  // Basic validation
+  const requiredFields = ['full_names', 'citizenship', 'id_passport_number', 'department_id', 'role_id']
+  const roleType = getSelectedRole()
 
-      if (formData.status === 'Closed') {
-        if (!formData.closed_date) {
-          setMessage({ type: 'error', text: 'Please enter a closed date' })
-          setIsUpdating(false)
-          return
-        }
-        updateData.closed_by = user.id
-      } else {
-        updateData.closed_date = null
-        updateData.closed_by = null
-      }
-
-      const { error } = await supabase
-        .from('background_checks')
-        .update(updateData)
-        .eq('id', selectedRequest.id)
-
-      if (error) throw error
-
-      setMessage({ 
-        type: 'success', 
-        text: `Record ${formData.status === 'Closed' ? 'closed' : 'updated'} successfully!` 
-      })
-      
-      handleSearch()
-    } catch (error) {
-      console.error('Error:', error)
-      setMessage({ 
-        type: 'error', 
-        text: 'Error updating record. Please try again.' 
-      })
-    } finally {
-      setIsUpdating(false)
-    }
+  // Add role-specific required fields
+  if (roleType !== 'Internship') {
+    requiredFields.push('submitted_date', 'requested_by')
   }
+
+  if (['Expert', 'Contractor', 'Consultant'].includes(roleType)) {
+    requiredFields.push('from_company')
+  }
+
+  if (['Contractor', 'Consultant'].includes(roleType)) {
+    requiredFields.push('duration', 'operating_country', 'additional_info')
+  }
+
+  if (roleType === 'Internship') {
+    requiredFields.push('date_start', 'date_end', 'work_with', 'contact_number')
+  }
+
+  // Check required fields
+  const missingFields = requiredFields.filter(field => !formData[field])
+  if (missingFields.length > 0) {
+    setMessage({
+      type: 'error',
+      text: `Please fill in all required fields: ${missingFields.join(', ')}`
+    })
+    return
+  }
+
+  // Additional validation for closed status
+  if (formData.status === 'Closed' && !formData.closed_date) {
+    setMessage({
+      type: 'error',
+      text: 'Please enter a closed date'
+    })
+    return
+  }
+
+  setIsUpdating(true)
+  try {
+    const updateData = {
+      ...formData,
+      updated_by: user.id,
+      updated_at: new Date().toISOString()
+    }
+
+    // Add closed_by if status is being set to Closed
+    if (formData.status === 'Closed') {
+      updateData.closed_by = user.id
+    } else {
+      // Reset closed fields if status is not Closed
+      updateData.closed_date = null
+      updateData.closed_by = null
+    }
+
+    const { error } = await supabase
+      .from('background_checks')
+      .update(updateData)
+      .eq('id', selectedRequest.id)
+
+    if (error) throw error
+
+    setMessage({ 
+      type: 'success', 
+      text: `Record ${formData.status === 'Closed' ? 'closed' : 'updated'} successfully!` 
+    })
+    
+    // Refresh search results
+    handleSearch()
+  } catch (error) {
+    console.error('Error:', error)
+    setMessage({ 
+      type: 'error', 
+      text: 'Error updating record. Please try again.' 
+    })
+  } finally {
+    setIsUpdating(false)
+  }
+}
 
   const resetForm = () => {
     setSelectedRequest(null)
@@ -490,143 +528,174 @@ const UpdateBackgroundCheck = () => {
           </div>
         </div>
 
-        {/* Role Specific Information */}
-        {getSelectedRole() && (
-          <div className="space-y-4 pt-4">
-            <h3 className="font-medium text-gray-900 dark:text-white">Additional Information</h3>
-            
-            {/* Expert Fields */}
-            {getSelectedRole() === 'Expert' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  From Company <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="from_company"
-                  value={formData.from_company}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                />
-              </div>
-            )}
+{/* Role Specific Information */}
+{getSelectedRole() && (
+  <div className="space-y-4 pt-4">
+    <h3 className="font-medium text-gray-900 dark:text-white">Additional Information</h3>
+    
+    {/* Common fields for all roles except Internship */}
+    {getSelectedRole() !== 'Internship' && (
+      <>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Submitted Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="submitted_date"
+            value={formData.submitted_date}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+          />
+        </div>
 
-            {/* Contractor & Consultant Fields */}
-            {['Contractor', 'Consultant'].includes(getSelectedRole()) && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    From Company <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="from_company"
-                    value={formData.from_company}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                  />
-                </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Requested By <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="requested_by"
+            value={formData.requested_by}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+          />
+        </div>
+      </>
+    )}
+    
+    {/* Expert Fields */}
+    {getSelectedRole() === 'Expert' && (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          From Company <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          name="from_company"
+          value={formData.from_company}
+          onChange={handleInputChange}
+          className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+        />
+      </div>
+    )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Duration <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="duration"
-                    value={formData.duration}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                  />
-                </div>
+    {/* Contractor & Consultant Fields */}
+    {['Contractor', 'Consultant'].includes(getSelectedRole()) && (
+      <>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            From Company <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="from_company"
+            value={formData.from_company}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+          />
+        </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Operating Country <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="operating_country"
-                    value={formData.operating_country}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                  />
-                </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Duration <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="duration"
+            value={formData.duration}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+          />
+        </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Additional Information <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    name="additional_info"
-                    value={formData.additional_info}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                  />
-                </div>
-              </>
-            )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Operating Country <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="operating_country"
+            value={formData.operating_country}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+          />
+        </div>
 
-            {/* Internship Fields */}
-            {getSelectedRole() === 'Internship' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Start Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="date_start"
-                    value={formData.date_start}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                  />
-                </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Additional Information <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            name="additional_info"
+            value={formData.additional_info}
+            onChange={handleInputChange}
+            rows={4}
+            className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+          />
+        </div>
+      </>
+    )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    End Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="date_end"
-                    value={formData.date_end}
-                    onChange={handleInputChange}
-                    min={formData.date_start}
-                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                  />
-                </div>
+    {/* Internship Fields */}
+    {getSelectedRole() === 'Internship' && (
+      <>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Start Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="date_start"
+            value={formData.date_start}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+          />
+        </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Work With <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="work_with"
-                    value={formData.work_with}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                  />
-                </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            End Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="date_end"
+            value={formData.date_end}
+            onChange={handleInputChange}
+            min={formData.date_start}
+            className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+          />
+        </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Contact Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    name="contact_number"
-                    value={formData.contact_number}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Work With <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="work_with"
+            value={formData.work_with}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Contact Number <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            name="contact_number"
+            value={formData.contact_number}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border-2 border-[#0A2647]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] focus:border-transparent dark:bg-gray-800 dark:border-gray-700"
+          />
+        </div>
+      </>
+    )}
+  </div>
+)}
 
         {/* Status Section - Always at the bottom */}
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
