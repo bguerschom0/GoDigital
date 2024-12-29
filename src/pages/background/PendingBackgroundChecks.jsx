@@ -45,14 +45,14 @@ const PendingBackgroundChecks = () => {
 
   const fetchDepartments = async () => {
     try {
-      const { data, error } = await supabase
+      const { , error } = await supabase
         .from('departments')
         .select('*')
         .eq('status', 'active')
         .order('name')
 
       if (error) throw error
-      setDepartments(data || [])
+      setDepartments( || [])
     } catch (error) {
       console.error('Error fetching departments:', error)
     }
@@ -88,8 +88,6 @@ const PendingBackgroundChecks = () => {
       setPendingChecks(filteredData)
       return
     
-
-      const { data, error } = await query
 
       if (error) throw error
       setPendingChecks(data || [])
