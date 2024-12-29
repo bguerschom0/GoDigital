@@ -295,11 +295,66 @@ const BackgroundCheckReport = () => {
     <div className="flex flex-col min-h-[calc(100vh-theme(spacing.16))]">
       <div className="flex-1 flex justify-center">
         <div className="w-full max-w-[90%] px-4 pb-8">
-          {/* ... (keep existing header and export buttons) ... */}
+           <div className="flex justify-between items-center pt-2 mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Background Check Report
+            </h1>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToExcel}
+                className="text-[#0A2647] border-[#0A2647]"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Export Excel
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToPDF}
+                className="text-[#0A2647] border-[#0A2647]"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="text-[#0A2647] border-[#0A2647]"
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                Print
+              </Button>
+            </div>
+          </div>
 
           {/* Filters */}
           <Card className="mb-6">
-            {/* ... (keep existing filter code but update role type filter) ... */}
+             <CardHeader>
+              <CardTitle className="text-sm font-medium flex items-center">
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Department
+                  </label>
+                  <select
+                    value={filters.department}
+                    onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647]"
+                  >
+                    <option value="all">All Departments</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
+                  </select>
+                </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Role Type
