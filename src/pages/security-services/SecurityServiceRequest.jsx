@@ -499,40 +499,52 @@ const validateForm = () => {
 return (
   <div className="max-w-3xl mx-auto p-6">
     <AnimatePresence mode="wait">
-{!showPersonalInfo && (
+{!showPersonalInfo ? (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
+    className="max-w-5xl mx-auto p-6"
   >
     <Card>
       <CardHeader>
-        <CardTitle>Select Service Type</CardTitle>
-        <p className="text-sm text-gray-500">Choose the service you need assistance with</p>
+        <CardTitle className="text-xl font-semibold text-[#0A2647]">Select Service</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="hex-container">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {services.map((service) => (
-            <div
+            <motion.div
               key={service.value}
-              className="hex-item"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => handleServiceSelect(service)}
+              className="relative group cursor-pointer"
             >
-              <div className="hex-content">
-                <div className="hex-icon">
-                  {service.icon}
+              <div className="aspect-square rounded-2xl bg-white border-2 border-gray-100 hover:border-[#0A2647]/20 p-4 transition-all duration-300 hover:shadow-lg">
+                <div className="h-full flex flex-col justify-between">
+                  <div>
+                    <div className="w-12 h-12 rounded-xl bg-[#0A2647]/5 flex items-center justify-center mb-3">
+                      {service.icon}
+                    </div>
+                    <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">
+                      {service.label}
+                    </h3>
+                    <p className="text-sm text-gray-500 line-clamp-2">
+                      {service.description}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-end mt-2">
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-[#0A2647] transition-colors" />
+                  </div>
                 </div>
-                <div className="hex-label">
-                  {service.label}
-                </div>
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-transparent group-hover:ring-[#0A2647]/20 transition-all duration-300" />
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </CardContent>
     </Card>
   </motion.div>
-)} : (
+) : (
           // Personal Information Form
           <motion.div
             initial={{ opacity: 0, x: 20 }}
