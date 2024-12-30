@@ -503,7 +503,7 @@ return (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    className="max-w-7xl mx-auto p-8"
+    className="max-w-40xl mx-auto p-8"
   >
     <Card className="bg-gray-50/50">
       <CardHeader className="px-8 pt-8">
