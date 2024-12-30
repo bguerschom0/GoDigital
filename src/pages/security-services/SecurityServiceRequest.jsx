@@ -503,7 +503,7 @@ return (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    className="max-w-37xl mx-auto p-6"
+    className="max-w-7xl mx-auto p-8"
   >
     <Card className="bg-gray-50/50">
       <CardHeader className="px-8 pt-8">
@@ -513,7 +513,7 @@ return (
         <p className="text-gray-500 mt-2">Choose the service you need assistance with</p>
       </CardHeader>
       <CardContent className="p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {services.map((service) => (
             <motion.div
               key={service.value}
@@ -522,7 +522,7 @@ return (
               onClick={() => handleServiceSelect(service)}
               className="relative group cursor-pointer"
             >
-              <div className="bg-white rounded-2xl border-2 border-gray-100 hover:border-[#0A2647]/20 p-6 transition-all duration-300 hover:shadow-xl min-h-[280px] flex flex-col max-w-[350px]">
+              <div className="bg-white rounded-2xl border-2 border-gray-100 hover:border-[#0A2647]/20 p-6 transition-all duration-300 hover:shadow-xl min-h-[280px] flex flex-col">
                 <div className="w-16 h-16 rounded-xl bg-[#0A2647]/5 flex items-center justify-center mb-4">
                   {React.cloneElement(service.icon, { className: "w-8 h-8 text-[#0A2647]" })}
                 </div>
