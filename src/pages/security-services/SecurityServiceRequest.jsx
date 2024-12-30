@@ -1,7 +1,7 @@
 // src/pages/security-services/SecurityServiceRequest.jsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
@@ -17,10 +17,13 @@ import {
   CheckCircle,
   User,
   Phone,
-  FileText
+  FileText,
+  ArrowLeft,
+  ChevronRight,
+  Shield
 } from 'lucide-react'
 
-// Success Message Component remains the same...
+// Success Message Component
 const SuccessPopup = ({ message, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -64,29 +67,59 @@ const SuccessPopup = ({ message, onClose }) => {
   )
 }
 
+const services = [
+  { 
+    value: 'request_serial_number', 
+    label: 'Request Serial Number',
+    description: 'Retrieve stolen phone serial number',
+    icon: <Phone className="w-4 h-4" />
+  },
+  { 
+    value: 'check_number_online', 
+    label: 'Check Number Status',
+    description: 'Check if a number is active',
+    icon: <Shield className="w-4 h-4" />
+  },
+  { 
+    value: 'unblock_number', 
+    label: 'Unblock Number/MoMo',
+    description: 'Unblock phone or mobile money',
+    icon: <Phone className="w-4 h-4" />
+  },
+  { 
+    value: 'money_refund', 
+    label: 'Money Refund',
+    description: 'Request money refund',
+    icon: <Save className="w-4 h-4" />
+  },
+  { 
+    value: 'other_issues', 
+    label: 'Other Issues',
+    description: 'Other security concerns',
+    icon: <FileText className="w-4 h-4" />
+  }
+]
+
 const SecurityServiceRequest = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { checkPermission } = usePageAccess()
   
+  const [selectedService, setSelectedService] = useState(null)
+  const [showPersonalInfo, setShowPersonalInfo] = useState(false)
   const [formData, setFormData] = useState({
-    // Personal Information
     full_names: '',
     id_passport: '',
     primary_contact: '',
     secondary_contact: '',
-    
-    // Service Information
     service_type: '',
-    details: '',
+    details: ''
   })
-
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
   const [message, setMessage] = useState({ type: '', text: '' })
 
-  // Access check effect remains the same...
   useEffect(() => {
     const checkAccess = async () => {
       let permissionPath = user?.role === 'admin' 
@@ -105,52 +138,16 @@ const SecurityServiceRequest = () => {
     checkAccess()
   }, [])
 
-  // Services array definition remains the same...
-  const services = [
-    { 
-      value: 'request_serial_number', 
-      label: 'Request Serial Number of Stolen phone',
-      description: 'Get help retrieving the serial number of your stolen phone',
-      icon: <Phone className="w-5 h-5" />
-    },
-    { 
-      value: 'check_number_online', 
-      label: 'Request to look if the number is on Air',
-      description: 'Check if a phone number is currently active',
-      icon: <Phone className="w-5 h-5" />
-    },
-    { 
-      value: 'unblock_number', 
-      label: 'Request to unblock Number/MoMo Account',
-      description: 'Get assistance with unblocking your number or mobile money account',
-      icon: <Phone className="w-5 h-5" />
-    },
-    { 
-      value: 'money_refund', 
-      label: 'Request Money Refund',
-      description: 'Request assistance for money refund transactions',
-      icon: <Phone className="w-5 h-5" />
-    },
-    { 
-      value: 'other_issues', 
-      label: 'Other Issues',
-      description: 'Report any other security-related concerns',
-      icon: <FileText className="w-5 h-5" />
-    }
-  ]
+  const handleServiceSelect = (service) => {
+    setSelectedService(service)
+    setFormData(prev => ({ ...prev, service_type: service.value }))
+    setShowPersonalInfo(true)
+  }
 
-  const validateForm = () => {
-    const newErrors = {}
-    
-    // Required fields validation
-    if (!formData.full_names) newErrors.full_names = 'Full names are required'
-    if (!formData.id_passport) newErrors.id_passport = 'ID/Passport is required'
-    if (!formData.primary_contact) newErrors.primary_contact = 'Primary contact is required'
-    if (!formData.service_type) newErrors.service_type = 'Please select a service type'
-    if (!formData.details) newErrors.details = 'Please provide service details'
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  const handleBack = () => {
+    setShowPersonalInfo(false)
+    setSelectedService(null)
+    setFormData(prev => ({ ...prev, service_type: '' }))
   }
 
   const handleInputChange = (e) => {
@@ -159,10 +156,30 @@ const SecurityServiceRequest = () => {
       ...prev,
       [name]: value
     }))
-    // Clear error when field is edited
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
+  }
+
+  const validateForm = () => {
+    const newErrors = {}
+    
+    if (!formData.full_names) newErrors.full_names = 'Full names are required'
+    if (!formData.id_passport) newErrors.id_passport = 'ID/Passport is required'
+    if (!formData.primary_contact) newErrors.primary_contact = 'Primary contact is required'
+    if (!formData.service_type) newErrors.service_type = 'Please select a service type'
+    if (!formData.details) newErrors.details = 'Please provide service details'
+
+    // Phone number format validation
+    if (formData.primary_contact && !/^\d{10}$/.test(formData.primary_contact)) {
+      newErrors.primary_contact = 'Contact number must be 10 digits'
+    }
+    if (formData.secondary_contact && !/^\d{10}$/.test(formData.secondary_contact)) {
+      newErrors.secondary_contact = 'Contact number must be 10 digits'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async () => {
@@ -199,6 +216,10 @@ const SecurityServiceRequest = () => {
     }
   }
 
+  const handlePrint = () => {
+    window.print()
+  }
+
   const handleReset = () => {
     setFormData({
       full_names: '',
@@ -221,195 +242,251 @@ const SecurityServiceRequest = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - Personal Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-[#0A2647]" />
-              <span>Personal Information</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Full Names <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="full_names"
-                  value={formData.full_names}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                  placeholder="Enter your full names"
-                />
-                {errors.full_names && (
-                  <p className="mt-1 text-sm text-red-500">{errors.full_names}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ID/Passport Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="id_passport"
-                  value={formData.id_passport}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                  placeholder="Enter ID or passport number"
-                />
-                {errors.id_passport && (
-                  <p className="mt-1 text-sm text-red-500">{errors.id_passport}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Primary Contact <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="primary_contact"
-                  value={formData.primary_contact}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                  placeholder="Enter primary contact number"
-                />
-                {errors.primary_contact && (
-                  <p className="mt-1 text-sm text-red-500">{errors.primary_contact}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Secondary Contact
-                </label>
-                <input
-                  type="tel"
-                  name="secondary_contact"
-                  value={formData.secondary_contact}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                  placeholder="Enter secondary contact number (optional)"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Right Column - Service Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-[#0A2647]" />
-              <span>Service Selection</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Service Type <span className="text-red-500">*</span>
-                </label>
-                <div className="mt-4 space-y-2">
+    <div className="max-w-3xl mx-auto p-6">
+      <AnimatePresence mode="wait">
+        {!showPersonalInfo ? (
+          // Service Selection Screen
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Select Service Type</CardTitle>
+                <p className="text-sm text-gray-500">Choose the service you need assistance with</p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {services.map((service) => (
                     <div
                       key={service.value}
-                      onClick={() => handleInputChange({ 
-                        target: { name: 'service_type', value: service.value } 
-                      })}
-                      className={`
-                        flex items-center space-x-3 p-3 rounded-lg cursor-pointer border
-                        transition-colors
-                        ${formData.service_type === service.value
-                          ? 'border-[#0A2647] bg-[#0A2647]/5'
-                          : 'border-gray-200 hover:border-[#0A2647]/50'
-                        }
-                      `}
+                      onClick={() => handleServiceSelect(service)}
+                      className="flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-[#0A2647] hover:bg-gray-50 transition-colors"
                     >
-                      <div className={`
-                        p-2 rounded-lg
-                        ${formData.service_type === service.value
-                          ? 'bg-[#0A2647] text-white'
-                          : 'bg-gray-100 text-gray-600'
-                        }
-                      `}>
+                      <div className="flex-shrink-0 p-2 rounded-md bg-[#0A2647]/5 text-[#0A2647]">
                         {service.icon}
                       </div>
-                      <div>
-                        <h4 className="font-medium">
-                          {service.label}
-                        </h4>
-                        <p className="text-sm text-gray-500">
-                          {service.description}
-                        </p>
+                      <div className="ml-3">
+                        <h4 className="text-sm font-medium">{service.label}</h4>
+                        <p className="text-xs text-gray-500">{service.description}</p>
                       </div>
+                      <ChevronRight className="w-4 h-4 ml-auto text-gray-400" />
                     </div>
                   ))}
                 </div>
-                {errors.service_type && (
-                  <p className="mt-2 text-sm text-red-500">{errors.service_type}</p>
-                )}
-              </div>
-
-              {formData.service_type && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Additional Details <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    name="details"
-                    value={formData.details}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                    placeholder="Please provide detailed information about your request..."
-                  />
-                  {errors.details && (
-                    <p className="mt-1 text-sm text-red-500">{errors.details}</p>
-                  )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : (
+          // Personal Information Form
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Card>
+              <CardHeader>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={handleBack}
+                    className="p-1 rounded-full hover:bg-gray-100"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <div>
+                    <CardTitle>{selectedService?.label}</CardTitle>
+                    <p className="text-sm text-gray-500">{selectedService?.description}</p>
+                  </div>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium">
+                        Full Names <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="full_names"
+                        value={formData.full_names}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+                        placeholder="Enter full names"
+                      />
+                      {errors.full_names && (
+                        <p className="mt-1 text-sm text-red-500">{errors.full_names}</p>
+                      )}
+                    </div>
 
-      {/* Action Buttons */}
-      <div className="mt-6 flex flex-col sm:flex-row justify-end gap-4">
-        <Button 
-          onClick={handleReset}
-          variant="outline"
-          className="w-full sm:w-auto"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Reset
-        </Button>
+                    <div>
+                      <label className="block text-sm font-medium">
+                        ID/Passport <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="id_passport"
+                        value={formData.id_passport}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+                        placeholder="Enter ID/Passport number"
+                      />
+                      {errors.id_passport && (
+                        <p className="mt-1 text-sm text-red-500">{errors.id_passport}</p>
+                      )}
+                    </div>
 
-        <Button 
-          onClick={handleSubmit}
-          disabled={isLoading}
-          className="w-full sm:w-auto bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Submit Request
-            </>
-          )}
-        </Button>
-      </div>
+                    <div>
+                      <label className="block text-sm font-medium">
+                        Primary Contact <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        name="primary_contact"
+                        value={formData.primary_contact}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+                        placeholder="Enter primary contact"
+                        maxLength={10}
+                      />
+                      {errors.primary_contact && (
+                        <p className="mt-1 text-sm text-red-500">{errors.primary_contact}</p>
+                      )}
+                    </div>
 
-      {/* Success Popup */}
+                    <div>
+                      <label className="block text-sm font-medium">
+                        Secondary Contact
+                      </label>
+                      <input
+                        type="tel"
+                        name="secondary_contact"
+                        value={formData.secondary_contact}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+                        placeholder="Enter secondary contact (optional)"
+                        maxLength={10}
+                      />
+                      {errors.secondary_contact && (
+                        <p className="mt-1 text-sm text-red-500">{errors.secondary_contact}</p>
+                      )}
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium">
+                        Request Details <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        name="details"
+                        value={formData.details}
+                        onChange={handleInputChange}
+                        rows={4}
+                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+                        placeholder="Please provide detailed information about your request..."
+                      />
+                      {errors.details && (
+                        <p className="mt-1 text-sm text-red-500">{errors.details}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Service-specific fields based on service type */}
+                  {selectedService?.value === 'request_serial_number' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium">
+                          Incident Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="incident_date"
+                          value={formData.incident_date || ''}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedService?.value === 'money_refund' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium">
+                          Transaction Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="transaction_date"
+                          value={formData.transaction_date || ''}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium">
+                          Amount <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="amount"
+                          value={formData.amount || ''}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+                          placeholder="Enter amount"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
+                    <Button 
+                      onClick={handlePrint}
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                    >
+                      <Printer className="w-4 h-4 mr-2" />
+                      Print
+                    </Button>
+
+                    <Button 
+                      onClick={handleReset}
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Reset
+                    </Button>
+
+                    <Button 
+                      onClick={handleSubmit}
+                      disabled={isLoading}
+                      className="w-full sm:w-auto bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Submit
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Message */}
       {message.type === 'success' && (
         <SuccessPopup
           message={message.text}
@@ -420,10 +497,10 @@ const SecurityServiceRequest = () => {
         />
       )}
 
-      {/* Error Alert */}
+      {/* Error Message */}
       {message.type === 'error' && (
         <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="h-4 h-4" />
           <AlertDescription>{message.text}</AlertDescription>
         </Alert>
       )}
