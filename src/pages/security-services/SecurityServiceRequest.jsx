@@ -21,10 +21,16 @@ import {
   ArrowLeft,
   ChevronRight,
   Shield,
-  XCircle,
-    Calendar,
+  Calendar,
   Wallet,
-  Plus  
+  XCircle,
+  Plus,
+  History,
+  Mail,
+  Users,
+  Wifi,
+  BadgeHelp,
+  PhoneCall
 } from 'lucide-react'
 
 // Success Message Component
@@ -107,6 +113,42 @@ const services = [
     description: 'Schedule a backoffice appointment',
     icon: <Calendar className="w-4 h-4" />
   },
+   { 
+    value: 'rib_followup', 
+    label: 'Followup on RIB Request',
+    description: 'Track RIB request status',
+    icon: <BadgeHelp className="w-4 h-4" />
+  },
+  { 
+    value: 'call_history', 
+    label: 'Call History',
+    description: 'Request call history details',
+    icon: <History className="w-4 h-4" />
+  },
+  { 
+    value: 'momo_transaction', 
+    label: 'MoMo Transaction',
+    description: 'Check MoMo transaction details',
+    icon: <Wallet className="w-4 h-4" />
+  },
+  { 
+    value: 'agent_commission', 
+    label: 'Agent Commission',
+    description: 'Agent commission request',
+    icon: <Users className="w-4 h-4" />
+  },
+  { 
+    value: 'unblock_call', 
+    label: 'Unblock Blocked Number for Calling',
+    description: 'Unblock numbers for calling',
+    icon: <PhoneCall className="w-4 h-4" />
+  },
+  { 
+    value: 'internet_issue', 
+    label: 'Internet Issue',
+    description: 'Report internet connectivity issues',
+    icon: <Wifi className="w-4 h-4" />
+  },
   { 
     value: 'other_issues', 
     label: 'Other Issues',
@@ -123,6 +165,21 @@ const SecurityServiceRequest = () => {
   const [backofficeUsers, setBackofficeUsers] = useState([])
   const [selectedService, setSelectedService] = useState(null)
   const [showPersonalInfo, setShowPersonalInfo] = useState(false)
+  const [blockedNumbers, setBlockedNumbers] = useState([{ number: '', id: Date.now() }])
+  const handleAddNumber = () => {
+  setBlockedNumbers([...blockedNumbers, { number: '', id: Date.now() }])
+}
+  const handleNumberChange = (id, value) => {
+  const updatedList = blockedNumbers.map(item => 
+    item.id === id ? { ...item, number: value } : item
+  )
+  setBlockedNumbers(updatedList)
+}
+  const handleRemoveNumber = (id) => {
+  if (blockedNumbers.length > 1) {
+    setBlockedNumbers(blockedNumbers.filter(item => item.id !== id))
+  }
+}
 const [imeiList, setImeiList] = useState([{ imei: '', id: Date.now() }])
 const handleAddImei = () => {
   setImeiList([...imeiList, { imei: '', id: Date.now() }])
@@ -151,7 +208,15 @@ const handleRemoveImei = (id) => {
   date_range: '',
   phone_model: '',
   details: '',
-  imei_list: []
+  imei_list: [],
+      rib_station: '',
+  rib_helper_number: '',
+  email: '',
+  franchisee: '',
+  start_date: '',
+  end_date: '',
+  blocked_numbers: [],
+  service_number: ''
   })
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
@@ -176,12 +241,11 @@ const handleRemoveImei = (id) => {
     checkAccess()
   }, [])
 
-  const fetchBackofficeUsers = async () => {
+const fetchBackofficeUsers = async () => {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('id, fullname')
-      .eq('role', 'backoffice')
+      .select('id, fullname') // Updated to use fullname field
       .eq('status', 'active')
       .order('fullname')
 
@@ -221,26 +285,62 @@ const handleRemoveImei = (id) => {
     }
   }
 
-  const validateForm = () => {
-    const newErrors = {}
-    
-    if (!formData.full_names) newErrors.full_names = 'Full names are required'
-    if (!formData.id_passport) newErrors.id_passport = 'ID/Passport is required'
-    if (!formData.primary_contact) newErrors.primary_contact = 'Primary contact is required'
-    if (!formData.service_type) newErrors.service_type = 'Please select a service type'
-    if (!formData.details) newErrors.details = 'Please provide service details'
+const validateForm = () => {
+  const newErrors = {}
 
-    // Phone number format validation
-    if (formData.primary_contact && !/^\d{10}$/.test(formData.primary_contact)) {
-      newErrors.primary_contact = 'Contact number must be 10 digits'
-    }
-    if (formData.secondary_contact && !/^\d{10}$/.test(formData.secondary_contact)) {
-      newErrors.secondary_contact = 'Contact number must be 10 digits'
-    }
+  // Common validations
+  if (!formData.full_names) newErrors.full_names = 'Full names are required'
+  if (!formData.id_passport) newErrors.id_passport = 'ID/Passport is required'
+  if (!formData.primary_contact) newErrors.primary_contact = 'Primary contact is required'
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  // Service-specific validations
+  switch (selectedService?.value) {
+    case 'rib_followup':
+      if (!formData.service_number) newErrors.service_number = 'Number is required'
+      if (!formData.rib_station) newErrors.rib_station = 'RIB station is required'
+      if (!formData.details) newErrors.details = 'Additional information is required'
+      break;
+
+    case 'call_history':
+      if (!formData.service_number) newErrors.service_number = 'Number is required'
+      if (!formData.start_date) newErrors.start_date = 'Start date is required'
+      if (!formData.end_date) newErrors.end_date = 'End date is required'
+      break;
+
+    case 'momo_transaction':
+      if (!formData.service_number) newErrors.service_number = 'Number is required'
+      if (!formData.start_date) newErrors.start_date = 'Start date is required'
+      if (!formData.end_date) newErrors.end_date = 'End date is required'
+      if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = 'Invalid email format'
+      }
+      break;
+
+    case 'agent_commission':
+      if (!formData.service_number) newErrors.service_number = 'Number is required'
+      if (!formData.franchisee) newErrors.franchisee = 'Franchisee is required'
+      if (!formData.details) newErrors.details = 'Additional information is required'
+      break;
+
+    case 'unblock_call':
+      if (blockedNumbers.length === 0) {
+        newErrors.blocked_numbers = 'At least one number is required'
+      }
+      if (!blockedNumbers.every(item => item.number)) {
+        newErrors.blocked_numbers = 'All number fields must be filled'
+      }
+      if (!formData.details) newErrors.details = 'Additional information is required'
+      break;
+
+    case 'internet_issue':
+      if (!formData.service_number) newErrors.service_number = 'Number is required'
+      if (!formData.details) newErrors.details = 'Additional information is required'
+      break;
   }
+
+  setErrors(newErrors)
+  return Object.keys(newErrors).length === 0
+}
 
   const handleSubmit = async () => {
     if (!validateForm()) return
@@ -703,6 +803,352 @@ const handleRemoveImei = (id) => {
         rows={4}
         className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
         placeholder="Enter any additional details (optional)"
+      />
+    </div>
+  </div>
+)}
+
+                  {/* RIB Followup */}
+{selectedService?.value === 'rib_followup' && (
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium">
+          Number <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="tel"
+          name="service_number"
+          value={formData.service_number}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter number"
+          maxLength={10}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          RIB Station <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          name="rib_station"
+          value={formData.rib_station}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter RIB station"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          RIB Helper Number
+        </label>
+        <input
+          type="tel"
+          name="rib_helper_number"
+          value={formData.rib_helper_number}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter RIB helper number (optional)"
+          maxLength={10}
+        />
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Information <span className="text-red-500">*</span>
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter additional information"
+      />
+    </div>
+  </div>
+)}
+
+{/* Call History */}
+{selectedService?.value === 'call_history' && (
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium">
+          Number <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="tel"
+          name="service_number"
+          value={formData.service_number}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter number"
+          maxLength={10}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          Start Date <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="date"
+          name="start_date"
+          value={formData.start_date}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          End Date <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="date"
+          name="end_date"
+          value={formData.end_date}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        />
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Information
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter additional information (optional)"
+      />
+    </div>
+  </div>
+)}
+
+{/* MoMo Transaction */}
+{selectedService?.value === 'momo_transaction' && (
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium">
+          Number <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="tel"
+          name="service_number"
+          value={formData.service_number}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter number"
+          maxLength={10}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          Email
+        </label>
+        <input
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter email (optional)"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          Start Date <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="date"
+          name="start_date"
+          value={formData.start_date}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          End Date <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="date"
+          name="end_date"
+          value={formData.end_date}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        />
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Information
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter additional information (optional)"
+      />
+    </div>
+  </div>
+)}
+
+{/* Agent Commission */}
+{selectedService?.value === 'agent_commission' && (
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium">
+          Number <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="tel"
+          name="service_number"
+          value={formData.service_number}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter number"
+          maxLength={10}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          Franchisee <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          name="franchisee"
+          value={formData.franchisee}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter franchisee"
+        />
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Information <span className="text-red-500">*</span>
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter additional information"
+      />
+    </div>
+  </div>
+)}
+
+                  {/* Unblock Blocked Number for Calling */}
+{selectedService?.value === 'unblock_call' && (
+  <div className="space-y-4">
+    <div className="space-y-4">
+      {blockedNumbers.map((item, index) => (
+        <div key={item.id} className="flex items-center space-x-2">
+          <div className="flex-1">
+            <label className="block text-sm font-medium">
+              Number {index + 1} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              value={item.number}
+              onChange={(e) => handleNumberChange(item.id, e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+              placeholder="Enter number"
+              maxLength={10}
+            />
+          </div>
+          {blockedNumbers.length > 1 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-6"
+              onClick={() => handleRemoveNumber(item.id)}
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      ))}
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleAddNumber}
+        className="w-full"
+      >
+        <Plus className="h-4 w-4 mr-2" />
+        Add Another Number
+      </Button>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Information <span className="text-red-500">*</span>
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter additional information"
+      />
+    </div>
+  </div>
+)}
+
+{/* Internet Issue */}
+{selectedService?.value === 'internet_issue' && (
+  <div className="space-y-4">
+    <div>
+      <label className="block text-sm font-medium">
+        Number <span className="text-red-500">*</span>
+      </label>
+      <input
+        type="tel"
+        name="service_number"
+        value={formData.service_number}
+        onChange={handleInputChange}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter number"
+        maxLength={10}
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Information <span className="text-red-500">*</span>
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter additional information about the internet issue"
       />
     </div>
   </div>
