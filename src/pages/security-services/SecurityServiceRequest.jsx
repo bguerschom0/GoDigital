@@ -434,23 +434,6 @@ const handleRemoveImei = (id) => {
                         <p className="mt-1 text-sm text-red-500">{errors.secondary_contact}</p>
                       )}
                     </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium">
-                        Request Details <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        name="details"
-                        value={formData.details}
-                        onChange={handleInputChange}
-                        rows={4}
-                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                        placeholder="Please provide detailed information about your request..."
-                      />
-                      {errors.details && (
-                        <p className="mt-1 text-sm text-red-500">{errors.details}</p>
-                      )}
-                    </div>
                   </div>
 
                   {/* Service-specific fields based on service type */}
