@@ -503,17 +503,17 @@ return (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    className="max-w-7xl mx-auto p-8"
+    className="max-w-5xl mx-auto p-6"
   >
     <Card className="bg-gray-50/50">
-      <CardHeader className="px-8 pt-8">
-        <CardTitle className="text-2xl font-semibold text-[#0A2647]">
+      <CardHeader className="px-6 pt-6">
+        <CardTitle className="text-xl font-semibold text-[#0A2647]">
           Select Service Type
         </CardTitle>
         <p className="text-gray-500 mt-2">Choose the service you need assistance with</p>
       </CardHeader>
-      <CardContent className="p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <CardContent className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {services.map((service) => (
             <motion.div
               key={service.value}
@@ -522,27 +522,27 @@ return (
               onClick={() => handleServiceSelect(service)}
               className="relative group cursor-pointer"
             >
-              <div className="bg-white rounded-2xl border-2 border-gray-100 hover:border-[#0A2647]/20 p-6 transition-all duration-300 hover:shadow-xl min-h-[280px] flex flex-col">
-                <div className="w-16 h-16 rounded-xl bg-[#0A2647]/5 flex items-center justify-center mb-4">
-                  {React.cloneElement(service.icon, { className: "w-8 h-8 text-[#0A2647]" })}
+              <div className="bg-white rounded-xl border-2 border-gray-100 hover:border-[#0A2647]/20 p-4 transition-all duration-300 hover:shadow-xl min-h-[200px] flex flex-col">
+                <div className="w-12 h-12 rounded-xl bg-[#0A2647]/5 flex items-center justify-center mb-3">
+                  {React.cloneElement(service.icon, { className: "w-6 h-6 text-[#0A2647]" })}
                 </div>
                 
-                <h3 className="text-xl font-medium text-gray-900 mb-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
                   {service.label}
                 </h3>
                 
-                <p className="text-base text-gray-500 flex-grow">
+                <p className="text-sm text-gray-500 flex-grow">
                   {service.description}
                 </p>
                 
-                <div className="flex items-center justify-end mt-6 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-end mt-4 pt-2 border-t border-gray-100">
                   <div className="flex items-center text-[#0A2647] font-medium">
                     <span className="mr-2">Select</span>
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-4 h-4" />
                   </div>
                 </div>
 
-                <div className="absolute inset-0 rounded-2xl ring-2 ring-transparent group-hover:ring-[#0A2647]/20 transition-all duration-300" />
+                <div className="absolute inset-0 rounded-xl ring-2 ring-transparent group-hover:ring-[#0A2647]/20 transition-all duration-300" />
               </div>
             </motion.div>
           ))}
