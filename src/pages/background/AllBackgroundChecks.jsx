@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Search, 
-  FileText, 
   Download,
   Loader,
   Filter,
-  Calendar,
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
@@ -18,6 +16,7 @@ import * as XLSX from 'xlsx'
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import debounce from 'lodash/debounce'
 
 const AllBackgroundChecks = () => {
   const navigate = useNavigate()
@@ -29,13 +28,15 @@ const AllBackgroundChecks = () => {
   const [exportLoading, setExportLoading] = useState(false)
   const [error, setError] = useState(null)
   const [canExportData, setCanExportData] = useState(false)
+  const [requesters, setRequesters] = useState([])
+  const [citizenshipOptions, setCitizenshipOptions] = useState([])
   
-  // Initialize date range to last 3 months
   const [filters, setFilters] = useState({
     role: 'all',
     department: 'all',
     status: 'all',
     citizenship: 'all',
+    requestedBy: 'all',
     searchTerm: '',
     startDate: format(subMonths(new Date(), 3), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd')
@@ -73,12 +74,73 @@ const AllBackgroundChecks = () => {
     checkAccess()
   }, [user])
 
+  // Fetch initial data
   useEffect(() => {
     if (!pageLoading) {
       fetchDepartmentsAndRoles()
+      fetchRequesters()
+      fetchCitizenshipOptions()
       fetchRecords()
     }
-  }, [filters, sortConfig, pageLoading])
+  }, [pageLoading])
+
+  // Handle real-time search
+  const debouncedSearch = useCallback(
+    debounce((searchTerm) => {
+      fetchRecords(searchTerm)
+    }, 300),
+    []
+  )
+
+  useEffect(() => {
+    if (!pageLoading) {
+      debouncedSearch(filters.searchTerm)
+    }
+    return () => debouncedSearch.cancel()
+  }, [filters.searchTerm])
+
+  // Fetch records when other filters change
+  useEffect(() => {
+    if (!pageLoading && !filters.searchTerm) {
+      fetchRecords()
+    }
+  }, [filters.role, filters.department, filters.status, filters.citizenship, filters.requestedBy, filters.startDate, filters.endDate, sortConfig])
+
+  const fetchRequesters = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('background_checks')
+        .select('requested_by')
+        .not('requested_by', 'is', null)
+        .order('requested_by')
+
+      if (error) throw error
+
+      // Get unique requesters
+      const uniqueRequesters = [...new Set(data.map(item => item.requested_by))]
+      setRequesters(uniqueRequesters)
+    } catch (error) {
+      console.error('Error fetching requesters:', error)
+    }
+  }
+
+  const fetchCitizenshipOptions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('background_checks')
+        .select('citizenship')
+        .not('citizenship', 'is', null)
+        .order('citizenship')
+
+      if (error) throw error
+
+      // Get unique citizenship options
+      const uniqueOptions = [...new Set(data.map(item => item.citizenship))]
+      setCitizenshipOptions(uniqueOptions)
+    } catch (error) {
+      console.error('Error fetching citizenship options:', error)
+    }
+  }
 
   const fetchDepartmentsAndRoles = async () => {
     try {
@@ -91,11 +153,12 @@ const AllBackgroundChecks = () => {
       if (deptsError) throw deptsError
       setDepartments(depts)
 
-      // Fetch roles
+      // Fetch roles (excluding internships)
       const { data: rolesData, error: rolesError } = await supabase
         .from('roles')
         .select('*')
         .eq('status', 'active')
+        .not('type', 'eq', 'internship')
       
       if (rolesError) throw rolesError
       setRoles(rolesData)
@@ -105,16 +168,20 @@ const AllBackgroundChecks = () => {
     }
   }
 
-  const fetchRecords = async () => {
+  const fetchRecords = async (searchTerm = filters.searchTerm) => {
     setLoading(true)
     setError(null)
     try {
       let query = supabase
         .from('background_checks')
         .select(`
-          *,
+          full_names,
+          citizenship,
           departments (name),
-          roles (name, type)
+          roles (name, type),
+          status,
+          submitted_date,
+          requested_by
         `)
         .order(sortConfig.key, { ascending: sortConfig.direction === 'asc' })
         .gte('submitted_date', filters.startDate)
@@ -133,11 +200,11 @@ const AllBackgroundChecks = () => {
       if (filters.citizenship !== 'all') {
         query = query.eq('citizenship', filters.citizenship)
       }
-      if (filters.searchTerm) {
-        query = query.or(`
-          full_names.ilike.%${filters.searchTerm}%,
-          id_passport_number.ilike.%${filters.searchTerm}%
-        `)
+      if (filters.requestedBy !== 'all') {
+        query = query.eq('requested_by', filters.requestedBy)
+      }
+      if (searchTerm) {
+        query = query.ilike('full_names', `%${searchTerm}%`)
       }
 
       const { data, error } = await query
@@ -161,10 +228,13 @@ const AllBackgroundChecks = () => {
 
   const exportToExcel = async () => {
     try {
-      const { canExport } = await checkPermission('/background/all')
-      if (!canExport) {
-        setError('You do not have permission to export data')
-        return
+      // Check if user is admin or has export permission
+      if (user?.role !== 'admin') {
+        const { canExport } = await checkPermission('/background/all')
+        if (!canExport) {
+          setError('You do not have permission to export data')
+          return
+        }
       }
 
       setExportLoading(true)
@@ -174,9 +244,13 @@ const AllBackgroundChecks = () => {
       let query = supabase
         .from('background_checks')
         .select(`
-          *,
+          full_names,
+          citizenship,
           departments (name),
-          roles (name, type)
+          roles (name),
+          status,
+          submitted_date,
+          requested_by
         `)
         .gte('submitted_date', filters.startDate)
         .lte('submitted_date', filters.endDate)
@@ -186,11 +260,9 @@ const AllBackgroundChecks = () => {
       if (filters.department !== 'all') query = query.eq('department_id', filters.department)
       if (filters.status !== 'all') query = query.eq('status', filters.status)
       if (filters.citizenship !== 'all') query = query.eq('citizenship', filters.citizenship)
+      if (filters.requestedBy !== 'all') query = query.eq('requested_by', filters.requestedBy)
       if (filters.searchTerm) {
-        query = query.or(`
-          full_names.ilike.%${filters.searchTerm}%,
-          id_passport_number.ilike.%${filters.searchTerm}%
-        `)
+        query = query.ilike('full_names', `%${filters.searchTerm}%`)
       }
 
       const { data: exportRecords, error } = await query
@@ -200,14 +272,11 @@ const AllBackgroundChecks = () => {
       const exportData = exportRecords.map(record => ({
         'Full Names': record.full_names,
         'Citizenship': record.citizenship,
-        'ID/Passport': record.id_passport_number,
         'Department': record.departments?.name,
         'Role': record.roles?.name,
         'Status': record.status,
         'Submitted Date': format(new Date(record.submitted_date), 'yyyy-MM-dd'),
-        'Requested By': record.requested_by,
-        'Created At': format(new Date(record.created_at), 'yyyy-MM-dd HH:mm:ss'),
-        'Updated At': format(new Date(record.updated_at), 'yyyy-MM-dd HH:mm:ss')
+        'Requested By': record.requested_by
       }))
 
       const ws = XLSX.utils.json_to_sheet(exportData)
@@ -232,7 +301,6 @@ const AllBackgroundChecks = () => {
       setExportLoading(false)
     }
   }
-
   if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -244,23 +312,25 @@ const AllBackgroundChecks = () => {
   return (
     <div className="p-6">
       <div className="flex justify-center">
-        <div className="w-full max-w-[90%]">
+        <div className="w-full max-w-[95%]"> {/* Increased width */}
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               All Background Checks
             </h1>
-            <Button
-              onClick={exportToExcel}
-              disabled={exportLoading || loading}
-              className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
-            >
-              {exportLoading ? (
-                <Loader className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4 mr-2" />
-              )}
-              Export to Excel
-            </Button>
+            {(user?.role === 'admin' || canExportData) && (
+              <Button
+                onClick={exportToExcel}
+                disabled={exportLoading || loading}
+                className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
+              >
+                {exportLoading ? (
+                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                Export to Excel
+              </Button>
+            )}
           </div>
 
           {error && (
@@ -278,16 +348,16 @@ const AllBackgroundChecks = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Search
+                    Search Names
                   </label>
                   <input
                     type="text"
                     value={filters.searchTerm}
                     onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-                    placeholder="Search names or ID..."
+                    placeholder="Search by name..."
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
                   />
                 </div>
@@ -372,9 +442,26 @@ const AllBackgroundChecks = () => {
                     onChange={(e) => setFilters(prev => ({ ...prev, citizenship: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
                   >
-                    <option value="all">All</option>
-                    <option value="Rwandan">Rwandan</option>
-                    <option value="Other">Other</option>
+                    <option value="all">All Citizenship</option>
+                    {citizenshipOptions.map(citizenship => (
+                      <option key={citizenship} value={citizenship}>{citizenship}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Requested By
+                  </label>
+                  <select
+                    value={filters.requestedBy}
+                    onChange={(e) => setFilters(prev => ({ ...prev, requestedBy: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A2647] dark:bg-gray-800 dark:border-gray-700"
+                  >
+                    <option value="all">All Requesters</option>
+                    {requesters.map(requester => (
+                      <option key={requester} value={requester}>{requester}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -389,20 +476,17 @@ const AllBackgroundChecks = () => {
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
                       {[
-                        { key: 'full_names', label: 'Full Names' },
-                        { key: 'citizenship', label: 'Citizenship' },
-                        { key: 'id_passport_number', label: 'ID/Passport' },
-                        { key: 'departments.name', label: 'Department' },
-                        { key: 'roles.name', label: 'Role' },
-                        { key: 'status', label: 'Status' },
-                        { key: 'submitted_date', label: 'Submitted Date' },
-                        { key: 'requested_by', label: 'Requested By' },
-                        { key: 'created_at', label: 'Created At' },
-                        { key: 'updated_at', label: 'Updated At' }
+                        { key: 'full_names', label: 'Full Names', width: 'w-[20%]' },
+                        { key: 'citizenship', label: 'Citizenship', width: 'w-[12%]' },
+                        { key: 'departments.name', label: 'Department', width: 'w-[15%]' },
+                        { key: 'roles.name', label: 'Role', width: 'w-[15%]' },
+                        { key: 'status', label: 'Status', width: 'w-[10%]' },
+                        { key: 'submitted_date', label: 'Submitted Date', width: 'w-[13%]' },
+                        { key: 'requested_by', label: 'Requested By', width: 'w-[15%]' }
                       ].map(column => (
                         <th
                           key={column.key}
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                          className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer ${column.width}`}
                           onClick={() => handleSort(column.key)}
                         >
                           <div className="flex items-center space-x-1">
@@ -431,26 +515,25 @@ const AllBackgroundChecks = () => {
                   <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                     {loading ? (
                       <tr>
-                        <td colSpan="10" className="px-6 py-4 text-center">
+                        <td colSpan="7" className="px-6 py-4 text-center">
                           <Loader className="w-6 h-6 animate-spin mx-auto text-[#0A2647]" />
                         </td>
                       </tr>
                     ) : records.length === 0 ? (
                       <tr>
-                        <td colSpan="10" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan="7" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                           No records found
                         </td>
                       </tr>
                     ) : (
-                      records.map((record) => (
+                      records.map((record, index) => (
                         <tr 
-                          key={record.id}
+                          key={index}
                           className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                           onClick={() => navigate(`/background/${record.id}`)}
                         >
                           <td className="px-6 py-4 whitespace-nowrap">{record.full_names}</td>
                           <td className="px-6 py-4 whitespace-nowrap">{record.citizenship}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{record.id_passport_number}</td>
                           <td className="px-6 py-4 whitespace-nowrap">{record.departments?.name}</td>
                           <td className="px-6 py-4 whitespace-nowrap">{record.roles?.name}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -466,12 +549,6 @@ const AllBackgroundChecks = () => {
                             {format(new Date(record.submitted_date), 'MMM d, yyyy')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">{record.requested_by}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {format(new Date(record.created_at), 'MMM d, yyyy HH:mm')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {format(new Date(record.updated_at), 'MMM d, yyyy HH:mm')}
-                          </td>
                         </tr>
                       ))
                     )}
