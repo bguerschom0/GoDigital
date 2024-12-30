@@ -686,7 +686,7 @@ const handleRemoveImei = (id) => {
         <option value="">Select a backoffice user</option>
         {backofficeUsers.map(user => (
           <option key={user.id} value={user.id}>
-            {user.fullname}
+            {user.full_names}
           </option>
         ))}
       </select>
