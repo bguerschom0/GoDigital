@@ -112,12 +112,18 @@ const AllBackgroundChecks = () => {
         .from('background_checks')
         .select('requested_by')
         .not('requested_by', 'is', null)
+        .not('requested_by', 'eq', '')  // Exclude empty strings
         .order('requested_by')
 
       if (error) throw error
 
-      // Get unique requesters
-      const uniqueRequesters = [...new Set(data.map(item => item.requested_by))]
+      // Get unique requesters and filter out any remaining empty or whitespace-only values
+      const uniqueRequesters = [...new Set(
+        data
+          .map(item => item.requested_by)
+          .filter(requester => requester && requester.trim() !== '')
+      )].sort()  // Sort alphabetically
+      
       setRequesters(uniqueRequesters)
     } catch (error) {
       console.error('Error fetching requesters:', error)
@@ -158,10 +164,11 @@ const AllBackgroundChecks = () => {
         .from('roles')
         .select('*')
         .eq('status', 'active')
-        .not('type', 'eq', 'internship')
+        .neq('type', 'internship')  // Changed to neq for "not equals"
+        .order('name')  // Order alphabetically
       
       if (rolesError) throw rolesError
-      setRoles(rolesData)
+      setRoles(rolesData.filter(role => role.type !== 'internship'))  // Additional safety check
     } catch (error) {
       console.error('Error fetching departments and roles:', error)
       setError('Failed to load departments and roles')
