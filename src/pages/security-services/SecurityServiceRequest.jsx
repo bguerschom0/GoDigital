@@ -511,7 +511,6 @@ return (
         <p className="text-sm text-gray-500">Choose the service you need assistance with</p>
       </CardHeader>
       <CardContent>
-        <style>{hexagonStyles}</style>
         <div className="hex-container">
           {services.map((service) => (
             <div
