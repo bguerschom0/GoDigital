@@ -33,6 +33,7 @@ import {
   BadgeHelp,
   PhoneCall
 } from 'lucide-react'
+import '@/styles/hexagonGrid.css';
 
 // Success Message Component
 const SuccessPopup = ({ message, onClose }) => {
@@ -502,56 +503,31 @@ return (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    transition={{ duration: 0.3 }}
+    exit={{ opacity: 0 }}
   >
-    <Card className="overflow-visible">
+    <Card>
       <CardHeader>
         <CardTitle>Select Service Type</CardTitle>
         <p className="text-sm text-gray-500">Choose the service you need assistance with</p>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col gap-4">
-          {services.map((service, index) => (
-            <motion.div
+        <style>{hexagonStyles}</style>
+        <div className="hex-container">
+          {services.map((service) => (
+            <div
               key={service.value}
-              className="relative"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: index * 0.1 }}
+              className="hex-item"
+              onClick={() => handleServiceSelect(service)}
             >
-              <button
-                onClick={() => handleServiceSelect(service)}
-                className="w-full group"
-              >
-                <div className="flex items-center relative">
-                  {/* Connection Line */}
-                  {index < services.length - 1 && (
-                    <div className="absolute left-6 top-full w-0.5 h-4 bg-gray-200" />
-                  )}
-                  
-                  {/* Service Button */}
-                  <div className="flex items-center w-full p-4 rounded-lg border border-gray-200 
-                    hover:border-[#0A2647] hover:bg-[#0A2647]/5 transition-all gap-4 group-hover:shadow-md">
-                    
-                    {/* Icon Circle */}
-                    <div className="w-12 h-12 rounded-full bg-[#0A2647]/10 flex items-center 
-                      justify-center group-hover:bg-[#0A2647] group-hover:text-white transition-colors">
-                      {service.icon}
-                    </div>
-
-                    {/* Service Info */}
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium text-gray-900">{service.label}</span>
-                      <span className="text-sm text-gray-500">{service.description}</span>
-                    </div>
-
-                    {/* Arrow */}
-                    <ChevronRight className="w-5 h-5 ml-auto text-gray-400 
-                      group-hover:text-[#0A2647] group-hover:transform group-hover:translate-x-1 transition-all" />
-                  </div>
+              <div className="hex-content">
+                <div className="hex-icon">
+                  {service.icon}
                 </div>
-              </button>
-            </motion.div>
+                <div className="hex-label">
+                  {service.label}
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </CardContent>
