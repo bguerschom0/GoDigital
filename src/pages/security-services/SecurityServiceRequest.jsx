@@ -33,7 +33,7 @@ import {
   BadgeHelp,
   PhoneCall
 } from 'lucide-react'
-import '@/styles/hexagonGrid.css';
+import { hexagonStyles } from '@/styles/hexagonGrid.css'
 
 // Success Message Component
 const SuccessPopup = ({ message, onClose }) => {
