@@ -497,13 +497,13 @@ const validateForm = () => {
   }
 
 return (
-  <div className="max-w-30xl mx-auto p-6">
+  <div className="max-w-60xl mx-auto p-6">
     <AnimatePresence mode="wait">
 {!showPersonalInfo ? (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    className="max-w-40xl mx-auto p-8"
+    className="max-w-60xl mx-auto p-8"
   >
     <Card className="bg-gray-50/50">
       <CardHeader className="px-8 pt-8">
