@@ -305,6 +305,8 @@ const validateForm = () => {
       if (!formData.service_number) newErrors.service_number = 'Number is required'
       if (!formData.start_date) newErrors.start_date = 'Start date is required'
       if (!formData.end_date) newErrors.end_date = 'End date is required'
+      if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = 'Invalid email format'
       break;
 
     case 'momo_transaction':
@@ -393,6 +395,96 @@ const validateForm = () => {
     setMessage({ type: '', text: '' })
   }
 
+  const ServiceCarousel = ({ services, onSelect }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const nextService = () => {
+    if (!isAnimating) {
+      setIsAnimating(true);
+      setActiveIndex((prev) => (prev + 1) % services.length);
+      setTimeout(() => setIsAnimating(false), 300);
+    }
+  };
+
+  const prevService = () => {
+    if (!isAnimating) {
+      setIsAnimating(true);
+      setActiveIndex((prev) => (prev - 1 + services.length) % services.length);
+      setTimeout(() => setIsAnimating(false), 300);
+    }
+  };
+    return (
+    <div className="relative w-full max-w-xl mx-auto">
+      <div className="overflow-hidden rounded-lg bg-white">
+        <div className="relative h-[400px]">
+          {/* Main Card */}
+          <motion.div
+            key={activeIndex}
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="absolute inset-0 p-6"
+          >
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-6 bg-[#0A2647]/5 rounded-lg p-8">
+              <div className="p-4 rounded-full bg-[#0A2647]/10">
+                {services[activeIndex].icon}
+              </div>
+              <h3 className="text-xl font-semibold text-[#0A2647]">
+                {services[activeIndex].label}
+              </h3>
+              <p className="text-gray-600">
+                {services[activeIndex].description}
+              </p>
+              <Button 
+                onClick={() => onSelect(services[activeIndex])}
+                className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white mt-4"
+              >
+                Select Service
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Navigation Buttons */}
+        <Button
+          variant="ghost"
+          onClick={prevService}
+          className="absolute left-2 top-1/2 -translate-y-1/2"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={nextService}
+          className="absolute right-2 top-1/2 -translate-y-1/2"
+        >
+          <ChevronRight className="h-6 w-6" />
+        </Button>
+
+        {/* Dots Navigation */}
+        <div className="absolute bottom-4 left-0 right-0">
+          <div className="flex justify-center space-x-2">
+            {services.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveIndex(index)}
+                className={`h-2 w-2 rounded-full transition-colors ${
+                  index === activeIndex 
+                    ? 'bg-[#0A2647]' 
+                    : 'bg-gray-300 hover:bg-gray-400'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
   if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -401,45 +493,32 @@ const validateForm = () => {
     )
   }
 
-  return (
-    <div className="max-w-3xl mx-auto p-6">
-      <AnimatePresence mode="wait">
-        {!showPersonalInfo ? (
-          // Service Selection Screen
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>Select Service Type</CardTitle>
-                <p className="text-sm text-gray-500">Choose the service you need assistance with</p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {services.map((service) => (
-                    <div
-                      key={service.value}
-                      onClick={() => handleServiceSelect(service)}
-                      className="flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-[#0A2647] hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex-shrink-0 p-2 rounded-md bg-[#0A2647]/5 text-[#0A2647]">
-                        {service.icon}
-                      </div>
-                      <div className="ml-3">
-                        <h4 className="text-sm font-medium">{service.label}</h4>
-                        <p className="text-xs text-gray-500">{service.description}</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 ml-auto text-gray-400" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ) : (
+return (
+  <div className="max-w-3xl mx-auto p-6">
+    <AnimatePresence mode="wait">
+      {!showPersonalInfo ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Select Service Type</CardTitle>
+              <p className="text-sm text-gray-500">
+                Choose the service you need assistance with
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ServiceCarousel 
+                services={services} 
+                onSelect={handleServiceSelect} 
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
+      ) : (
           // Personal Information Form
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -628,7 +707,7 @@ const validateForm = () => {
               className="mt-6"
               onClick={() => handleRemoveImei(item.id)}
             >
-              <X className="h-4 w-4" />
+              <XCircle className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -889,6 +968,20 @@ const validateForm = () => {
           className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
           placeholder="Enter number"
           maxLength={10}
+        />
+      </div>
+
+            <div>
+        <label className="block text-sm font-medium">
+          Email
+        </label>
+        <input
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter email (optional)"
         />
       </div>
 
