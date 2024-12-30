@@ -180,10 +180,10 @@ const handleRemoveImei = (id) => {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('id, full_names')
+      .select('id, fullname')
       .eq('role', 'backoffice')
       .eq('status', 'active')
-      .order('full_names')
+      .order('fullname')
 
     if (error) throw error
     setBackofficeUsers(data || [])
