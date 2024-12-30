@@ -20,7 +20,11 @@ import {
   FileText,
   ArrowLeft,
   ChevronRight,
-  Shield
+  Shield,
+  XCircle,
+    Calendar,
+  Wallet,
+  Plus  
 } from 'lucide-react'
 
 // Success Message Component
@@ -67,6 +71,11 @@ const SuccessPopup = ({ message, onClose }) => {
   )
 }
 
+const phoneModels = [
+  'iPhone', 'Samsung', 'Techno', 'Infinix', 
+  'Xiaomi', 'Itel', 'Nokia', 'Huawei'
+]
+
 const services = [
   { 
     value: 'request_serial_number', 
@@ -81,16 +90,22 @@ const services = [
     icon: <Shield className="w-4 h-4" />
   },
   { 
-    value: 'unblock_number', 
-    label: 'Unblock Number/MoMo',
-    description: 'Unblock phone or mobile money',
-    icon: <Phone className="w-4 h-4" />
+    value: 'unblock_momo', 
+    label: 'Unblock MoMo Account & MoMoPay',
+    description: 'Get assistance with unblocking MoMo',
+    icon: <Wallet className="w-4 h-4" />
   },
   { 
     value: 'money_refund', 
     label: 'Money Refund',
     description: 'Request money refund',
     icon: <Save className="w-4 h-4" />
+  },
+  { 
+    value: 'backoffice_appointment', 
+    label: 'Appointment with Backoffice',
+    description: 'Schedule a backoffice appointment',
+    icon: <Calendar className="w-4 h-4" />
   },
   { 
     value: 'other_issues', 
@@ -104,7 +119,8 @@ const SecurityServiceRequest = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { checkPermission } = usePageAccess()
-  
+
+  const [backofficeUsers, setBackofficeUsers] = useState([])
   const [selectedService, setSelectedService] = useState(null)
   const [showPersonalInfo, setShowPersonalInfo] = useState(false)
 const [imeiList, setImeiList] = useState([{ imei: '', id: Date.now() }])
@@ -159,6 +175,28 @@ const handleRemoveImei = (id) => {
     
     checkAccess()
   }, [])
+
+  const fetchBackofficeUsers = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, full_names')
+      .eq('role', 'backoffice')
+      .eq('status', 'active')
+      .order('full_names')
+
+    if (error) throw error
+    setBackofficeUsers(data || [])
+  } catch (error) {
+    console.error('Error fetching backoffice users:', error)
+  }
+}
+
+  useEffect(() => {
+  if (selectedService?.value === 'backoffice_appointment') {
+    fetchBackofficeUsers()
+  }
+}, [selectedService])
 
   const handleServiceSelect = (service) => {
     setSelectedService(service)
@@ -554,35 +592,138 @@ const handleRemoveImei = (id) => {
   </div>
 )}
 
-                  {selectedService?.value === 'money_refund' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium">
-                          Transaction Date <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          name="transaction_date"
-                          value={formData.transaction_date || ''}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium">
-                          Amount <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="number"
-                          name="amount"
-                          value={formData.amount || ''}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                          placeholder="Enter amount"
-                        />
-                      </div>
-                    </div>
-                  )}
+                  {selectedService?.value === 'unblock_momo' && (
+  <div className="space-y-4">
+    <div>
+      <label className="block text-sm font-medium">
+        Blocked MoMo/MoMoPay Number <span className="text-red-500">*</span>
+      </label>
+      <input
+        type="tel"
+        name="blocked_number"
+        value={formData.blocked_number}
+        onChange={handleInputChange}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter blocked number"
+        maxLength={10}
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Details
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter any additional details (optional)"
+      />
+    </div>
+  </div>
+)}
+                  
+
+{selectedService?.value === 'money_refund' && (
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium">
+          Amount <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="number"
+          name="amount"
+          value={formData.amount}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter amount"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          Storage Number <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="tel"
+          name="storage_number"
+          value={formData.storage_number}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter number where amount is stored"
+          maxLength={10}
+        />
+      </div>
+
+      <div className="sm:col-span-2">
+        <label className="block text-sm font-medium">
+          Date Range <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="date"
+          name="date_range"
+          value={formData.date_range}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        />
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Details
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter any additional details (optional)"
+      />
+    </div>
+  </div>
+)}
+
+{selectedService?.value === 'backoffice_appointment' && (
+  <div className="space-y-4">
+    <div>
+      <label className="block text-sm font-medium">
+        Select Backoffice User <span className="text-red-500">*</span>
+      </label>
+      <select
+        name="backoffice_user"
+        value={formData.backoffice_user}
+        onChange={handleInputChange}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+      >
+        <option value="">Select a backoffice user</option>
+        {backofficeUsers.map(user => (
+          <option key={user.id} value={user.id}>
+            {user.full_names}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Details
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter any additional details (optional)"
+      />
+    </div>
+  </div>
+)}
 
                   {/* Action Buttons */}
                   <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
