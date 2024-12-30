@@ -307,6 +307,7 @@ const validateForm = () => {
       if (!formData.end_date) newErrors.end_date = 'End date is required'
       if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
         newErrors.email = 'Invalid email format'
+      }
       break;
 
     case 'momo_transaction':
