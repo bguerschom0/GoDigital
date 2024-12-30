@@ -75,9 +75,9 @@ const services = [
     icon: <Phone className="w-4 h-4" />
   },
   { 
-    value: 'check_number_online', 
-    label: 'Check Number Status',
-    description: 'Check if a number is active',
+    value: 'check_stolen_phone', // Updated value
+    label: 'Check Stolen Phone Status',
+    description: 'Check status of stolen phones by IMEI',
     icon: <Shield className="w-4 h-4" />
   },
   { 
@@ -107,13 +107,35 @@ const SecurityServiceRequest = () => {
   
   const [selectedService, setSelectedService] = useState(null)
   const [showPersonalInfo, setShowPersonalInfo] = useState(false)
+const [imeiList, setImeiList] = useState([{ imei: '', id: Date.now() }])
+const handleAddImei = () => {
+  setImeiList([...imeiList, { imei: '', id: Date.now() }])
+}
+
+const handleImeiChange = (id, value) => {
+  const updatedList = imeiList.map(item => 
+    item.id === id ? { ...item, imei: value } : item
+  )
+  setImeiList(updatedList)
+}
+
+const handleRemoveImei = (id) => {
+  setImeiList(imeiList.filter(item => item.id !== id))
+}
+
+
+  
   const [formData, setFormData] = useState({
     full_names: '',
     id_passport: '',
     primary_contact: '',
     secondary_contact: '',
     service_type: '',
-    details: ''
+      phone_number: '',
+  date_range: '',
+  phone_model: '',
+  details: '',
+  imei_list: []
   })
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
@@ -394,22 +416,143 @@ const SecurityServiceRequest = () => {
                   </div>
 
                   {/* Service-specific fields based on service type */}
-                  {selectedService?.value === 'request_serial_number' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium">
-                          Incident Date <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          name="incident_date"
-                          value={formData.incident_date || ''}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                        />
-                      </div>
-                    </div>
-                  )}
+{selectedService?.value === 'request_serial_number' && (
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium">
+          Stolen Phone Number <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="tel"
+          name="phone_number"
+          value={formData.phone_number}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Enter phone number"
+          maxLength={10}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          Date Range <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          name="date_range"
+          value={formData.date_range}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+          placeholder="Select date range"
+          onFocus={(e) => e.target.type = 'date'}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">
+          Phone Model <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="phone_model"
+          value={formData.phone_model}
+          onChange={handleInputChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        >
+          <option value="">Select phone model</option>
+          {phoneModels.map(model => (
+            <option key={model} value={model}>{model}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Details
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter any additional details (optional)"
+      />
+    </div>
+  </div>
+)}
+                  {selectedService?.value === 'check_stolen_phone' && (
+  <div className="space-y-4">
+    <div className="space-y-4">
+      {imeiList.map((item, index) => (
+        <div key={item.id} className="flex items-center space-x-2">
+          <div className="flex-1">
+            <label className="block text-sm font-medium">
+              IMEI {index + 1} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={item.imei}
+              onChange={(e) => handleImeiChange(item.id, e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+              placeholder="Enter IMEI number"
+              maxLength={15}
+            />
+          </div>
+          {imeiList.length > 1 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-6"
+              onClick={() => handleRemoveImei(item.id)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      ))}
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleAddImei}
+        className="w-full"
+      >
+        Add Another IMEI
+      </Button>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Date Range <span className="text-red-500">*</span>
+      </label>
+      <input
+        type="text"
+        name="date_range"
+        value={formData.date_range}
+        onChange={handleInputChange}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Select date range"
+        onFocus={(e) => e.target.type = 'date'}
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium">
+        Additional Details
+      </label>
+      <textarea
+        name="details"
+        value={formData.details}
+        onChange={handleInputChange}
+        rows={4}
+        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
+        placeholder="Enter any additional details (optional)"
+      />
+    </div>
+  </div>
+)}
 
                   {selectedService?.value === 'money_refund' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
