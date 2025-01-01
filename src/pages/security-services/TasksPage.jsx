@@ -1,4 +1,4 @@
-// src/pages/tasks/TasksPage.jsx
+// src/pages/security-services/TasksPage.jsx
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,7 +36,6 @@ const TasksPage = () => {
 
   useEffect(() => {
     loadRequests();
-    // Set up real-time subscription for new requests
     const subscription = supabase
       .channel('service_requests')
       .on('*', (payload) => {
@@ -256,7 +255,12 @@ const TasksPage = () => {
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Service Requests</h1>
+        <p className="text-sm text-gray-500">Manage and track service requests</p>
+      </div>
+
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="available">
