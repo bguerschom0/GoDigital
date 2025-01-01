@@ -1,5 +1,24 @@
 // src/pages/security-services/components/ServiceSpecificFields.jsx
-const ServiceSpecificFields = ({ serviceType, register, errors }) => {
+import React from 'react';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Calendar } from 'lucide-react';
+import IMEIFieldArray from './IMEIFieldArray';
+import BlockedNumbersArray from './BlockedNumbersArray';
+
+const phoneModels = [
+  'iPhone',
+  'Samsung',
+  'Techno',
+  'Infinix',
+  'Xiaomi',
+  'Itel',
+  'Nokia',
+  'Huawei'
+];
+
+const ServiceSpecificFields = ({ serviceType, register, control, errors }) => {
   switch (serviceType) {
     case 'request_serial_number':
       return (
@@ -14,22 +33,26 @@ const ServiceSpecificFields = ({ serviceType, register, errors }) => {
               maxLength={10}
               error={errors.phone_number?.message}
               className="mt-1"
+              placeholder="Enter phone number"
             />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Phone Model
             </label>
-            <select
+            <Select
               {...register('phone_model')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              error={errors.phone_model?.message}
+              className="mt-1"
             >
-              <option value="">Select model</option>
+              <option value="">Select phone model</option>
               {phoneModels.map(model => (
                 <option key={model} value={model}>{model}</option>
               ))}
-            </select>
+            </Select>
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Date Range
@@ -46,12 +69,255 @@ const ServiceSpecificFields = ({ serviceType, register, errors }) => {
 
     case 'check_stolen_phone':
       return (
-        <IMEIFieldArray register={register} errors={errors} />
+        <IMEIFieldArray
+          control={control}
+          register={register}
+          errors={errors}
+        />
       );
 
-    // Add other service-specific fields...
+    case 'unblock_momo':
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Blocked MoMo/MoMoPay Number
+            </label>
+            <Input
+              {...register('service_number')}
+              type="tel"
+              maxLength={10}
+              error={errors.service_number?.message}
+              className="mt-1"
+              placeholder="Enter blocked number"
+            />
+          </div>
+        </div>
+      );
+
+    case 'money_refund':
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Amount
+            </label>
+            <Input
+              {...register('amount')}
+              type="number"
+              error={errors.amount?.message}
+              className="mt-1"
+              placeholder="Enter amount"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Storage Number
+            </label>
+            <Input
+              {...register('storage_number')}
+              type="tel"
+              maxLength={10}
+              error={errors.storage_number?.message}
+              className="mt-1"
+              placeholder="Enter storage number"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Transaction Date
+            </label>
+            <Input
+              {...register('date_range')}
+              type="date"
+              error={errors.date_range?.message}
+              className="mt-1"
+            />
+          </div>
+        </div>
+      );
+
+    case 'backoffice_appointment':
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Preferred Date and Time
+            </label>
+            <Input
+              {...register('appointment_date')}
+              type="datetime-local"
+              error={errors.appointment_date?.message}
+              className="mt-1"
+            />
+          </div>
+        </div>
+      );
+
+    case 'rib_followup':
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Number
+            </label>
+            <Input
+              {...register('service_number')}
+              type="tel"
+              maxLength={10}
+              error={errors.service_number?.message}
+              className="mt-1"
+              placeholder="Enter number"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              RIB Station
+            </label>
+            <Input
+              {...register('rib_station')}
+              error={errors.rib_station?.message}
+              className="mt-1"
+              placeholder="Enter RIB station"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              RIB Helper Number
+            </label>
+            <Input
+              {...register('rib_helper_number')}
+              type="tel"
+              maxLength={10}
+              error={errors.rib_helper_number?.message}
+              className="mt-1"
+              placeholder="Enter RIB helper number (optional)"
+            />
+          </div>
+        </div>
+      );
+
+    case 'call_history':
+    case 'momo_transaction':
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Number
+            </label>
+            <Input
+              {...register('service_number')}
+              type="tel"
+              maxLength={10}
+              error={errors.service_number?.message}
+              className="mt-1"
+              placeholder="Enter number"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Start Date
+            </label>
+            <Input
+              {...register('start_date')}
+              type="date"
+              error={errors.start_date?.message}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              End Date
+            </label>
+            <Input
+              {...register('end_date')}
+              type="date"
+              error={errors.end_date?.message}
+              className="mt-1"
+            />
+          </div>
+
+          <div className="lg:col-span-3">
+            <label className="block text-sm font-medium text-gray-700">
+              Email (Optional)
+            </label>
+            <Input
+              {...register('email')}
+              type="email"
+              error={errors.email?.message}
+              className="mt-1"
+              placeholder="Enter email for report delivery"
+            />
+          </div>
+        </div>
+      );
+
+    case 'agent_commission':
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Number
+            </label>
+            <Input
+              {...register('service_number')}
+              type="tel"
+              maxLength={10}
+              error={errors.service_number?.message}
+              className="mt-1"
+              placeholder="Enter number"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Franchisee
+            </label>
+            <Input
+              {...register('franchisee')}
+              error={errors.franchisee?.message}
+              className="mt-1"
+              placeholder="Enter franchisee"
+            />
+          </div>
+        </div>
+      );
+
+    case 'unblock_call':
+      return (
+        <BlockedNumbersArray
+          control={control}
+          register={register}
+          errors={errors}
+        />
+      );
+
+    case 'internet_issue':
+      return (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Number
+          </label>
+          <Input
+            {...register('service_number')}
+            type="tel"
+            maxLength={10}
+            error={errors.service_number?.message}
+            className="mt-1"
+            placeholder="Enter number"
+          />
+        </div>
+      );
 
     default:
       return null;
   }
 };
+
+export default ServiceSpecificFields;
