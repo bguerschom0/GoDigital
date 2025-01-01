@@ -40,7 +40,7 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
       secondary_contact: '',
       details: '',
 
-      // Service specific arrays
+      // For request_serial_number
       phoneRequests: [{ 
         phone_number: '', 
         phone_brand: '', 
@@ -48,47 +48,27 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
         end_date: '' 
       }],
 
+      // For call_history
       callHistoryRequests: [{
         phone_number: '',
-        email: '',
         start_date: '',
         end_date: ''
       }],
 
+      // For momo_transaction
       momoTransactions: [{
         phone_number: '',
-        email: '',
         start_date: '',
         end_date: ''
       }],
 
+      // For agent_commission
       agentRequests: [{
         number: '',
         franchisee: ''
       }],
 
-      imeiNumbers: [{
-        imei: ''
-      }],
-
-      momoNumbers: [{
-        number: ''
-      }],
-
-      refundRequests: [{
-        phone_number: '',
-        amount: '',
-        transaction_date: ''
-      }],
-
-      internetIssues: [{
-        number: ''
-      }],
-
-      // Other fields
-      backoffice_user: '',
-      rib_number: '',
-      rib_station: ''
+      // Other service specific fields...
     }
   });
 
@@ -116,10 +96,10 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
         </div>
       </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
           {/* Common Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="form-field">
               <label className="block text-sm font-medium text-gray-700">
                 Full Names <span className="text-red-500">*</span>
@@ -128,11 +108,7 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
                 {...register('full_names')}
                 placeholder="Enter full names"
                 error={errors.full_names?.message}
-                className="mt-1"
               />
-              {errors.full_names && (
-                <p className="mt-1 text-sm text-red-500">{errors.full_names.message}</p>
-              )}
             </div>
 
             <div className="form-field">
@@ -143,11 +119,7 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
                 {...register('id_passport')}
                 placeholder="Enter ID/Passport number"
                 error={errors.id_passport?.message}
-                className="mt-1"
               />
-              {errors.id_passport && (
-                <p className="mt-1 text-sm text-red-500">{errors.id_passport.message}</p>
-              )}
             </div>
 
             <div className="form-field">
@@ -160,28 +132,22 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
                 maxLength={10}
                 placeholder="Enter primary contact"
                 error={errors.primary_contact?.message}
-                className="mt-1"
               />
-              {errors.primary_contact && (
-                <p className="mt-1 text-sm text-red-500">{errors.primary_contact.message}</p>
-              )}
             </div>
 
-            <div className="form-field">
-              <label className="block text-sm font-medium text-gray-700">
-                Secondary Contact
-              </label>
-              <Input
-                {...register('secondary_contact')}
-                placeholder="Enter phone number or email address"
-                className="mt-1"
-                error={errors.secondary_contact?.message}
-              />
-              {errors.secondary_contact && (
-                <p className="mt-1 text-sm text-red-500">{errors.secondary_contact.message}</p>
-              )}
-            </div>
-          </div>
+<div className="form-field">
+  <label className="block text-sm font-medium text-gray-700">
+    Secondary Contact
+  </label>
+  <Input
+    {...register('secondary_contact')}
+    placeholder="Enter phone number or email address"
+    className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+  />
+  {errors.secondary_contact && (
+    <p className="mt-1 text-sm text-red-500">{errors.secondary_contact.message}</p>
+  )}
+</div>
 
           {/* Service Specific Fields */}
           <ServiceSpecificFields
@@ -193,7 +159,7 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
           />
         </CardContent>
 
-        <CardFooter className="flex justify-between pt-6 border-t">
+        <CardFooter className="flex justify-between pt-6">
           <Button
             type="button"
             variant="outline"
@@ -219,7 +185,7 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="min-w-[120px] bg-primary hover:bg-primary/90"
+              className="min-w-[120px] bg-primary"
             >
               {isLoading ? (
                 <>
