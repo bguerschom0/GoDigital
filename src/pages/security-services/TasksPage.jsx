@@ -50,44 +50,55 @@ const TasksPage = () => {
     };
   }, []);
 
-  const loadRequests = async () => {
-    setLoading(true);
-    try {
-      // Load available requests
-      const { data: available, error: availableError } = await supabase
-        .from('service_requests')
-        .select(\`
-          *,
-          created_by (fullname),
-          service_details:service_metadata (*)
-        \`)
-        .eq('status', 'new')
-        .order('created_at', { ascending: false });
+const loadRequests = async () => {
+  setLoading(true);
+  try {
+    // Load available requests
+    const { data: available, error: availableError } = await supabase
+      .from('service_requests')
+      .select(`
+        *,
+        created_by (fullname),
+        service_details:service_metadata (*)
+      `)
+      .eq('status', 'new')
+      .order('created_at', { ascending: false });
 
-      if (availableError) throw availableError;
-
-      // Load my assigned requests
-      const { data: assigned, error: assignedError } = await supabase
-        .from('service_requests')
-        .select(\`
-          *,
-          created_by (fullname),
-          service_details:service_metadata (*)
-        \`)
-        .eq('assigned_to', user.id)
-        .in('status', ['in_progress', 'pending_investigation'])
-        .order('created_at', { ascending: false });
-
-      if (assignedError) throw assignedError;
-
-      setAvailableRequests(available || []);
-      setMyRequests(assigned || []);
-    } catch (error) {
-      console.error('Error loading requests:', error);
-    } finally {
-      setLoading(false);
+    if (availableError) {
+      console.error('Error loading available requests:', availableError);
+      throw availableError;
     }
-  };
+
+    // Load my assigned requests
+    if (!user?.id) {
+      console.error('User ID is missing.');
+      return;
+    }
+    const { data: assigned, error: assignedError } = await supabase
+      .from('service_requests')
+      .select(`
+        *,
+        created_by (fullname),
+        service_details:service_metadata (*)
+      `)
+      .eq('assigned_to', user.id)
+      .in('status', ['in_progress', 'pending_investigation'])
+      .order('created_at', { ascending: false });
+
+    if (assignedError) {
+      console.error('Error loading assigned requests:', assignedError);
+      throw assignedError;
+    }
+
+    setAvailableRequests(available || []);
+    setMyRequests(assigned || []);
+  } catch (error) {
+    console.error('Error loading requests:', error.message || error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleRequestClick = async (request) => {
     try {
