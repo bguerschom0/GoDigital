@@ -7,111 +7,69 @@ import { Calendar, Printer } from 'lucide-react';
 import IMEIFieldArray from './IMEIFieldArray';
 import BlockedNumbersArray from './BlockedNumbersArray';
 
+import { 
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage 
+} from '@/components/ui/form';
+
                                       
 const ServiceSpecificFields = ({ 
   serviceType, 
   register, 
   control, 
   errors,
-  phoneModels,
-  watch 
+  phoneModels 
 }) => {
-  const [selectedBrand, setSelectedBrand] = useState('');
-  const watchPhoneBrand = watch?.('phone_brand');
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const getBrandModels = (brand) => {
-    const brandData = phoneModels.find(p => p.value === brand);
-    return brandData ? brandData.makes : [];
-  };
-
-  const renderPrintButton = () => (
-    <div className="mt-6 border-t pt-4">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={handlePrint}
-        className="w-full sm:w-auto"
-      >
-        <Printer className="w-4 h-4 mr-2" />
-        Print Request
-      </Button>
-    </div>
-  );
-
   switch (serviceType) {
     case 'request_serial_number':
       return (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Phone Number
-              </label>
-              <Input
-                {...register('phone_number')}
-                type="tel"
-                maxLength={10}
-                error={errors.phone_number?.message}
-                className="mt-1"
-                placeholder="Enter phone number"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Phone Brand
-              </label>
-              <Select
-                {...register('phone_brand')}
-                onChange={(e) => setSelectedBrand(e.target.value)}
-                error={errors.phone_brand?.message}
-                className="mt-1"
-              >
-                <option value="">Select phone brand</option>
-                {phoneModels.map(model => (
-                  <option key={model.value} value={model.value}>
-                    {model.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Phone Model
-              </label>
-              <Select
-                {...register('phone_model')}
-                error={errors.phone_model?.message}
-                className="mt-1"
-                disabled={!watchPhoneBrand}
-              >
-                <option value="">Select phone model</option>
-                {getBrandModels(watchPhoneBrand).map(model => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Date Range
-              </label>
-              <Input
-                {...register('date_range')}
-                type="date"
-                error={errors.date_range?.message}
-                className="mt-1"
-              />
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="form-field">
+            <label className="block text-sm font-medium text-gray-700">
+              Phone Number <span className="text-red-500">*</span>
+            </label>
+            <Input
+              {...register('phone_number')}
+              type="tel"
+              maxLength={10}
+              placeholder="Enter phone number"
+              error={errors.phone_number?.message}
+            />
           </div>
-          {renderPrintButton()}
+
+          <div className="form-field">
+            <label className="block text-sm font-medium text-gray-700">
+              Phone Brand <span className="text-red-500">*</span>
+            </label>
+            <select
+              {...register('phone_brand')}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Select phone brand</option>
+              {['iPhone', 'Samsung', 'Techno', 'Infinix', 'Xiaomi', 'Itel', 'Nokia', 'Huawei'].map(brand => (
+                <option key={brand} value={brand.toLowerCase()}>
+                  {brand}
+                </option>
+              ))}
+            </select>
+            {errors.phone_brand && (
+              <p className="mt-1 text-sm text-red-500">{errors.phone_brand.message}</p>
+            )}
+          </div>
+
+          <div className="form-field">
+            <label className="block text-sm font-medium text-gray-700">
+              Date Range <span className="text-red-500">*</span>
+            </label>
+            <Input
+              {...register('date_range')}
+              type="date"
+              error={errors.date_range?.message}
+            />
+          </div>
         </div>
       );
 
