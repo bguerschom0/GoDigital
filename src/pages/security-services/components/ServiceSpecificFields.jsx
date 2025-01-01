@@ -361,20 +361,119 @@ const ServiceSpecificFields = ({
         </div>
       );
 
-    case 'unblock_momo':
+      case 'unblock_call':
       return (
-        <div className="space-y-4">
-          <div>
+        <div className="space-y-6">
+          <div className="space-y-4">
+            {phoneArray.fields.map((field, index) => (
+              <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
+                <div className="form-field">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Phone Number {index + 1} <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    {...register(`phoneNumbers.${index}.number`)}
+                    type="tel"
+                    maxLength={10}
+                    placeholder="Enter phone number to unblock"
+                    error={errors?.phoneNumbers?.[index]?.number?.message}
+                  />
+                </div>
+                {phoneArray.fields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute -top-2 -right-2"
+                    onClick={() => phoneArray.remove(index)}
+                  >
+                    <XCircle className="h-5 w-5 text-gray-500 hover:text-red-500" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => phoneArray.append({ number: '' })}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Another Number
+            </Button>
+          </div>
+
+          <div className="form-field">
             <label className="block text-sm font-medium text-gray-700">
-              Blocked MoMo/MoMoPay Number
+              Additional Details
             </label>
-            <Input
-              {...register('service_number')}
-              type="tel"
-              maxLength={10}
-              error={errors.service_number?.message}
-              className="mt-1"
-              placeholder="Enter blocked number"
+            <textarea
+              {...register('details')}
+              rows={4}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Any additional information (optional)"
+            />
+          </div>
+
+          {renderImportantNote(
+            "Please ensure you are requesting to unblock numbers registered under your name. Unblocking service is only available for numbers that belong to the requestor."
+          )}
+        </div>
+      );
+
+       case 'unblock_momo':
+      return (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            {momoArray.fields.map((field, index) => (
+              <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
+                <div className="form-field">
+                  <label className="block text-sm font-medium text-gray-700">
+                    MoMo/MoMoPay Number {index + 1} <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    {...register(`momoNumbers.${index}.number`)}
+                    type="tel"
+                    maxLength={10}
+                    placeholder="Enter MoMo number to unblock"
+                    error={errors?.momoNumbers?.[index]?.number?.message}
+                  />
+                </div>
+                {momoArray.fields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute -top-2 -right-2"
+                    onClick={() => momoArray.remove(index)}
+                  >
+                    <XCircle className="h-5 w-5 text-gray-500 hover:text-red-500" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => momoArray.append({ number: '' })}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Another MoMo Number
+            </Button>
+          </div>
+
+          <div className="form-field">
+            <label className="block text-sm font-medium text-gray-700">
+              Additional Details
+            </label>
+            <textarea
+              {...register('details')}
+              rows={4}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Any additional information (optional)"
             />
           </div>
         </div>
@@ -382,47 +481,262 @@ const ServiceSpecificFields = ({
 
     case 'money_refund':
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Amount
-            </label>
-            <Input
-              {...register('amount')}
-              type="number"
-              error={errors.amount?.message}
-              className="mt-1"
-              placeholder="Enter amount"
-            />
+        <div className="space-y-6">
+          <div className="space-y-4">
+            {refundArray.fields.map((field, index) => (
+              <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`refundRequests.${index}.phone_number`)}
+                      type="tel"
+                      maxLength={10}
+                      placeholder="Enter phone number"
+                      error={errors?.refundRequests?.[index]?.phone_number?.message}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Amount <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`refundRequests.${index}.amount`)}
+                      type="number"
+                      placeholder="Enter amount"
+                      error={errors?.refundRequests?.[index]?.amount?.message}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Transaction Date <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`refundRequests.${index}.transaction_date`)}
+                      type="date"
+                      error={errors?.refundRequests?.[index]?.transaction_date?.message}
+                    />
+                  </div>
+                </div>
+                {refundArray.fields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute -top-2 -right-2"
+                    onClick={() => refundArray.remove(index)}
+                  >
+                    <XCircle className="h-5 w-5 text-gray-500 hover:text-red-500" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => refundArray.append({
+                phone_number: '',
+                amount: '',
+                transaction_date: ''
+              })}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Another Refund Request
+            </Button>
           </div>
 
-          <div>
+          <div className="form-field">
             <label className="block text-sm font-medium text-gray-700">
-              Storage Number
+              Additional Details
             </label>
-            <Input
-              {...register('storage_number')}
-              type="tel"
-              maxLength={10}
-              error={errors.storage_number?.message}
-              className="mt-1"
-              placeholder="Enter storage number"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Transaction Date
-            </label>
-            <Input
-              {...register('date_range')}
-              type="date"
-              error={errors.date_range?.message}
-              className="mt-1"
+            <textarea
+              {...register('details')}
+              rows={4}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Any additional information (optional)"
             />
           </div>
         </div>
       );
+
+      
+      case 'momo_transaction':
+      return (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            {momoTransactionArray.fields.map((field, index) => (
+              <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`momoTransactions.${index}.phone_number`)}
+                      type="tel"
+                      maxLength={10}
+                      placeholder="Enter phone number"
+                      error={errors?.momoTransactions?.[index]?.phone_number?.message}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Start Date <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`momoTransactions.${index}.start_date`)}
+                      type="date"
+                      error={errors?.momoTransactions?.[index]?.start_date?.message}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      End Date <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`momoTransactions.${index}.end_date`)}
+                      type="date"
+                      error={errors?.momoTransactions?.[index]?.end_date?.message}
+                    />
+                  </div>
+                </div>
+                {momoTransactionArray.fields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute -top-2 -right-2"
+                    onClick={() => momoTransactionArray.remove(index)}
+                  >
+                    <XCircle className="h-5 w-5 text-gray-500 hover:text-red-500" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => momoTransactionArray.append({
+                phone_number: '',
+                start_date: '',
+                end_date: ''
+              })}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Another Transaction Request
+            </Button>
+          </div>
+
+          <div className="form-field">
+            <label className="block text-sm font-medium text-gray-700">
+              Additional Details
+            </label>
+            <textarea
+              {...register('details')}
+              rows={4}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Any additional information (optional)"
+            />
+          </div>
+        </div>
+      );
+
+       case 'agent_commission':
+      return (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            {agentRequestArray.fields.map((field, index) => (
+              <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Number <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`agentRequests.${index}.number`)}
+                      type="tel"
+                      maxLength={10}
+                      placeholder="Enter number"
+                      error={errors?.agentRequests?.[index]?.number?.message}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Franchisee <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`agentRequests.${index}.franchisee`)}
+                      placeholder="Enter franchisee"
+                      error={errors?.agentRequests?.[index]?.franchisee?.message}
+                    />
+                  </div>
+                </div>
+                {agentRequestArray.fields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute -top-2 -right-2"
+                    onClick={() => agentRequestArray.remove(index)}
+                  >
+                    <XCircle className="h-5 w-5 text-gray-500 hover:text-red-500" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => agentRequestArray.append({
+                number: '',
+                franchisee: ''
+              })}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Another Request
+            </Button>
+          </div>
+
+          <div className="form-field">
+            <label className="block text-sm font-medium text-gray-700">
+              Additional Details
+            </label>
+            <textarea
+              {...register('details')}
+              rows={4}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Any additional information (optional)"
+            />
+          </div>
+        </div>
+      );
+
+
+
+
+
+
+
+
+
+
+      
+
+    
+  
 
     case 'backoffice_appointment':
       return (
@@ -486,47 +800,6 @@ const ServiceSpecificFields = ({
         </div>
       );
 
-    
-
-    case 'agent_commission':
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Number
-            </label>
-            <Input
-              {...register('service_number')}
-              type="tel"
-              maxLength={10}
-              error={errors.service_number?.message}
-              className="mt-1"
-              placeholder="Enter number"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Franchisee
-            </label>
-            <Input
-              {...register('franchisee')}
-              error={errors.franchisee?.message}
-              className="mt-1"
-              placeholder="Enter franchisee"
-            />
-          </div>
-        </div>
-      );
-
-    case 'unblock_call':
-      return (
-        <BlockedNumbersArray
-          control={control}
-          register={register}
-          errors={errors}
-        />
-      );
 
     case 'internet_issue':
       return (
