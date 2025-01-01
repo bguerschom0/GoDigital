@@ -110,51 +110,50 @@ const ServiceSpecificFields = ({
     }
   }, [serviceType]);
 
-   const callHistoryArray = serviceType === 'call_history' 
-    ? useFieldArray({
-        control,
-        name: "callHistoryRequests"
-      })
-    : null;
+    const callHistoryArray = useFieldArray({
+    control,
+    name: "callHistoryRequests",
+    shouldUnregister: true
+  });
 
-  const momoTransactionArray = serviceType === 'momo_transaction' 
-    ? useFieldArray({
-        control,
-        name: "momoTransactions"
-      })
-    : null;
+  const momoTransactionArray = useFieldArray({
+    control,
+    name: "momoTransactions",
+    shouldUnregister: true
+  });
 
-  const agentCommissionArray = serviceType === 'agent_commission' 
-    ? useFieldArray({
-        control,
-        name: "agentRequests"
-      })
-    : null;
+  const agentRequestArray = useFieldArray({
+    control,
+    name: "agentRequests",
+    shouldUnregister: true
+  });
 
   // Initialize default entries
   React.useEffect(() => {
     switch (serviceType) {
       case 'call_history':
-        if (callHistoryArray && callHistoryArray.fields.length === 0) {
+        if (callHistoryArray.fields.length === 0) {
           callHistoryArray.append({
             phone_number: '',
+            email: '',
             start_date: '',
             end_date: ''
           });
         }
         break;
       case 'momo_transaction':
-        if (momoTransactionArray && momoTransactionArray.fields.length === 0) {
+        if (momoTransactionArray.fields.length === 0) {
           momoTransactionArray.append({
             phone_number: '',
+            email: '',
             start_date: '',
             end_date: ''
           });
         }
         break;
       case 'agent_commission':
-        if (agentCommissionArray && agentCommissionArray.fields.length === 0) {
-          agentCommissionArray.append({
+        if (agentRequestArray.fields.length === 0) {
+          agentRequestArray.append({
             number: '',
             franchisee: ''
           });
@@ -356,13 +355,13 @@ const ServiceSpecificFields = ({
         </div>
       );
 
-     case 'call_history':
+    case 'call_history':
       return (
         <div className="space-y-6">
           <div className="space-y-4">
             {callHistoryArray.fields.map((field, index) => (
               <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="form-field">
                     <label className="block text-sm font-medium text-gray-700">
                       Phone Number <span className="text-red-500">*</span>
@@ -373,6 +372,18 @@ const ServiceSpecificFields = ({
                       maxLength={10}
                       placeholder="Enter phone number"
                       error={errors?.callHistoryRequests?.[index]?.phone_number?.message}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
+                    <Input
+                      {...register(`callHistoryRequests.${index}.email`)}
+                      type="email"
+                      placeholder="Enter email for report"
+                      error={errors?.callHistoryRequests?.[index]?.email?.message}
                     />
                   </div>
 
@@ -398,6 +409,7 @@ const ServiceSpecificFields = ({
                     />
                   </div>
                 </div>
+
                 {callHistoryArray.fields.length > 1 && (
                   <Button
                     type="button"
@@ -417,6 +429,7 @@ const ServiceSpecificFields = ({
               variant="outline"
               onClick={() => callHistoryArray.append({
                 phone_number: '',
+                email: '',
                 start_date: '',
                 end_date: ''
               })}
@@ -438,10 +451,6 @@ const ServiceSpecificFields = ({
               placeholder="Any additional information (optional)"
             />
           </div>
-
-          {renderImportantNote(
-            "Please ensure that you are requesting call history for numbers registered under your name. Call history can only be provided for numbers that belong to the requestor."
-          )}
         </div>
       );
 
@@ -650,13 +659,13 @@ const ServiceSpecificFields = ({
       );
 
       
-      case 'momo_transaction':
+    case 'momo_transaction':
       return (
         <div className="space-y-6">
           <div className="space-y-4">
             {momoTransactionArray.fields.map((field, index) => (
               <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="form-field">
                     <label className="block text-sm font-medium text-gray-700">
                       Phone Number <span className="text-red-500">*</span>
@@ -667,6 +676,18 @@ const ServiceSpecificFields = ({
                       maxLength={10}
                       placeholder="Enter phone number"
                       error={errors?.momoTransactions?.[index]?.phone_number?.message}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
+                    <Input
+                      {...register(`momoTransactions.${index}.email`)}
+                      type="email"
+                      placeholder="Enter email for report"
+                      error={errors?.momoTransactions?.[index]?.email?.message}
                     />
                   </div>
 
@@ -692,6 +713,7 @@ const ServiceSpecificFields = ({
                     />
                   </div>
                 </div>
+
                 {momoTransactionArray.fields.length > 1 && (
                   <Button
                     type="button"
@@ -711,6 +733,7 @@ const ServiceSpecificFields = ({
               variant="outline"
               onClick={() => momoTransactionArray.append({
                 phone_number: '',
+                email: '',
                 start_date: '',
                 end_date: ''
               })}
@@ -735,7 +758,7 @@ const ServiceSpecificFields = ({
         </div>
       );
 
-       case 'agent_commission':
+     case 'agent_commission':
       return (
         <div className="space-y-6">
           <div className="space-y-4">
@@ -766,6 +789,7 @@ const ServiceSpecificFields = ({
                     />
                   </div>
                 </div>
+
                 {agentRequestArray.fields.length > 1 && (
                   <Button
                     type="button"
@@ -783,10 +807,7 @@ const ServiceSpecificFields = ({
             <Button
               type="button"
               variant="outline"
-              onClick={() => agentRequestArray.append({
-                number: '',
-                franchisee: ''
-              })}
+              onClick={() => agentRequestArray.append({ number: '', franchisee: '' })}
               className="w-full"
             >
               <Plus className="w-4 h-4 mr-2" />
