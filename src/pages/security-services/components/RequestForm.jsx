@@ -20,12 +20,13 @@ import {
 import { getServiceSchema } from '../schemas/serviceSchemas';
 import ServiceSpecificFields from './ServiceSpecificFields';
 
-const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
+const RequestForm = ({ service, onBack, onSubmit, isLoading, phoneModels }) => {
   const schema = getServiceSchema(service.value);
   const { 
     register, 
     control,
-    handleSubmit, 
+    handleSubmit,
+    watch,
     formState: { errors } 
   } = useForm({
     resolver: zodResolver(schema),
@@ -34,7 +35,9 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
       id_passport: '',
       primary_contact: '',
       secondary_contact: '',
-      details: ''
+      details: '',
+      phone_brand: '',
+      phone_model: ''
     }
   });
 
@@ -117,6 +120,8 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
             register={register}
             control={control}
             errors={errors}
+            phoneModels={phoneModels}
+            watch={watch}
           />
 
           {/* Additional Details */}
