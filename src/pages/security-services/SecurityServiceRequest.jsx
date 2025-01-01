@@ -1,26 +1,30 @@
 // src/pages/security-services/SecurityServiceRequest.jsx
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '@/config/supabase'
-import { useAuth } from '@/context/AuthContext'
-import { usePageAccess } from '@/hooks/usePageAccess'
-import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/config/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { usePageAccess } from '@/hooks/usePageAccess';
+import { 
+  Card,
+  CardHeader, 
+  CardTitle, 
+  CardContent,
+  CardDescription 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Save, 
-  Printer, 
+  Printer,
   RefreshCw,
   AlertCircle,
   Loader2,
   CheckCircle,
   User,
   Phone,
-  FileText,
-  ArrowLeft,
-  ChevronRight,
-  ChevronLeft,
   Shield,
   Calendar,
   Wallet,
@@ -31,1322 +35,288 @@ import {
   Users,
   Wifi,
   BadgeHelp,
-  PhoneCall
-} from 'lucide-react'
-import '@/styles/hexagonGrid.css'
-
-// Success Message Component
-const SuccessPopup = ({ message, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose()
-      window.location.reload()
-    }, 10000)
-
-    return () => clearTimeout(timer)
-  }, [onClose])
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4 relative"
-      >
-        <div className="flex items-center space-x-4">
-          <div className="bg-[#0A2647]/10 dark:bg-[#0A2647]/30 p-2 rounded-full">
-            <CheckCircle className="h-6 w-6 text-[#0A2647]" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-medium text-[#0A2647]">Success</h3>
-            <p className="text-[#0A2647]/70 dark:text-[#0A2647]/90">{message}</p>
-          </div>
-        </div>
-        <div className="mt-6 flex justify-end">
-          <Button
-            onClick={() => {
-              onClose()
-              window.location.reload()
-            }}
-            className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
-          >
-            Close
-          </Button>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
-
-const phoneModels = [
-  'iPhone', 'Samsung', 'Techno', 'Infinix', 
-  'Xiaomi', 'Itel', 'Nokia', 'Huawei'
-]
+  PhoneCall,
+  ArrowLeft,
+  ChevronRight
+} from 'lucide-react';
+import ServiceCard from './components/ServiceCard';
+import { RequestForm } from './components/RequestForm';
+import { SuccessPopup } from './components/SuccessPopup';
+import { FormProvider } from './context/FormContext';
+import '@/styles/serviceGrid.css';
 
 const services = [
   { 
     value: 'request_serial_number', 
     label: 'Request Serial Number',
     description: 'Retrieve stolen phone serial number',
-    icon: <Phone className="w-4 h-4" />
+    icon: <Phone className="w-5 h-5" />,
+    color: 'blue'
   },
   { 
-    value: 'check_stolen_phone', // Updated value
+    value: 'check_stolen_phone',
     label: 'Check Stolen Phone Status',
     description: 'Check status of stolen phones by IMEI',
-    icon: <Shield className="w-4 h-4" />
+    icon: <Shield className="w-5 h-5" />,
+    color: 'indigo'
   },
   { 
     value: 'unblock_momo', 
-    label: 'Unblock MoMo Account & MoMoPay',
+    label: 'Unblock MoMo Account',
     description: 'Get assistance with unblocking MoMo',
-    icon: <Wallet className="w-4 h-4" />
+    icon: <Wallet className="w-5 h-5" />,
+    color: 'green'
   },
   { 
     value: 'money_refund', 
     label: 'Money Refund',
-    description: 'Request money refund',
-    icon: <Save className="w-4 h-4" />
+    description: 'Request money refund for failed transactions',
+    icon: <Save className="w-5 h-5" />,
+    color: 'yellow'
   },
   { 
     value: 'backoffice_appointment', 
-    label: 'Appointment with Backoffice',
-    description: 'Schedule a backoffice appointment',
-    icon: <Calendar className="w-4 h-4" />
+    label: 'Backoffice Appointment',
+    description: 'Schedule a meeting with backoffice team',
+    icon: <Calendar className="w-5 h-5" />,
+    color: 'purple'
   },
-   { 
+  { 
     value: 'rib_followup', 
-    label: 'Followup on RIB Request',
-    description: 'Track RIB request status',
-    icon: <BadgeHelp className="w-4 h-4" />
+    label: 'RIB Request Followup',
+    description: 'Track the status of your RIB request',
+    icon: <BadgeHelp className="w-5 h-5" />,
+    color: 'red'
   },
   { 
     value: 'call_history', 
     label: 'Call History',
-    description: 'Request call history details',
-    icon: <History className="w-4 h-4" />
+    description: 'Request detailed call history records',
+    icon: <History className="w-5 h-5" />,
+    color: 'orange'
   },
   { 
     value: 'momo_transaction', 
     label: 'MoMo Transaction',
-    description: 'Check MoMo transaction details',
-    icon: <Wallet className="w-4 h-4" />
+    description: 'View MoMo transaction details',
+    icon: <Wallet className="w-5 h-5" />,
+    color: 'emerald'
   },
   { 
     value: 'agent_commission', 
     label: 'Agent Commission',
-    description: 'Agent commission request',
-    icon: <Users className="w-4 h-4" />
+    description: 'Request agent commission details',
+    icon: <Users className="w-5 h-5" />,
+    color: 'cyan'
   },
   { 
     value: 'unblock_call', 
-    label: 'Unblock Blocked Number for Calling',
-    description: 'Unblock numbers for calling',
-    icon: <PhoneCall className="w-4 h-4" />
+    label: 'Unblock Number',
+    description: 'Request to unblock numbers for calling',
+    icon: <PhoneCall className="w-5 h-5" />,
+    color: 'teal'
   },
   { 
     value: 'internet_issue', 
-    label: 'Internet Issue',
-    description: 'Report internet connectivity issues',
-    icon: <Wifi className="w-4 h-4" />
-  },
-  { 
-    value: 'other_issues', 
-    label: 'Other Issues',
-    description: 'Other security concerns',
-    icon: <FileText className="w-4 h-4" />
+    label: 'Internet Issues',
+    description: 'Report and resolve internet connectivity problems',
+    icon: <Wifi className="w-5 h-5" />,
+    color: 'sky'
   }
-]
+];
 
 const SecurityServiceRequest = () => {
-  const navigate = useNavigate()
-  const { user } = useAuth()
-  const { checkPermission } = usePageAccess()
-
-  const [backofficeUsers, setBackofficeUsers] = useState([])
-  const [selectedService, setSelectedService] = useState(null)
-  const [showPersonalInfo, setShowPersonalInfo] = useState(false)
-  const [blockedNumbers, setBlockedNumbers] = useState([{ number: '', id: Date.now() }])
-  const handleAddNumber = () => {
-  setBlockedNumbers([...blockedNumbers, { number: '', id: Date.now() }])
-}
-  const handleNumberChange = (id, value) => {
-  const updatedList = blockedNumbers.map(item => 
-    item.id === id ? { ...item, number: value } : item
-  )
-  setBlockedNumbers(updatedList)
-}
-  const handleRemoveNumber = (id) => {
-  if (blockedNumbers.length > 1) {
-    setBlockedNumbers(blockedNumbers.filter(item => item.id !== id))
-  }
-}
-const [imeiList, setImeiList] = useState([{ imei: '', id: Date.now() }])
-const handleAddImei = () => {
-  setImeiList([...imeiList, { imei: '', id: Date.now() }])
-}
-
-const handleImeiChange = (id, value) => {
-  const updatedList = imeiList.map(item => 
-    item.id === id ? { ...item, imei: value } : item
-  )
-  setImeiList(updatedList)
-}
-
-const handleRemoveImei = (id) => {
-  setImeiList(imeiList.filter(item => item.id !== id))
-}
-
-
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { checkPermission } = usePageAccess();
   
-  const [formData, setFormData] = useState({
-    full_names: '',
-    id_passport: '',
-    primary_contact: '',
-    secondary_contact: '',
-    service_type: '',
-      phone_number: '',
-  date_range: '',
-  phone_model: '',
-  details: '',
-  imei_list: [],
-      rib_station: '',
-  rib_helper_number: '',
-  email: '',
-  franchisee: '',
-  start_date: '',
-  end_date: '',
-  blocked_numbers: [],
-  service_number: ''
-  })
-  const [errors, setErrors] = useState({})
-  const [isLoading, setIsLoading] = useState(false)
-  const [pageLoading, setPageLoading] = useState(true)
-  const [message, setMessage] = useState({ type: '', text: '' })
+  const [selectedService, setSelectedService] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     const checkAccess = async () => {
-      let permissionPath = user?.role === 'admin' 
+      const permissionPath = user?.role === 'admin' 
         ? '/admin/security_services/security_service_request'
-        : '/security_services/security_service_request'
+        : '/security_services/security_service_request';
       
-      const { canAccess } = checkPermission(permissionPath)
+      const { canAccess } = checkPermission(permissionPath);
       
       if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/user/dashboard')
-        return
+        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/user/dashboard');
+        return;
       }
-      setPageLoading(false)
-    }
+      setPageLoading(false);
+    };
     
-    checkAccess()
-  }, [])
-
-const fetchBackofficeUsers = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, fullname') // Updated to use fullname field
-      .eq('status', 'active')
-      .order('fullname')
-
-    if (error) throw error
-    setBackofficeUsers(data || [])
-  } catch (error) {
-    console.error('Error fetching backoffice users:', error)
-  }
-}
-
-  useEffect(() => {
-  if (selectedService?.value === 'backoffice_appointment') {
-    fetchBackofficeUsers()
-  }
-}, [selectedService])
+    checkAccess();
+  }, []);
 
   const handleServiceSelect = (service) => {
-    setSelectedService(service)
-    setFormData(prev => ({ ...prev, service_type: service.value }))
-    setShowPersonalInfo(true)
-  }
+    setSelectedService(service);
+    setShowForm(true);
+  };
 
   const handleBack = () => {
-    setShowPersonalInfo(false)
-    setSelectedService(null)
-    setFormData(prev => ({ ...prev, service_type: '' }))
-  }
+    setShowForm(false);
+    setSelectedService(null);
+  };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-const validateForm = () => {
-  const newErrors = {}
-
-  // Common validations
-  if (!formData.full_names) newErrors.full_names = 'Full names are required'
-  if (!formData.id_passport) newErrors.id_passport = 'ID/Passport is required'
-  if (!formData.primary_contact) newErrors.primary_contact = 'Primary contact is required'
-
-  // Service-specific validations
-  switch (selectedService?.value) {
-    case 'rib_followup':
-      if (!formData.service_number) newErrors.service_number = 'Number is required'
-      if (!formData.rib_station) newErrors.rib_station = 'RIB station is required'
-      if (!formData.details) newErrors.details = 'Additional information is required'
-      break;
-
-    case 'call_history':
-      if (!formData.service_number) newErrors.service_number = 'Number is required'
-      if (!formData.start_date) newErrors.start_date = 'Start date is required'
-      if (!formData.end_date) newErrors.end_date = 'End date is required'
-      if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = 'Invalid email format'
-      }
-      break;
-
-    case 'momo_transaction':
-      if (!formData.service_number) newErrors.service_number = 'Number is required'
-      if (!formData.start_date) newErrors.start_date = 'Start date is required'
-      if (!formData.end_date) newErrors.end_date = 'End date is required'
-      if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = 'Invalid email format'
-      }
-      break;
-
-    case 'agent_commission':
-      if (!formData.service_number) newErrors.service_number = 'Number is required'
-      if (!formData.franchisee) newErrors.franchisee = 'Franchisee is required'
-      if (!formData.details) newErrors.details = 'Additional information is required'
-      break;
-
-    case 'unblock_call':
-      if (blockedNumbers.length === 0) {
-        newErrors.blocked_numbers = 'At least one number is required'
-      }
-      if (!blockedNumbers.every(item => item.number)) {
-        newErrors.blocked_numbers = 'All number fields must be filled'
-      }
-      if (!formData.details) newErrors.details = 'Additional information is required'
-      break;
-
-    case 'internet_issue':
-      if (!formData.service_number) newErrors.service_number = 'Number is required'
-      if (!formData.details) newErrors.details = 'Additional information is required'
-      break;
-  }
-
-  setErrors(newErrors)
-  return Object.keys(newErrors).length === 0
-}
-
-  const handleSubmit = async () => {
-    if (!validateForm()) return
-
-    setIsLoading(true)
+  const handleSubmit = async (formData) => {
+    setIsLoading(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('service_requests')
         .insert([{
           ...formData,
+          service_type: selectedService.value,
           created_by: user.id,
-          status: 'Pending',
+          status: 'pending',
           created_at: new Date().toISOString(),
-          updated_by: user.id,
           updated_at: new Date().toISOString()
         }])
+        .select()
+        .single();
 
-      if (error) throw error
+      if (error) throw error;
+
+      // Create notifications for assigned user if any
+      if (data.assigned_to) {
+        await supabase
+          .from('notifications')
+          .insert([{
+            user_id: data.assigned_to,
+            request_id: data.id,
+            title: 'New Service Request Assigned',
+            message: `A new ${selectedService.label} request has been assigned to you.`
+          }]);
+      }
 
       setMessage({
         type: 'success',
         text: 'Service request submitted successfully!'
-      })
+      });
+
+      // Reset form after successful submission
+      setShowForm(false);
+      setSelectedService(null);
 
     } catch (error) {
-      console.error('Submission error:', error)
+      console.error('Submission error:', error);
       setMessage({
         type: 'error',
         text: 'Failed to submit request. Please try again.'
-      })
+      });
     } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handlePrint = () => {
-    window.print()
-  }
-
-  const handleReset = () => {
-    setFormData({
-      full_names: '',
-      id_passport: '',
-      primary_contact: '',
-      secondary_contact: '',
-      service_type: '',
-      details: ''
-    })
-    setErrors({})
-    setMessage({ type: '', text: '' })
-  }
-
-  const ServiceCarousel = ({ services, onSelect }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  const nextService = () => {
-    if (!isAnimating) {
-      setIsAnimating(true);
-      setActiveIndex((prev) => (prev + 1) % services.length);
-      setTimeout(() => setIsAnimating(false), 300);
+      setIsLoading(false);
     }
   };
 
-  const prevService = () => {
-    if (!isAnimating) {
-      setIsAnimating(true);
-      setActiveIndex((prev) => (prev - 1 + services.length) % services.length);
-      setTimeout(() => setIsAnimating(false), 300);
-    }
-  };
-    return (
-    <div className="relative w-full max-w-xl mx-auto">
-      <div className="overflow-hidden rounded-lg bg-white">
-        <div className="relative h-[400px]">
-          {/* Main Card */}
-          <motion.div
-            key={activeIndex}
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            className="absolute inset-0 p-6"
-          >
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-6 bg-[#0A2647]/5 rounded-lg p-8">
-              <div className="p-4 rounded-full bg-[#0A2647]/10">
-                {services[activeIndex].icon}
-              </div>
-              <h3 className="text-xl font-semibold text-[#0A2647]">
-                {services[activeIndex].label}
-              </h3>
-              <p className="text-gray-600">
-                {services[activeIndex].description}
-              </p>
-              <Button 
-                onClick={() => onSelect(services[activeIndex])}
-                className="bg-[#0A2647] hover:bg-[#0A2647]/90 text-white mt-4"
-              >
-                Select Service
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Navigation Buttons */}
-        <Button
-          variant="ghost"
-          onClick={prevService}
-          className="absolute left-2 top-1/2 -translate-y-1/2"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={nextService}
-          className="absolute right-2 top-1/2 -translate-y-1/2"
-        >
-          <ChevronRight className="h-6 w-6" />
-        </Button>
-
-        {/* Dots Navigation */}
-        <div className="absolute bottom-4 left-0 right-0">
-          <div className="flex justify-center space-x-2">
-            {services.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveIndex(index)}
-                className={`h-2 w-2 rounded-full transition-colors ${
-                  index === activeIndex 
-                    ? 'bg-[#0A2647]' 
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
+  const filteredServices = activeTab === 'all' 
+    ? services 
+    : services.filter(service => {
+        switch(activeTab) {
+          case 'phone':
+            return ['request_serial_number', 'check_stolen_phone'].includes(service.value);
+          case 'financial':
+            return ['unblock_momo', 'money_refund', 'momo_transaction', 'agent_commission'].includes(service.value);
+          case 'other':
+            return ['backoffice_appointment', 'rib_followup', 'call_history', 'unblock_call', 'internet_issue'].includes(service.value);
+          default:
+            return true;
+        }
+      });
 
   if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-[#0A2647]" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
-return (
-  <div className="max-w-60xl mx-auto p-6">
-    <AnimatePresence mode="wait">
-{!showPersonalInfo ? (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    className="max-w-7xl mx-auto p-8"
-  >
-    <Card className="bg-gray-50/50">
-      <CardHeader className="px-8 pt-8">
-        <CardTitle className="text-2xl font-semibold text-[#0A2647]">
-          Select Service Type
-        </CardTitle>
-        <p className="text-gray-500 mt-2">Choose the service you need assistance with</p>
-      </CardHeader>
-      <CardContent className="p-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {services.map((service) => (
+  return (
+    <FormProvider>
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <AnimatePresence mode="wait">
+          {!showForm ? (
             <motion.div
-              key={service.value}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleServiceSelect(service)}
-              className="relative group cursor-pointer"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
             >
-              <div className="bg-white rounded-xl border border-gray-100 hover:border-[#0A2647]/20 p-4 transition-all duration-300 hover:shadow-xl flex flex-col min-h-[150px]">
-                <div className="w-14 h-14 rounded-lg bg-[#0A2647]/5 flex items-center justify-center mb-3">
-                  {React.cloneElement(service.icon, { className: "w-6 h-6 text-[#0A2647]" })}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-2xl font-semibold text-gray-900">Security Services</h1>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Select a service to submit a new request
+                  </p>
                 </div>
                 
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {service.label}
-                </h3>
-                
-                <p className="text-sm text-gray-500 flex-grow">
-                  {service.description}
-                </p>
-                
-                <div className="flex items-center justify-end mt-4 pt-2 border-t border-gray-100">
-                  <div className="flex items-center text-[#0A2647] font-medium">
-                    <span className="mr-1">Select</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
+                <div className="mt-4 sm:mt-0">
+                  <Badge variant="outline" className="text-primary">
+                    {user?.role === 'admin' ? 'Admin View' : 'User View'}
+                  </Badge>
                 </div>
-
-                <div className="absolute inset-0 rounded-xl ring-2 ring-transparent group-hover:ring-[#0A2647]/20 transition-all duration-300" />
               </div>
+
+              <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-4 rounded-lg bg-muted">
+                  <TabsTrigger value="all">All Services</TabsTrigger>
+                  <TabsTrigger value="phone">Phone Services</TabsTrigger>
+                  <TabsTrigger value="financial">Financial</TabsTrigger>
+                  <TabsTrigger value="other">Other Services</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value={activeTab} className="mt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredServices.map((service) => (
+                      <ServiceCard
+                        key={service.value}
+                        service={service}
+                        onSelect={() => handleServiceSelect(service)}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </motion.div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  </motion.div>
-) : (
-  // Personal information form remains the same
-)}
- : (
-          // Personal Information Form
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Card>
-              <CardHeader>
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={handleBack}
-                    className="p-1 rounded-full hover:bg-gray-100"
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                  </button>
-                  <div>
-                    <CardTitle>{selectedService?.label}</CardTitle>
-                    <p className="text-sm text-gray-500">{selectedService?.description}</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Full Names <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="full_names"
-                        value={formData.full_names}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                        placeholder="Enter full names"
-                      />
-                      {errors.full_names && (
-                        <p className="mt-1 text-sm text-red-500">{errors.full_names}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium">
-                        ID/Passport <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="id_passport"
-                        value={formData.id_passport}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                        placeholder="Enter ID/Passport number"
-                      />
-                      {errors.id_passport && (
-                        <p className="mt-1 text-sm text-red-500">{errors.id_passport}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Primary Contact <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="primary_contact"
-                        value={formData.primary_contact}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                        placeholder="Enter primary contact"
-                        maxLength={10}
-                      />
-                      {errors.primary_contact && (
-                        <p className="mt-1 text-sm text-red-500">{errors.primary_contact}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Secondary Contact
-                      </label>
-                      <input
-                        type="tel"
-                        name="secondary_contact"
-                        value={formData.secondary_contact}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-                        placeholder="Enter secondary contact (optional)"
-                        maxLength={10}
-                      />
-                      {errors.secondary_contact && (
-                        <p className="mt-1 text-sm text-red-500">{errors.secondary_contact}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Service-specific fields based on service type */}
-{selectedService?.value === 'request_serial_number' && (
-  <div className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium">
-          Stolen Phone Number <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="tel"
-          name="phone_number"
-          value={formData.phone_number}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter phone number"
-          maxLength={10}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          Date Range <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          name="date_range"
-          value={formData.date_range}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Select date range"
-          onFocus={(e) => e.target.type = 'date'}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          Phone Model <span className="text-red-500">*</span>
-        </label>
-        <select
-          name="phone_model"
-          value={formData.phone_model}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        >
-          <option value="">Select phone model</option>
-          {phoneModels.map(model => (
-            <option key={model} value={model}>{model}</option>
-          ))}
-        </select>
-      </div>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Details
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter any additional details (optional)"
-      />
-    </div>
-  </div>
-)}
-                  {selectedService?.value === 'check_stolen_phone' && (
-  <div className="space-y-4">
-    <div className="space-y-4">
-      {imeiList.map((item, index) => (
-        <div key={item.id} className="flex items-center space-x-2">
-          <div className="flex-1">
-            <label className="block text-sm font-medium">
-              IMEI {index + 1} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={item.imei}
-              onChange={(e) => handleImeiChange(item.id, e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-              placeholder="Enter IMEI number"
-              maxLength={15}
-            />
-          </div>
-          {imeiList.length > 1 && (
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-6"
-              onClick={() => handleRemoveImei(item.id)}
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
             >
-              <XCircle className="h-4 w-4" />
-            </Button>
+              <RequestForm
+                service={selectedService}
+                onBack={handleBack}
+                onSubmit={handleSubmit}
+                isLoading={isLoading}
+              />
+            </motion.div>
           )}
-        </div>
-      ))}
+        </AnimatePresence>
 
-      <Button
-        type="button"
-        variant="outline"
-        onClick={handleAddImei}
-        className="w-full"
-      >
-        Add Another IMEI
-      </Button>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Date Range <span className="text-red-500">*</span>
-      </label>
-      <input
-        type="text"
-        name="date_range"
-        value={formData.date_range}
-        onChange={handleInputChange}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Select date range"
-        onFocus={(e) => e.target.type = 'date'}
-      />
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Details
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter any additional details (optional)"
-      />
-    </div>
-  </div>
-)}
-
-                  {selectedService?.value === 'unblock_momo' && (
-  <div className="space-y-4">
-    <div>
-      <label className="block text-sm font-medium">
-        Blocked MoMo/MoMoPay Number <span className="text-red-500">*</span>
-      </label>
-      <input
-        type="tel"
-        name="blocked_number"
-        value={formData.blocked_number}
-        onChange={handleInputChange}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter blocked number"
-        maxLength={10}
-      />
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Details
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter any additional details (optional)"
-      />
-    </div>
-  </div>
-)}
-                  
-
-{selectedService?.value === 'money_refund' && (
-  <div className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium">
-          Amount <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="number"
-          name="amount"
-          value={formData.amount}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter amount"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          Storage Number <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="tel"
-          name="storage_number"
-          value={formData.storage_number}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter number where amount is stored"
-          maxLength={10}
-        />
-      </div>
-
-      <div className="sm:col-span-2">
-        <label className="block text-sm font-medium">
-          Date Range <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="date"
-          name="date_range"
-          value={formData.date_range}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        />
-      </div>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Details
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter any additional details (optional)"
-      />
-    </div>
-  </div>
-)}
-
-{selectedService?.value === 'backoffice_appointment' && (
-  <div className="space-y-4">
-    <div>
-      <label className="block text-sm font-medium">
-        Select Backoffice User <span className="text-red-500">*</span>
-      </label>
-      <select
-        name="backoffice_user"
-        value={formData.backoffice_user}
-        onChange={handleInputChange}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-      >
-        <option value="">Select a backoffice user</option>
-        {backofficeUsers.map(user => (
-          <option key={user.id} value={user.id}>
-            {user.full_names}
-          </option>
-        ))}
-      </select>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Details
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter any additional details (optional)"
-      />
-    </div>
-  </div>
-)}
-
-                  {/* RIB Followup */}
-{selectedService?.value === 'rib_followup' && (
-  <div className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium">
-          Number <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="tel"
-          name="service_number"
-          value={formData.service_number}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter number"
-          maxLength={10}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          RIB Station <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          name="rib_station"
-          value={formData.rib_station}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter RIB station"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          RIB Helper Number
-        </label>
-        <input
-          type="tel"
-          name="rib_helper_number"
-          value={formData.rib_helper_number}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter RIB helper number (optional)"
-          maxLength={10}
-        />
-      </div>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Information <span className="text-red-500">*</span>
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter additional information"
-      />
-    </div>
-  </div>
-)}
-
-{/* Call History */}
-{selectedService?.value === 'call_history' && (
-  <div className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium">
-          Number <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="tel"
-          name="service_number"
-          value={formData.service_number}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter number"
-          maxLength={10}
-        />
-      </div>
-
-            <div>
-        <label className="block text-sm font-medium">
-          Email
-        </label>
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter email (optional)"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          Start Date <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="date"
-          name="start_date"
-          value={formData.start_date}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          End Date <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="date"
-          name="end_date"
-          value={formData.end_date}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        />
-      </div>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Information
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter additional information (optional)"
-      />
-    </div>
-  </div>
-)}
-
-{/* MoMo Transaction */}
-{selectedService?.value === 'momo_transaction' && (
-  <div className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium">
-          Number <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="tel"
-          name="service_number"
-          value={formData.service_number}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter number"
-          maxLength={10}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          Email
-        </label>
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter email (optional)"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          Start Date <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="date"
-          name="start_date"
-          value={formData.start_date}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          End Date <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="date"
-          name="end_date"
-          value={formData.end_date}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        />
-      </div>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Information
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter additional information (optional)"
-      />
-    </div>
-  </div>
-)}
-
-{/* Agent Commission */}
-{selectedService?.value === 'agent_commission' && (
-  <div className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium">
-          Number <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="tel"
-          name="service_number"
-          value={formData.service_number}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter number"
-          maxLength={10}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">
-          Franchisee <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          name="franchisee"
-          value={formData.franchisee}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-          placeholder="Enter franchisee"
-        />
-      </div>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Information <span className="text-red-500">*</span>
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter additional information"
-      />
-    </div>
-  </div>
-)}
-
-                  {/* Unblock Blocked Number for Calling */}
-{selectedService?.value === 'unblock_call' && (
-  <div className="space-y-4">
-    <div className="space-y-4">
-      {blockedNumbers.map((item, index) => (
-        <div key={item.id} className="flex items-center space-x-2">
-          <div className="flex-1">
-            <label className="block text-sm font-medium">
-              Number {index + 1} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="tel"
-              value={item.number}
-              onChange={(e) => handleNumberChange(item.id, e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-              placeholder="Enter number"
-              maxLength={10}
-            />
-          </div>
-          {blockedNumbers.length > 1 && (
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-6"
-              onClick={() => handleRemoveNumber(item.id)}
-            >
-              <XCircle className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      ))}
-
-      <Button
-        type="button"
-        variant="outline"
-        onClick={handleAddNumber}
-        className="w-full"
-      >
-        <Plus className="h-4 w-4 mr-2" />
-        Add Another Number
-      </Button>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Information <span className="text-red-500">*</span>
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter additional information"
-      />
-    </div>
-  </div>
-)}
-
-{/* Internet Issue */}
-{selectedService?.value === 'internet_issue' && (
-  <div className="space-y-4">
-    <div>
-      <label className="block text-sm font-medium">
-        Number <span className="text-red-500">*</span>
-      </label>
-      <input
-        type="tel"
-        name="service_number"
-        value={formData.service_number}
-        onChange={handleInputChange}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter number"
-        maxLength={10}
-      />
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium">
-        Additional Information <span className="text-red-500">*</span>
-      </label>
-      <textarea
-        name="details"
-        value={formData.details}
-        onChange={handleInputChange}
-        rows={4}
-        className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#0A2647] focus:ring-[#0A2647]"
-        placeholder="Enter additional information about the internet issue"
-      />
-    </div>
-  </div>
-)}
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
-                    <Button 
-                      onClick={handlePrint}
-                      variant="outline"
-                      className="w-full sm:w-auto"
-                    >
-                      <Printer className="w-4 h-4 mr-2" />
-                      Print
-                    </Button>
-
-                    <Button 
-                      onClick={handleReset}
-                      variant="outline"
-                      className="w-full sm:w-auto"
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Reset
-                    </Button>
-
-                    <Button 
-                      onClick={handleSubmit}
-                      disabled={isLoading}
-                      className="w-full sm:w-auto bg-[#0A2647] hover:bg-[#0A2647]/90 text-white"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 mr-2" />
-                          Submit
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+        {message.type === 'success' && (
+          <SuccessPopup
+            message={message.text}
+            onClose={() => setMessage({ type: '', text: '' })}
+          />
         )}
-      </AnimatePresence>
 
-      {/* Success Message */}
-      {message.type === 'success' && (
-        <SuccessPopup
-          message={message.text}
-          onClose={() => {
-            setMessage({ type: '', text: '' })
-            handleReset()
-          }}
-        />
-      )}
+        {message.type === 'error' && (
+          <Alert variant="destructive" className="mt-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{message.text}</AlertDescription>
+          </Alert>
+        )}
+      </div>
+    </FormProvider>
+  );
+};
 
-      {/* Error Message */}
-      {message.type === 'error' && (
-        <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 h-4" />
-          <AlertDescription>{message.text}</AlertDescription>
-        </Alert>
-      )}
-    </div>
-  )
-}
-
-export default SecurityServiceRequest
+export default SecurityServiceRequest;
