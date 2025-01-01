@@ -51,3 +51,5 @@ const ServiceCard = ({ service, onSelect }) => {
     </motion.div>
   );
 };
+
+export default ServiceCard;
