@@ -135,19 +135,19 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
               />
             </div>
 
-            <div className="form-field">
-              <label className="block text-sm font-medium text-gray-700">
-                Secondary Contact
-              </label>
-              <Input
-                {...register('secondary_contact')}
-                type="tel"
-                maxLength={10}
-                placeholder="Enter secondary contact (optional)"
-                error={errors.secondary_contact?.message}
-              />
-            </div>
-          </div>
+<div className="form-field">
+  <label className="block text-sm font-medium text-gray-700">
+    Secondary Contact
+  </label>
+  <Input
+    {...register('secondary_contact')}
+    placeholder="Enter phone number or email address"
+    className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+  />
+  {errors.secondary_contact && (
+    <p className="mt-1 text-sm text-red-500">{errors.secondary_contact.message}</p>
+  )}
+</div>
 
           {/* Service Specific Fields */}
           <ServiceSpecificFields
