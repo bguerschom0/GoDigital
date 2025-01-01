@@ -1,69 +1,117 @@
 // src/pages/security-services/components/ServiceSpecificFields.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Calendar } from 'lucide-react';
+import { Calendar, Printer } from 'lucide-react';
 import IMEIFieldArray from './IMEIFieldArray';
 import BlockedNumbersArray from './BlockedNumbersArray';
 
-const phoneModels = [
-  'iPhone',
-  'Samsung',
-  'Techno',
-  'Infinix',
-  'Xiaomi',
-  'Itel',
-  'Nokia',
-  'Huawei'
-];
+                                      
+const ServiceSpecificFields = ({ 
+  serviceType, 
+  register, 
+  control, 
+  errors,
+  phoneModels,
+  watch 
+}) => {
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const watchPhoneBrand = watch?.('phone_brand');
 
-const ServiceSpecificFields = ({ serviceType, register, control, errors }) => {
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const getBrandModels = (brand) => {
+    const brandData = phoneModels.find(p => p.value === brand);
+    return brandData ? brandData.makes : [];
+  };
+
+  const renderPrintButton = () => (
+    <div className="mt-6 border-t pt-4">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handlePrint}
+        className="w-full sm:w-auto"
+      >
+        <Printer className="w-4 h-4 mr-2" />
+        Print Request
+      </Button>
+    </div>
+  );
+
   switch (serviceType) {
     case 'request_serial_number':
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Phone Number
-            </label>
-            <Input
-              {...register('phone_number')}
-              type="tel"
-              maxLength={10}
-              error={errors.phone_number?.message}
-              className="mt-1"
-              placeholder="Enter phone number"
-            />
-          </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Phone Number
+              </label>
+              <Input
+                {...register('phone_number')}
+                type="tel"
+                maxLength={10}
+                error={errors.phone_number?.message}
+                className="mt-1"
+                placeholder="Enter phone number"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Phone Model
-            </label>
-            <Select
-              {...register('phone_model')}
-              error={errors.phone_model?.message}
-              className="mt-1"
-            >
-              <option value="">Select phone model</option>
-              {phoneModels.map(model => (
-                <option key={model} value={model}>{model}</option>
-              ))}
-            </Select>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Phone Brand
+              </label>
+              <Select
+                {...register('phone_brand')}
+                onChange={(e) => setSelectedBrand(e.target.value)}
+                error={errors.phone_brand?.message}
+                className="mt-1"
+              >
+                <option value="">Select phone brand</option>
+                {phoneModels.map(model => (
+                  <option key={model.value} value={model.value}>
+                    {model.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Date Range
-            </label>
-            <Input
-              {...register('date_range')}
-              type="date"
-              error={errors.date_range?.message}
-              className="mt-1"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Phone Model
+              </label>
+              <Select
+                {...register('phone_model')}
+                error={errors.phone_model?.message}
+                className="mt-1"
+                disabled={!watchPhoneBrand}
+              >
+                <option value="">Select phone model</option>
+                {getBrandModels(watchPhoneBrand).map(model => (
+                  <option key={model} value={model}>
+                    {model}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Date Range
+              </label>
+              <Input
+                {...register('date_range')}
+                type="date"
+                error={errors.date_range?.message}
+                className="mt-1"
+              />
+            </div>
           </div>
+          {renderPrintButton()}
         </div>
       );
 
