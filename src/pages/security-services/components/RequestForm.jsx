@@ -70,16 +70,35 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
   });
 
 const handlePrint = (formData) => {
-  // Create a window for printing
-  const printWindow = window.open('', '_blank');
+  if (!formData) {
+    console.error("Form data is required for printing.");
+    return;
+  }
+
+  if (!service || !service.label || !service.value) {
+    console.error("Service details are missing or incomplete.");
+    return;
+  }
+
   const printDate = new Date().toLocaleDateString();
   const requestType = service.label;
 
-  // Generate print content based on service type
+  // Generate print content
   const printContent = generatePrintContent(service.value, formData, printDate);
-  
-  // Write content to print window
-  printWindow.document.write(`
+  if (!printContent) {
+    console.error("Failed to generate print content.");
+    return;
+  }
+
+  // Open a new window for printing
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    console.error("Unable to open a new window. Check for pop-up blockers.");
+    return;
+  }
+
+  // Prepare HTML content for the print window
+  const htmlContent = `
     <!DOCTYPE html>
     <html>
       <head>
@@ -130,45 +149,50 @@ const handlePrint = (formData) => {
         ${printContent}
       </body>
     </html>
-  `);
+  `;
 
-  // Close the document
+  // Write the content to the print window
+  printWindow.document.open();
+  printWindow.document.write(htmlContent);
   printWindow.document.close();
-  // Trigger print
+
+  // Trigger the print
   printWindow.print();
 };
 
-// Helper function to generate print content
-const generatePrintContent = (serviceType, formData, printDate) => {
-  const commonFields = `
+  const generatePrintContent = (serviceType, formData, printDate) => {
+  return `
     <div class="header">
       <img src="/mtn-logo.png" alt="MTN Logo" class="logo" />
       <h1>Service Request</h1>
       <p>Date: ${printDate}</p>
     </div>
-    
     <div class="section">
       <h2>Personal Information</h2>
       <div class="field">
-        <span class="label">Full Names:</span>
-        <span>${formData.full_names}</span>
+        <span class="label">Full Names:</span> ${formData.full_names}
       </div>
       <div class="field">
-        <span class="label">ID/Passport:</span>
-        <span>${formData.id_passport}</span>
+        <span class="label">ID/Passport:</span> ${formData.id_passport}
       </div>
       <div class="field">
-        <span class="label">Primary Contact:</span>
-        <span>${formData.primary_contact}</span>
+        <span class="label">Primary Contact:</span> ${formData.primary_contact}
       </div>
-      ${formData.secondary_contact ? `
-        <div class="field">
-          <span class="label">Secondary Contact:</span>
-          <span>${formData.secondary_contact}</span>
-        </div>
-      ` : ''}
+      ${
+        formData.secondary_contact
+          ? `<div class="field">
+               <span class="label">Secondary Contact:</span> ${formData.secondary_contact}
+             </div>`
+          : ""
+      }
+    </div>
+    <div class="footer">
+      <p>Thank you for your request.</p>
     </div>
   `;
+};
+
+
 
   return (
     <Card className="max-w-4xl mx-auto">
