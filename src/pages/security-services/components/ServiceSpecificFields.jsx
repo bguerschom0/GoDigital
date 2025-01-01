@@ -723,33 +723,40 @@ const ServiceSpecificFields = ({
           </div>
         </div>
       );
-
-
-
-
-
-
-
-
-
-
-      
-
-    
   
 
     case 'backoffice_appointment':
       return (
-        <div className="space-y-4">
-          <div>
+        <div className="space-y-6">
+          <div className="form-field">
             <label className="block text-sm font-medium text-gray-700">
-              Preferred Date and Time
+              Select Backoffice User <span className="text-red-500">*</span>
             </label>
-            <Input
-              {...register('appointment_date')}
-              type="datetime-local"
-              error={errors.appointment_date?.message}
-              className="mt-1"
+            <select
+              {...register('backoffice_user')}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Select a user</option>
+              {backofficeUsers?.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.full_name}
+                </option>
+              ))}
+            </select>
+            {errors?.backoffice_user && (
+              <p className="mt-1 text-sm text-red-500">{errors.backoffice_user.message}</p>
+            )}
+          </div>
+
+          <div className="form-field">
+            <label className="block text-sm font-medium text-gray-700">
+              Additional Details
+            </label>
+            <textarea
+              {...register('details')}
+              rows={4}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Any additional information (optional)"
             />
           </div>
         </div>
@@ -801,20 +808,60 @@ const ServiceSpecificFields = ({
       );
 
 
-    case 'internet_issue':
+case 'internet_issue':
       return (
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Number
-          </label>
-          <Input
-            {...register('service_number')}
-            type="tel"
-            maxLength={10}
-            error={errors.service_number?.message}
-            className="mt-1"
-            placeholder="Enter number"
-          />
+        <div className="space-y-6">
+          <div className="space-y-4">
+            {internetIssueArray.fields.map((field, index) => (
+              <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
+                <div className="form-field">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Number {index + 1} <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    {...register(`internetIssues.${index}.number`)}
+                    type="tel"
+                    maxLength={10}
+                    placeholder="Enter number with internet issue"
+                    error={errors?.internetIssues?.[index]?.number?.message}
+                      />
+                </div>
+                {internetIssueArray.fields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute -top-2 -right-2"
+                    onClick={() => internetIssueArray.remove(index)}
+                  >
+                    <XCircle className="h-5 w-5 text-gray-500 hover:text-red-500" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => internetIssueArray.append({ number: '' })}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Another Number
+            </Button>
+          </div>
+
+          <div className="form-field">
+            <label className="block text-sm font-medium text-gray-700">
+              Additional Details
+            </label>
+            <textarea
+              {...register('details')}
+              rows={4}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Any additional information (optional)"
+            />
+          </div>
         </div>
       );
 
