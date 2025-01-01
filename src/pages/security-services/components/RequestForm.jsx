@@ -1,25 +1,49 @@
 // src/pages/security-services/components/RequestForm.jsx
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { 
+  Card, 
+  CardHeader, 
+  CardContent, 
+  CardFooter 
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  Loader2
+} from 'lucide-react';
 import { getServiceSchema } from '../schemas/serviceSchemas';
+import ServiceSpecificFields from './ServiceSpecificFields';
 
-export const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
+const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
   const schema = getServiceSchema(service.value);
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: zodResolver(schema)
+  const { 
+    register, 
+    control,
+    handleSubmit, 
+    formState: { errors } 
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      full_names: '',
+      id_passport: '',
+      primary_contact: '',
+      secondary_contact: '',
+      details: ''
+    }
   });
 
   return (
     <Card className="max-w-4xl mx-auto">
       <CardHeader className="flex flex-row items-center space-x-4">
-        <Button 
-          variant="ghost" 
+        <Button
+          type="button"
+          variant="ghost"
           size="icon"
           onClick={onBack}
           className="h-8 w-8"
@@ -34,42 +58,55 @@ export const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
         </div>
       </CardHeader>
 
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <CardContent className="space-y-6">
           {/* Common Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
+            <div className="form-field">
               <label className="block text-sm font-medium text-gray-700">
-                Full Names
+                Full Names <span className="text-red-500">*</span>
               </label>
               <Input
                 {...register('full_names')}
+                placeholder="Enter full names"
                 error={errors.full_names?.message}
-                className="mt-1"
               />
             </div>
 
-            <div>
+            <div className="form-field">
               <label className="block text-sm font-medium text-gray-700">
-                ID/Passport
+                ID/Passport <span className="text-red-500">*</span>
               </label>
               <Input
                 {...register('id_passport')}
+                placeholder="Enter ID/Passport number"
                 error={errors.id_passport?.message}
-                className="mt-1"
               />
             </div>
 
-            <div>
+            <div className="form-field">
               <label className="block text-sm font-medium text-gray-700">
-                Primary Contact
+                Primary Contact <span className="text-red-500">*</span>
               </label>
               <Input
                 {...register('primary_contact')}
                 type="tel"
                 maxLength={10}
+                placeholder="Enter primary contact"
                 error={errors.primary_contact?.message}
-                className="mt-1"
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="block text-sm font-medium text-gray-700">
+                Secondary Contact
+              </label>
+              <Input
+                {...register('secondary_contact')}
+                type="tel"
+                maxLength={10}
+                placeholder="Enter secondary contact (optional)"
+                error={errors.secondary_contact?.message}
               />
             </div>
           </div>
@@ -78,38 +115,57 @@ export const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
           <ServiceSpecificFields
             serviceType={service.value}
             register={register}
+            control={control}
             errors={errors}
           />
 
-          {/* Form Actions */}
-          <div className="flex justify-end space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onBack}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="min-w-[120px]"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Submit
-                </>
+          {/* Additional Details */}
+          <div className="form-field">
+            <label className="block text-sm font-medium text-gray-700">
+              Additional Details
+              {service.value !== 'backoffice_appointment' && (
+                <span className="text-red-500">*</span>
               )}
-            </Button>
+            </label>
+            <Textarea
+              {...register('details')}
+              rows={4}
+              placeholder="Enter additional details"
+              error={errors.details?.message}
+            />
           </div>
-        </form>
-      </CardContent>
+        </CardContent>
+
+        <CardFooter className="flex justify-end space-x-4 pt-6">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onBack}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="min-w-[120px]"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Submitting
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Submit
+              </>
+            )}
+          </Button>
+        </CardFooter>
+      </form>
     </Card>
   );
 };
+
+export default RequestForm;
