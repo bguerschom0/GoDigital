@@ -110,6 +110,59 @@ const ServiceSpecificFields = ({
     }
   }, [serviceType]);
 
+   const callHistoryArray = serviceType === 'call_history' 
+    ? useFieldArray({
+        control,
+        name: "callHistoryRequests"
+      })
+    : null;
+
+  const momoTransactionArray = serviceType === 'momo_transaction' 
+    ? useFieldArray({
+        control,
+        name: "momoTransactions"
+      })
+    : null;
+
+  const agentCommissionArray = serviceType === 'agent_commission' 
+    ? useFieldArray({
+        control,
+        name: "agentRequests"
+      })
+    : null;
+
+  // Initialize default entries
+  React.useEffect(() => {
+    switch (serviceType) {
+      case 'call_history':
+        if (callHistoryArray && callHistoryArray.fields.length === 0) {
+          callHistoryArray.append({
+            phone_number: '',
+            start_date: '',
+            end_date: ''
+          });
+        }
+        break;
+      case 'momo_transaction':
+        if (momoTransactionArray && momoTransactionArray.fields.length === 0) {
+          momoTransactionArray.append({
+            phone_number: '',
+            start_date: '',
+            end_date: ''
+          });
+        }
+        break;
+      case 'agent_commission':
+        if (agentCommissionArray && agentCommissionArray.fields.length === 0) {
+          agentCommissionArray.append({
+            number: '',
+            franchisee: ''
+          });
+        }
+        break;
+    }
+  }, [serviceType]);
+
   const renderImportantNote = (message) => (
     <Alert className="bg-blue-50 border-blue-200">
       <AlertDescription className="text-sm text-blue-800">
@@ -303,44 +356,75 @@ const ServiceSpecificFields = ({
         </div>
       );
 
-      case 'call_history':
+     case 'call_history':
       return (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="form-field">
-              <label className="block text-sm font-medium text-gray-700">
-                Phone Number <span className="text-red-500">*</span>
-              </label>
-              <Input
-                {...register('phone_number')}
-                type="tel"
-                maxLength={10}
-                placeholder="Enter phone number"
-                error={errors?.phone_number?.message}
-              />
-            </div>
+          <div className="space-y-4">
+            {callHistoryArray.fields.map((field, index) => (
+              <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`callHistoryRequests.${index}.phone_number`)}
+                      type="tel"
+                      maxLength={10}
+                      placeholder="Enter phone number"
+                      error={errors?.callHistoryRequests?.[index]?.phone_number?.message}
+                    />
+                  </div>
 
-            <div className="form-field">
-              <label className="block text-sm font-medium text-gray-700">
-                Start Date <span className="text-red-500">*</span>
-              </label>
-              <Input
-                {...register('start_date')}
-                type="date"
-                error={errors?.start_date?.message}
-              />
-            </div>
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Start Date <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`callHistoryRequests.${index}.start_date`)}
+                      type="date"
+                      error={errors?.callHistoryRequests?.[index]?.start_date?.message}
+                    />
+                  </div>
 
-            <div className="form-field">
-              <label className="block text-sm font-medium text-gray-700">
-                End Date <span className="text-red-500">*</span>
-              </label>
-              <Input
-                {...register('end_date')}
-                type="date"
-                error={errors?.end_date?.message}
-              />
-            </div>
+                  <div className="form-field">
+                    <label className="block text-sm font-medium text-gray-700">
+                      End Date <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      {...register(`callHistoryRequests.${index}.end_date`)}
+                      type="date"
+                      error={errors?.callHistoryRequests?.[index]?.end_date?.message}
+                    />
+                  </div>
+                </div>
+                {callHistoryArray.fields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute -top-2 -right-2"
+                    onClick={() => callHistoryArray.remove(index)}
+                  >
+                    <XCircle className="h-5 w-5 text-gray-500 hover:text-red-500" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => callHistoryArray.append({
+                phone_number: '',
+                start_date: '',
+                end_date: ''
+              })}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Another Call History Request
+            </Button>
           </div>
 
           <div className="form-field">
@@ -356,7 +440,7 @@ const ServiceSpecificFields = ({
           </div>
 
           {renderImportantNote(
-            "Please ensure that you are requesting call history for a number registered under your name. Call history can only be provided for numbers that belong to the requestor."
+            "Please ensure that you are requesting call history for numbers registered under your name. Call history can only be provided for numbers that belong to the requestor."
           )}
         </div>
       );
@@ -764,44 +848,42 @@ const ServiceSpecificFields = ({
 
     case 'rib_followup':
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Number
-            </label>
-            <Input
-              {...register('service_number')}
-              type="tel"
-              maxLength={10}
-              error={errors.service_number?.message}
-              className="mt-1"
-              placeholder="Enter number"
-            />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-field">
+              <label className="block text-sm font-medium text-gray-700">
+                RIB Number <span className="text-red-500">*</span>
+              </label>
+              <Input
+                {...register('rib_number')}
+                type="tel"
+                maxLength={10}
+                placeholder="Enter RIB number"
+                error={errors?.rib_number?.message}
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="block text-sm font-medium text-gray-700">
+                RIB Station <span className="text-red-500">*</span>
+              </label>
+              <Input
+                {...register('rib_station')}
+                placeholder="Enter RIB station"
+                error={errors?.rib_station?.message}
+              />
+            </div>
           </div>
 
-          <div>
+          <div className="form-field">
             <label className="block text-sm font-medium text-gray-700">
-              RIB Station
+              Additional Details
             </label>
-            <Input
-              {...register('rib_station')}
-              error={errors.rib_station?.message}
-              className="mt-1"
-              placeholder="Enter RIB station"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              RIB Helper Number
-            </label>
-            <Input
-              {...register('rib_helper_number')}
-              type="tel"
-              maxLength={10}
-              error={errors.rib_helper_number?.message}
-              className="mt-1"
-              placeholder="Enter RIB helper number (optional)"
+            <textarea
+              {...register('details')}
+              rows={4}
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Any additional information (optional)"
             />
           </div>
         </div>
