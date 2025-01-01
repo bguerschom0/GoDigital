@@ -17,12 +17,18 @@ const commonFields = {
 
 const serialNumberSchema = z.object({
   ...commonFields,
-  phone_number: z.string()
-    .min(1, 'Phone number is required')
-    .length(10, 'Phone number must be 10 digits')
-    .regex(/^[0-9]+$/, 'Must contain only numbers'),
-  phone_model: z.string().min(1, 'Phone model is required'),
-  date_range: z.string().min(1, 'Date range is required')
+  phoneRequests: z.array(
+    z.object({
+      phone_number: z.string()
+        .min(1, 'Phone number is required')
+        .length(10, 'Phone number must be 10 digits')
+        .regex(/^[0-9]+$/, 'Must contain only numbers'),
+      phone_brand: z.string().min(1, 'Phone brand is required'),
+      start_date: z.string().min(1, 'Start date is required'),
+      end_date: z.string().min(1, 'End date is required')
+    })
+  ).min(1, 'At least one phone request is required'),
+  details: z.string().optional()
 });
 
 const stolenPhoneSchema = z.object({
