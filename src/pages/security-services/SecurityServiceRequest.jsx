@@ -194,55 +194,74 @@ const SecurityServiceRequest = () => {
     setSelectedService(null);
   };
 
-  const handleSubmit = async (formData) => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('service_requests')
+const handleSubmit = async (formData) => {
+  setIsLoading(true);
+  try {
+    // Generate a reference number
+    const referenceNumber = `SR-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    const { data, error } = await supabase
+      .from('service_requests')
+      .insert([{
+        reference_number: referenceNumber,
+        service_type: selectedService.value,
+        status: 'new',
+        priority: 'normal',
+        full_names: formData.full_names,
+        id_passport: formData.id_passport,
+        primary_contact: formData.primary_contact,
+        secondary_contact: formData.secondary_contact || null,
+        details: formData.details,
+        created_by: user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Save additional metadata if needed
+    if (formData.metadata) {
+      await supabase
+        .from('service_request_metadata')
         .insert([{
-          ...formData,
-          service_type: selectedService.value,
-          created_by: user.id,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Create notifications for assigned user if any
-      if (data.assigned_to) {
-        await supabase
-          .from('notifications')
-          .insert([{
-            user_id: data.assigned_to,
-            request_id: data.id,
-            title: 'New Service Request Assigned',
-            message: `A new ${selectedService.label} request has been assigned to you.`
-          }]);
-      }
-
-      setMessage({
-        type: 'success',
-        text: 'Service request submitted successfully!'
-      });
-
-      // Reset form after successful submission
-      setShowForm(false);
-      setSelectedService(null);
-
-    } catch (error) {
-      console.error('Submission error:', error);
-      setMessage({
-        type: 'error',
-        text: 'Failed to submit request. Please try again.'
-      });
-    } finally {
-      setIsLoading(false);
+          request_id: data.id,
+          metadata: formData.metadata
+        }]);
     }
-  };
+
+    // Create initial history record
+    await supabase
+      .from('request_history')
+      .insert([{
+        request_id: data.id,
+        action: 'created',
+        status_from: null,
+        status_to: 'new',
+        performed_by: user.id,
+        details: 'Request created'
+      }]);
+
+    setMessage({
+      type: 'success',
+      text: `Service request submitted successfully! Reference: ${referenceNumber}`
+    });
+
+    setShowForm(false);
+    setSelectedService(null);
+
+  } catch (error) {
+    console.error('Submission error:', error);
+    setMessage({
+      type: 'error',
+      text: 'Failed to submit request. Please try again.'
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
 const filteredServices = activeTab === 'all' 
     ? services 
