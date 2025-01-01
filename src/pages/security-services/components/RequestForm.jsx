@@ -141,33 +141,67 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading, phoneModels }) => {
           </div>
         </CardContent>
 
-        <CardFooter className="flex justify-end space-x-4 pt-6">
+<CardFooter className="flex justify-between items-center pt-6">
           <Button
             type="button"
             variant="outline"
-            onClick={onBack}
-            disabled={isLoading}
+            onClick={() => {
+              const printWindow = window.open('', '_blank');
+              printWindow.document.write(`
+                <html>
+                  <head>
+                    <title>Print Service Request</title>
+                    <link rel="stylesheet" href="/styles.css" />
+                  </head>
+                  <body>
+                    ${document.querySelector('.print-template').innerHTML}
+                  </body>
+                </html>
+              `);
+              printWindow.document.close();
+              printWindow.print();
+            }}
+            className="text-gray-600 hover:text-gray-900"
           >
-            Cancel
+            <Printer className="w-4 h-4 mr-2" />
+            Print Request
           </Button>
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="min-w-[120px]"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 w-4 mr-2 animate-spin" />
-                Submitting
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Submit
-              </>
-            )}
-          </Button>
+
+          <div className="space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="min-w-[120px]"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 w-4 mr-2 animate-spin" />
+                  Submitting
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Submit
+                </>
+              )}
+            </Button>
+          </div>
         </CardFooter>
+
+        {/* Hidden print template */}
+        <div className="hidden">
+          <div className="print-template">
+            <PrintTemplate service={service} formData={watch()} />
+          </div>
+        </div>
       </form>
     </Card>
   );
