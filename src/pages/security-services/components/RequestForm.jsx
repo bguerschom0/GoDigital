@@ -1,4 +1,3 @@
-// src/pages/security-services/components/RequestForm.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -66,9 +65,7 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
       agentRequests: [{
         number: '',
         franchisee: ''
-      }],
-
-      // Other service specific fields...
+      }]
     }
   });
 
@@ -135,19 +132,20 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
               />
             </div>
 
-<div className="form-field">
-  <label className="block text-sm font-medium text-gray-700">
-    Secondary Contact
-  </label>
-  <Input
-    {...register('secondary_contact')}
-    placeholder="Enter phone number or email address"
-    className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-  />
-  {errors.secondary_contact && (
-    <p className="mt-1 text-sm text-red-500">{errors.secondary_contact.message}</p>
-  )}
-</div>
+            <div className="form-field">
+              <label className="block text-sm font-medium text-gray-700">
+                Secondary Contact
+              </label>
+              <Input
+                {...register('secondary_contact')}
+                placeholder="Enter phone number or email address"
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              {errors.secondary_contact && (
+                <p className="mt-1 text-sm text-red-500">{errors.secondary_contact.message}</p>
+              )}
+            </div>
+          </div>
 
           {/* Service Specific Fields */}
           <ServiceSpecificFields
