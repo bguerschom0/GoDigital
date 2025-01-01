@@ -152,12 +152,12 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-4 w-4 mr-2 animate-spin" />
                 Submitting
               </>
             ) : (
               <>
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="h-4 w-4 mr-2" />
                 Submit
               </>
             )}
