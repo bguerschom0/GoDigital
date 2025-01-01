@@ -40,7 +40,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import ServiceCard from './components/ServiceCard';
-import { RequestForm } from './components/RequestForm';
+import RequestForm  from './components/RequestForm';
 import { SuccessPopup } from './components/SuccessPopup';
 import { FormProvider } from './context/FormContext';
 import '@/styles/serviceGrid.css';
