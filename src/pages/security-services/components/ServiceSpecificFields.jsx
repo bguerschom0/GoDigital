@@ -7,6 +7,7 @@ import { Calendar, Printer, Plus, XCircle  } from 'lucide-react';
 import IMEIFieldArray from './IMEIFieldArray';
 import BlockedNumbersArray from './BlockedNumbersArray';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useForm, useFieldArray } from 'react-hook-form';
 
 import { 
   FormControl,
@@ -21,16 +22,23 @@ const ServiceSpecificFields = ({
   serviceType, 
   register, 
   errors,
-  control
+  control // Make sure control is being passed from parent
 }) => {
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "phoneRequests"
-  });
+  // Only create the field array if we're on the serial number request
+  const serialNumberArray = serviceType === 'request_serial_number' 
+    ? useFieldArray({
+        control,
+        name: "phoneRequests"
+      })
+    : null;
 
-  // Add a default entry if there are none
+  const fields = serialNumberArray?.fields || [];
+  const append = serialNumberArray?.append || (() => {});
+  const remove = serialNumberArray?.remove || (() => {});
+
+  // Add initial field if empty and it's a serial number request
   React.useEffect(() => {
-    if (fields.length === 0) {
+    if (serviceType === 'request_serial_number' && fields.length === 0) {
       append({
         phone_number: '',
         phone_brand: '',
@@ -38,7 +46,8 @@ const ServiceSpecificFields = ({
         end_date: ''
       });
     }
-  }, []);
+  }, [serviceType]);
+  
   switch (serviceType) {
     case 'request_serial_number':
       return (
