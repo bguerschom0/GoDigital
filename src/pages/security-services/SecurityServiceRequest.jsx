@@ -46,83 +46,110 @@ import { FormProvider } from './context/FormContext';
 import '@/styles/serviceGrid.css';
 
 const services = [
+  // Phone Services Category
   { 
     value: 'request_serial_number', 
     label: 'Request Serial Number',
     description: 'Retrieve stolen phone serial number',
     icon: <Phone className="w-5 h-5" />,
-    color: 'blue'
+    color: 'blue',
+    category: 'phone'
   },
   { 
     value: 'check_stolen_phone',
     label: 'Check Stolen Phone Status',
     description: 'Check status of stolen phones by IMEI',
     icon: <Shield className="w-5 h-5" />,
-    color: 'indigo'
-  },
-  { 
-    value: 'unblock_momo', 
-    label: 'Unblock MoMo Account',
-    description: 'Get assistance with unblocking MoMo',
-    icon: <Wallet className="w-5 h-5" />,
-    color: 'green'
-  },
-  { 
-    value: 'money_refund', 
-    label: 'Money Refund',
-    description: 'Request money refund for failed transactions',
-    icon: <Save className="w-5 h-5" />,
-    color: 'yellow'
-  },
-  { 
-    value: 'backoffice_appointment', 
-    label: 'Backoffice Appointment',
-    description: 'Schedule a meeting with backoffice team',
-    icon: <Calendar className="w-5 h-5" />,
-    color: 'purple'
-  },
-  { 
-    value: 'rib_followup', 
-    label: 'RIB Request Followup',
-    description: 'Track the status of your RIB request',
-    icon: <BadgeHelp className="w-5 h-5" />,
-    color: 'red'
+    color: 'indigo',
+    category: 'phone'
   },
   { 
     value: 'call_history', 
     label: 'Call History',
     description: 'Request detailed call history records',
     icon: <History className="w-5 h-5" />,
-    color: 'orange'
-  },
-  { 
-    value: 'momo_transaction', 
-    label: 'MoMo Transaction',
-    description: 'View MoMo transaction details',
-    icon: <Wallet className="w-5 h-5" />,
-    color: 'emerald'
-  },
-  { 
-    value: 'agent_commission', 
-    label: 'Agent Commission',
-    description: 'Request agent commission details',
-    icon: <Users className="w-5 h-5" />,
-    color: 'cyan'
+    color: 'orange',
+    category: 'phone'
   },
   { 
     value: 'unblock_call', 
     label: 'Unblock Number',
     description: 'Request to unblock numbers for calling',
     icon: <PhoneCall className="w-5 h-5" />,
-    color: 'teal'
+    color: 'teal',
+    category: 'phone'
+  },
+
+  // Financial Services Category
+  { 
+    value: 'unblock_momo', 
+    label: 'Unblock MoMo Account',
+    description: 'Get assistance with unblocking MoMo',
+    icon: <Wallet className="w-5 h-5" />,
+    color: 'green',
+    category: 'financial'
+  },
+  { 
+    value: 'money_refund', 
+    label: 'Money Refund',
+    description: 'Request money refund for failed transactions',
+    icon: <Save className="w-5 h-5" />,
+    color: 'yellow',
+    category: 'financial'
+  },
+  { 
+    value: 'momo_transaction', 
+    label: 'MoMo Transaction',
+    description: 'View MoMo transaction details',
+    icon: <Wallet className="w-5 h-5" />,
+    color: 'emerald',
+    category: 'financial'
+  },
+  { 
+    value: 'agent_commission', 
+    label: 'Agent Commission',
+    description: 'Request agent commission details',
+    icon: <Users className="w-5 h-5" />,
+    color: 'cyan',
+    category: 'financial'
+  },
+
+  // Other Services Category
+  { 
+    value: 'backoffice_appointment', 
+    label: 'Backoffice Appointment',
+    description: 'Schedule a meeting with backoffice team',
+    icon: <Calendar className="w-5 h-5" />,
+    color: 'purple',
+    category: 'other'
+  },
+  { 
+    value: 'rib_followup', 
+    label: 'RIB Request Followup',
+    description: 'Track the status of your RIB request',
+    icon: <BadgeHelp className="w-5 h-5" />,
+    color: 'red',
+    category: 'other'
   },
   { 
     value: 'internet_issue', 
     label: 'Internet Issues',
     description: 'Report and resolve internet connectivity problems',
     icon: <Wifi className="w-5 h-5" />,
-    color: 'sky'
+    color: 'sky',
+    category: 'other'
   }
+];
+
+const phoneModels = [
+  { value: 'iphone', label: 'iPhone', makes: ['iPhone 11', 'iPhone 12', 'iPhone 13', 'iPhone 14', 'iPhone 15'] },
+  { value: 'samsung', label: 'Samsung', makes: ['Galaxy S21', 'Galaxy S22', 'Galaxy S23', 'Galaxy A52', 'Galaxy A53'] },
+  { value: 'techno', label: 'Techno', makes: ['Camon 19', 'Camon 20', 'Spark 10', 'Phantom X2'] },
+  { value: 'infinix', label: 'Infinix', makes: ['Note 12', 'Note 13', 'Hot 12', 'Hot 13'] },
+  { value: 'xiaomi', label: 'Xiaomi', makes: ['Redmi Note 12', 'Redmi Note 13', 'POCO X5', 'POCO F5'] },
+  { value: 'itel', label: 'Itel', makes: ['A58', 'A59', 'P40', 'Vision 3'] },
+  { value: 'nokia', label: 'Nokia', makes: ['G20', 'G21', 'C21', 'C22'] },
+  { value: 'huawei', label: 'Huawei', makes: ['P40', 'P50', 'Nova 9', 'Nova 10'] }
 ];
 
 const SecurityServiceRequest = () => {
@@ -215,20 +242,10 @@ const SecurityServiceRequest = () => {
     }
   };
 
-  const filteredServices = activeTab === 'all' 
+const filteredServices = activeTab === 'all' 
     ? services 
-    : services.filter(service => {
-        switch(activeTab) {
-          case 'phone':
-            return ['request_serial_number', 'check_stolen_phone'].includes(service.value);
-          case 'financial':
-            return ['unblock_momo', 'money_refund', 'momo_transaction', 'agent_commission'].includes(service.value);
-          case 'other':
-            return ['backoffice_appointment', 'rib_followup', 'call_history', 'unblock_call', 'internet_issue'].includes(service.value);
-          default:
-            return true;
-        }
-      });
+    : services.filter(service => service.category === activeTab);
+
 
   if (pageLoading) {
     return (
@@ -239,7 +256,7 @@ const SecurityServiceRequest = () => {
   }
 
   return (
-    <FormProvider>
+      <FormProvider>
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <AnimatePresence mode="wait">
           {!showForm ? (
@@ -249,19 +266,11 @@ const SecurityServiceRequest = () => {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-6"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h1 className="text-2xl font-semibold text-gray-900">Security Services</h1>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Select a service to submit a new request
-                  </p>
-                </div>
-                
-                <div className="mt-4 sm:mt-0">
-                  <Badge variant="outline" className="text-primary">
-                    {user?.role === 'admin' ? 'Admin View' : 'User View'}
-                  </Badge>
-                </div>
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">Security Services</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  Select a service to submit a new request
+                </p>
               </div>
 
               <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
@@ -286,18 +295,13 @@ const SecurityServiceRequest = () => {
               </Tabs>
             </motion.div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-            >
-              <RequestForm
-                service={selectedService}
-                onBack={handleBack}
-                onSubmit={handleSubmit}
-                isLoading={isLoading}
-              />
-            </motion.div>
+            <RequestForm
+              service={selectedService}
+              onBack={handleBack}
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+              phoneModels={phoneModels}
+            />
           )}
         </AnimatePresence>
 
