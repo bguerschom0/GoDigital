@@ -1,5 +1,8 @@
 // src/pages/security-services/schemas/serviceSchemas.js
-import { z } from 'zod';
+import * as z from 'zod';
+
+const isValidPhoneNumber = (value) => /^\d{10}$/.test(value);
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 const commonFields = {
   full_names: z.string().min(1, 'Full names are required'),
@@ -9,9 +12,11 @@ const commonFields = {
     .length(10, 'Contact number must be 10 digits')
     .regex(/^[0-9]+$/, 'Must contain only numbers'),
   secondary_contact: z.string()
-    .length(10, 'Contact number must be 10 digits')
-    .regex(/^[0-9]+$/, 'Must contain only numbers')
-    .optional(),
+    .optional()
+    .refine((val) => {
+      if (!val) return true; // Optional field
+      return isValidPhoneNumber(val) || isValidEmail(val);
+    }, 'Must be a valid phone number or email address'),
   details: z.string().optional()
 };
 
