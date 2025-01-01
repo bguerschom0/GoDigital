@@ -69,9 +69,106 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
     }
   });
 
-  const handlePrint = () => {
-    window.print();
-  };
+const handlePrint = (formData) => {
+  // Create a window for printing
+  const printWindow = window.open('', '_blank');
+  const printDate = new Date().toLocaleDateString();
+  const requestType = service.label;
+
+  // Generate print content based on service type
+  const printContent = generatePrintContent(service.value, formData, printDate);
+  
+  // Write content to print window
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Service Request - ${requestType}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 20px;
+          }
+          .logo {
+            max-width: 150px;
+            margin-bottom: 10px;
+          }
+          .request-details {
+            margin-bottom: 30px;
+          }
+          .section {
+            margin-bottom: 20px;
+          }
+          .field {
+            margin-bottom: 10px;
+          }
+          .label {
+            font-weight: bold;
+            color: #666;
+          }
+          .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+          }
+          @media print {
+            @page {
+              margin: 20mm;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        ${printContent}
+      </body>
+    </html>
+  `);
+
+  // Close the document
+  printWindow.document.close();
+  // Trigger print
+  printWindow.print();
+};
+
+// Helper function to generate print content
+const generatePrintContent = (serviceType, formData, printDate) => {
+  const commonFields = `
+    <div class="header">
+      <img src="/mtn-logo.png" alt="MTN Logo" class="logo" />
+      <h1>Service Request</h1>
+      <p>Date: ${printDate}</p>
+    </div>
+    
+    <div class="section">
+      <h2>Personal Information</h2>
+      <div class="field">
+        <span class="label">Full Names:</span>
+        <span>${formData.full_names}</span>
+      </div>
+      <div class="field">
+        <span class="label">ID/Passport:</span>
+        <span>${formData.id_passport}</span>
+      </div>
+      <div class="field">
+        <span class="label">Primary Contact:</span>
+        <span>${formData.primary_contact}</span>
+      </div>
+      ${formData.secondary_contact ? `
+        <div class="field">
+          <span class="label">Secondary Contact:</span>
+          <span>${formData.secondary_contact}</span>
+        </div>
+      ` : ''}
+    </div>
+  `;
 
   return (
     <Card className="max-w-4xl mx-auto">
