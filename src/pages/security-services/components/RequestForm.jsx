@@ -15,7 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   ArrowLeft,
   Save,
-  Loader2
+  Loader2,
+  Printer // Added Printer import
 } from 'lucide-react';
 import { getServiceSchema } from '../schemas/serviceSchemas';
 import ServiceSpecificFields from './ServiceSpecificFields';
@@ -37,9 +38,12 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading, phoneModels }) => {
       secondary_contact: '',
       details: '',
       phone_brand: '',
-      phone_model: ''
     }
   });
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
     <Card className="max-w-4xl mx-auto">
@@ -141,26 +145,11 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading, phoneModels }) => {
           </div>
         </CardContent>
 
-<CardFooter className="flex justify-between items-center pt-6">
+        <CardFooter className="flex justify-between pt-6">
           <Button
             type="button"
             variant="outline"
-            onClick={() => {
-              const printWindow = window.open('', '_blank');
-              printWindow.document.write(`
-                <html>
-                  <head>
-                    <title>Print Service Request</title>
-                    <link rel="stylesheet" href="/styles.css" />
-                  </head>
-                  <body>
-                    ${document.querySelector('.print-template').innerHTML}
-                  </body>
-                </html>
-              `);
-              printWindow.document.close();
-              printWindow.print();
-            }}
+            onClick={handlePrint}
             className="text-gray-600 hover:text-gray-900"
           >
             <Printer className="w-4 h-4 mr-2" />
@@ -183,7 +172,7 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading, phoneModels }) => {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Submitting
                 </>
               ) : (
@@ -195,13 +184,6 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading, phoneModels }) => {
             </Button>
           </div>
         </CardFooter>
-
-        {/* Hidden print template */}
-        <div className="hidden">
-          <div className="print-template">
-            <PrintTemplate service={service} formData={watch()} />
-          </div>
-        </div>
       </form>
     </Card>
   );
