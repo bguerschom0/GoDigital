@@ -173,27 +173,27 @@ const ServiceSpecificFields = ({
   });
 
   // Fetch backoffice users
-  useEffect(() => {
-    const fetchBackofficeUsers = async () => {
-      if (serviceType === 'backoffice_appointment') {
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('id, full_name')
-            .eq('role', 'backoffice')
-            .eq('status', 'active')
-            .order('full_name');
+useEffect(() => {
+  const fetchBackofficeUsers = async () => {
+    if (serviceType === 'backoffice_appointment') {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, fullname')  // Changed from full_name to fullname
+          .eq('role', 'backoffice')
+          .eq('status', 'active')
+          .order('fullname');  // Changed the order field to match
 
-          if (error) throw error;
-          setBackofficeUsers(data || []);
-        } catch (error) {
-          console.error('Error fetching backoffice users:', error);
-        }
+        if (error) throw error;
+        setBackofficeUsers(data || []);
+      } catch (error) {
+        console.error('Error fetching backoffice users:', error);
       }
-    };
+    }
+  };
 
-    fetchBackofficeUsers();
-  }, [serviceType]);
+  fetchBackofficeUsers();
+}, [serviceType]);
 
     // Initialize default entries
   useEffect(() => {
@@ -871,41 +871,41 @@ const ServiceSpecificFields = ({
   
 
 case 'backoffice_appointment':
-    return (
-      <div className="space-y-6">
-        <div className="form-field">
-          <label className="block text-sm font-medium text-gray-700">
-            Select Backoffice User <span className="text-red-500">*</span>
-          </label>
-          <select
-            {...register('backoffice_user')}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">Select a user</option>
-            {backofficeUsers.map(user => (
-              <option key={user.id} value={user.id}>
-                {user.full_name}
-              </option>
-            ))}
-          </select>
-          {errors?.backoffice_user && (
-            <p className="mt-1 text-sm text-red-500">{errors.backoffice_user.message}</p>
-          )}
-        </div>
-
-        <div className="form-field">
-          <label className="block text-sm font-medium text-gray-700">
-            Additional Details
-          </label>
-          <textarea
-            {...register('details')}
-            rows={4}
-            className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            placeholder="Any additional information (optional)"
-          />
-        </div>
+  return (
+    <div className="space-y-6">
+      <div className="form-field">
+        <label className="block text-sm font-medium text-gray-700">
+          Select Backoffice User <span className="text-red-500">*</span>
+        </label>
+        <select
+          {...register('backoffice_user')}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">Select a user</option>
+          {backofficeUsers.map(user => (
+            <option key={user.id} value={user.id}>
+              {user.fullname}  {/* Changed from full_name to fullname */}
+            </option>
+          ))}
+        </select>
+        {errors?.backoffice_user && (
+          <p className="mt-1 text-sm text-red-500">{errors.backoffice_user.message}</p>
+        )}
       </div>
-    );
+
+      <div className="form-field">
+        <label className="block text-sm font-medium text-gray-700">
+          Additional Details
+        </label>
+        <textarea
+          {...register('details')}
+          rows={4}
+          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          placeholder="Any additional information (optional)"
+        />
+      </div>
+    </div>
+  );
 
     case 'rib_followup':
       return (
