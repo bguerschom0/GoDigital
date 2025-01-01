@@ -16,28 +16,59 @@ import {
   ArrowLeft,
   Save,
   Loader2,
-  Printer // Added Printer import
+  Printer
 } from 'lucide-react';
 import { getServiceSchema } from '../schemas/serviceSchemas';
 import ServiceSpecificFields from './ServiceSpecificFields';
 
-const RequestForm = ({ service, onBack, onSubmit, isLoading, phoneModels }) => {
+const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
   const schema = getServiceSchema(service.value);
   const { 
     register, 
     control,
     handleSubmit,
     watch,
+    reset,
     formState: { errors } 
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
+      // Common fields
       full_names: '',
       id_passport: '',
       primary_contact: '',
       secondary_contact: '',
       details: '',
-      phone_brand: '',
+
+      // For request_serial_number
+      phoneRequests: [{ 
+        phone_number: '', 
+        phone_brand: '', 
+        start_date: '', 
+        end_date: '' 
+      }],
+
+      // For call_history
+      callHistoryRequests: [{
+        phone_number: '',
+        start_date: '',
+        end_date: ''
+      }],
+
+      // For momo_transaction
+      momoTransactions: [{
+        phone_number: '',
+        start_date: '',
+        end_date: ''
+      }],
+
+      // For agent_commission
+      agentRequests: [{
+        number: '',
+        franchisee: ''
+      }],
+
+      // Other service specific fields...
     }
   });
 
@@ -124,25 +155,8 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading, phoneModels }) => {
             register={register}
             control={control}
             errors={errors}
-            phoneModels={phoneModels}
             watch={watch}
           />
-
-          {/* Additional Details */}
-          <div className="form-field">
-            <label className="block text-sm font-medium text-gray-700">
-              Additional Details
-              {service.value !== 'backoffice_appointment' && (
-                <span className="text-red-500">*</span>
-              )}
-            </label>
-            <Textarea
-              {...register('details')}
-              rows={4}
-              placeholder="Enter additional details"
-              error={errors.details?.message}
-            />
-          </div>
         </CardContent>
 
         <CardFooter className="flex justify-between pt-6">
@@ -160,7 +174,10 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading, phoneModels }) => {
             <Button
               type="button"
               variant="outline"
-              onClick={onBack}
+              onClick={() => {
+                reset();
+                onBack();
+              }}
               disabled={isLoading}
             >
               Cancel
@@ -168,7 +185,7 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading, phoneModels }) => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="min-w-[120px]"
+              className="min-w-[120px] bg-primary"
             >
               {isLoading ? (
                 <>
