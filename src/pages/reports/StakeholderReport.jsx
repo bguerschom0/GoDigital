@@ -74,20 +74,7 @@ const StakeholderReport = () => {
   const [subjectOptions, setSubjectOptions] = useState([])
   const [rawData, setRawData] = useState([])
 
-  // Check permissions
-  useEffect(() => {
-    const checkAccess = async () => {
-      const { canAccess, canExport } = checkPermission('/reports/stakeholder')
-      
-      if (!canAccess) {
-        navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
-        return
-      }
-      setPageLoading(false)
-    }
-    
-    checkAccess()
-  }, [])
+
 
    useEffect(() => {
     fetchInitialData()
