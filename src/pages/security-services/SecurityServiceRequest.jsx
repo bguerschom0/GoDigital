@@ -196,11 +196,11 @@ const SecurityServiceRequest = () => {
 
 const handleSubmit = async (formData) => {
   setIsLoading(true);
-
-    console.log('Current user ID:', user?.id);
-  console.log('Auth UID:', (await supabase.auth.getUser()).data.user?.id);
-
-   const { data: { user: authUser } } = await supabase.auth.getUser();
+  
+  const { data: { session } } = await supabase.auth.getSession();
+  const authUserId = session?.user?.id;
+  
+  console.log('Session User ID:', authUserId);
   
   try {
     // Generate a reference number
@@ -218,7 +218,7 @@ const handleSubmit = async (formData) => {
         primary_contact: formData.primary_contact,
         secondary_contact: formData.secondary_contact || null,
         details: formData.details,
-        created_by: authUser.id,
+        created_by: authUserId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }])
