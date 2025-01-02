@@ -211,7 +211,7 @@ const handleSubmit = async (formData) => {
   console.log('Selected Service:', selectedService);
   
   try {
-    const referenceNumber = `SR-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const referenceNumber = `SR${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100)}`;
     console.log('Generated Reference Number:', referenceNumber);
     
     // Log the exact data being sent to Supabase
