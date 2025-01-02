@@ -4,7 +4,14 @@ import { supabase } from '@/config/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/use-toast'
+import { 
+  Loader2, 
+  Save,
+  RefreshCcw,
+  AlertTriangle
+} from 'lucide-react'
 
 const PagePermissions = () => {
   const [users, setUsers] = useState([])
@@ -12,7 +19,9 @@ const PagePermissions = () => {
   const [permissions, setPermissions] = useState({})
   const [selectedUser, setSelectedUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const { user: currentUser } = useAuth()
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchData()
@@ -27,22 +36,23 @@ const PagePermissions = () => {
   const fetchData = async () => {
     try {
       setLoading(true)
-      // Fetch users
+      // Fetch non-admin users
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('status', 'active')
+        .neq('role', 'admin')
         .order('username')
 
       if (userError) throw userError
 
-      // Fetch pages
+      // Fetch active pages
       const { data: pageData, error: pageError } = await supabase
         .from('pages')
         .select('*')
         .eq('is_active', true)
-        .order('category', { ascending: true })
-        .order('name', { ascending: true })
+        .order('category')
+        .order('name')
 
       if (pageError) throw pageError
 
@@ -50,6 +60,11 @@ const PagePermissions = () => {
       setPages(pageData || [])
     } catch (error) {
       console.error('Error fetching data:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load users and pages',
+        variant: 'destructive'
+      })
     } finally {
       setLoading(false)
     }
@@ -59,62 +74,122 @@ const PagePermissions = () => {
     try {
       const { data: permissionData, error } = await supabase
         .from('page_permissions')
-        .select('*')
+        .select('*, pages!inner(*)')
         .eq('user_id', userId)
 
       if (error) throw error
 
       const permissionMap = {}
       permissionData?.forEach(perm => {
-        permissionMap[perm.page_id] = perm
+        permissionMap[perm.page_id] = {
+          id: perm.id,
+          can_view: perm.can_view,
+          can_edit: perm.can_edit,
+          can_delete: perm.can_delete,
+          can_download: perm.can_download
+        }
       })
       setPermissions(permissionMap)
     } catch (error) {
       console.error('Error fetching permissions:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load user permissions',
+        variant: 'destructive'
+      })
     }
   }
 
-  const handlePermissionChange = async (pageId, permission, value) => {
+  const handlePermissionChange = (pageId, field, value) => {
+    setPermissions(prev => ({
+      ...prev,
+      [pageId]: {
+        ...prev[pageId],
+        [field]: value,
+        // If can_view is being set to false, reset other permissions
+        ...(field === 'can_view' && !value && {
+          can_edit: false,
+          can_delete: false,
+          can_download: false
+        })
+      }
+    }))
+  }
+
+  const savePermissions = async () => {
+    if (!selectedUser) return
+
     try {
-      const existingPermission = permissions[pageId]
+      setSaving(true)
       
-      if (existingPermission) {
-        // Update existing permission
-        const { error } = await supabase
-          .from('page_permissions')
-          .update({ 
-            [permission]: value, 
-            updated_at: new Date().toISOString() 
+      // Prepare batch operations
+      const updates = []
+      const inserts = []
+
+      Object.entries(permissions).forEach(([pageId, perms]) => {
+        const permData = {
+          user_id: selectedUser.id,
+          page_id: pageId,
+          can_view: perms.can_view || false,
+          can_edit: perms.can_edit || false,
+          can_delete: perms.can_delete || false,
+          can_download: perms.can_download || false,
+          updated_at: new Date().toISOString()
+        }
+
+        if (perms.id) {
+          updates.push({
+            ...permData,
+            id: perms.id
           })
-          .eq('id', existingPermission.id)
+        } else {
+          inserts.push({
+            ...permData,
+            created_by: currentUser.id
+          })
+        }
+      })
 
-        if (error) throw error
-      } else {
-        // Create new permission
-        const { error } = await supabase
+      // Perform batch operations
+      if (updates.length > 0) {
+        const { error: updateError } = await supabase
           .from('page_permissions')
-          .insert([{
-            user_id: selectedUser.id,
-            page_id: pageId,
-            [permission]: value,
-            created_by: currentUser.id,
-            created_at: new Date().toISOString()
-          }])
-
-        if (error) throw error
+          .upsert(updates)
+        if (updateError) throw updateError
       }
 
-      // Refresh permissions for the selected user
+      if (inserts.length > 0) {
+        const { error: insertError } = await supabase
+          .from('page_permissions')
+          .insert(inserts)
+        if (insertError) throw insertError
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Permissions updated successfully'
+      })
+
+      // Refresh permissions
       await fetchUserPermissions(selectedUser.id)
     } catch (error) {
-      console.error('Error updating permission:', error)
+      console.error('Error saving permissions:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to save permissions',
+        variant: 'destructive'
+      })
+    } finally {
+      setSaving(false)
     }
   }
+
+  const categories = ['dashboard', 'stakeholder', 'background', 'security_services', 'reports']
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -123,19 +198,32 @@ const PagePermissions = () => {
     <div className="p-6">
       <Card>
         <CardHeader>
-          <CardTitle>Page Permissions Management</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>Page Permissions Management</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchData}
+              className="ml-2"
+            >
+              <RefreshCcw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {/* User Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">Select User</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select User
+            </label>
             <select
               value={selectedUser?.id || ''}
               onChange={(e) => {
                 const user = users.find(u => u.id === e.target.value)
                 setSelectedUser(user)
               }}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded-md bg-white dark:bg-gray-800"
             >
               <option value="">Select a user...</option>
               {users.map(user => (
@@ -146,51 +234,119 @@ const PagePermissions = () => {
             </select>
           </div>
 
- {selectedUser && (
-            <Tabs defaultValue="stakeholder">
-              <TabsList className="mb-4">
-                <TabsTrigger value="stakeholder">Stakeholder</TabsTrigger>
-                <TabsTrigger value="background">Background Check</TabsTrigger>
-                <TabsTrigger value="report">Reports</TabsTrigger>
-              </TabsList>
+          {selectedUser && (
+            <>
+              <Tabs defaultValue={categories[0]}>
+                <TabsList className="mb-4">
+                  {categories.map(category => (
+                    <TabsTrigger key={category} value={category} className="capitalize">
+                      {category.replace('_', ' ')}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
 
-              {['stakeholder', 'background', 'report'].map(category => (
-                <TabsContent key={category} value={category}>
-                  <div className="space-y-4">
-                    {pages
-                      .filter(page => page.category === category)
-                      .map(page => (
-                        <div key={page.id} className="flex items-center justify-between p-4 border rounded hover:bg-gray-50">
-                          <div>
-                            <h3 className="font-medium">{page.name}</h3>
-                            <p className="text-sm text-gray-500">{page.description}</p>
-                          </div>
-                          <div className="flex space-x-4">
-                            <label className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={permissions[page.id]?.can_access || false}
-                                onChange={(e) => handlePermissionChange(page.id, 'can_access', e.target.checked)}
-                                className="rounded"
-                              />
-                              <span>Access Page</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={permissions[page.id]?.can_export || false}
-                                onChange={(e) => handlePermissionChange(page.id, 'can_export', e.target.checked)}
-                                className="rounded"
-                              />
-                              <span>Export Data</span>
-                            </label>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
+                {categories.map(category => (
+                  <TabsContent key={category} value={category}>
+                    <div className="space-y-4">
+                      {pages
+                        .filter(page => page.category === category)
+                        .map(page => {
+                          const pagePerms = permissions[page.id] || {}
+                          const hasAccess = pagePerms.can_view
+                          
+                          return (
+                            <div 
+                              key={page.id} 
+                              className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h3 className="font-medium">{page.name}</h3>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    {page.description}
+                                  </p>
+                                </div>
+                                <div className="flex space-x-6">
+                                  {/* View Permission */}
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={pagePerms.can_view || false}
+                                      onChange={(e) => handlePermissionChange(page.id, 'can_view', e.target.checked)}
+                                      className="rounded border-gray-300"
+                                    />
+                                    <span>View</span>
+                                  </label>
+
+                                  {/* Additional permissions - only enabled if can_view is true */}
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={pagePerms.can_download || false}
+                                      onChange={(e) => handlePermissionChange(page.id, 'can_download', e.target.checked)}
+                                      disabled={!hasAccess}
+                                      className="rounded border-gray-300"
+                                    />
+                                    <span>Export</span>
+                                  </label>
+
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={pagePerms.can_edit || false}
+                                      onChange={(e) => handlePermissionChange(page.id, 'can_edit', e.target.checked)}
+                                      disabled={!hasAccess}
+                                      className="rounded border-gray-300"
+                                    />
+                                    <span>Edit</span>
+                                  </label>
+
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={pagePerms.can_delete || false}
+                                      onChange={(e) => handlePermissionChange(page.id, 'can_delete', e.target.checked)}
+                                      disabled={!hasAccess}
+                                      className="rounded border-gray-300"
+                                    />
+                                    <span>Delete</span>
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
+
+              {/* Save Button */}
+              <div className="mt-6 flex justify-end">
+                <Button 
+                  onClick={savePermissions} 
+                  disabled={saving}
+                  className="w-full sm:w-auto"
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Save Permissions
+                </Button>
+              </div>
+            </>
+          )}
+
+          {!selectedUser && (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+              <AlertTriangle className="w-12 h-12 mb-4 opacity-50" />
+              <p className="text-lg font-medium">No User Selected</p>
+              <p className="text-sm text-center mt-1">
+                Please select a user to manage their permissions
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>
