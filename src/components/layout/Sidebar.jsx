@@ -26,17 +26,31 @@ import {
 const MenuGroup = ({ item, isOpen, isHovered, expandedMenus, toggleMenu, location, checkPermission }) => {
   if (!isOpen) return null
 
-  // Important: Remove '/admin' from path when checking permissions
+  // Add debug logging
+  console.log('MenuGroup rendering:', {
+    title: item.title,
+    children: item.children?.map(c => ({
+      title: c.title,
+      href: c.href,
+      permission: checkPermission(c.href.replace('/admin', ''))
+    }))
+  })
+
   const accessibleChildren = item.children.filter(child => {
-    // Remove /admin prefix for permission check
-    const permissionPath = child.href.replace('/admin', '')
-    const permission = checkPermission(permissionPath)
-    console.log('Checking permission for:', permissionPath, permission) // Debug log
+    const permPath = child.href.replace('/admin', '')
+    const permission = checkPermission(permPath)
+    console.log('MenuGroup permission check:', {
+      path: permPath,
+      permission,
+      title: child.title
+    })
     return permission.canAccess
   })
 
-  if (accessibleChildren.length === 0) return null
-
+  if (accessibleChildren.length === 0) {
+    console.log('No accessible children for:', item.title)
+    return null
+  }
   return (
     <>
       <div
@@ -247,29 +261,40 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   // Filter navigation items based on user role and permissions
 const getNavItems = () => {
-  if (user?.role === 'admin') return adminNavItems
+  console.log('Getting nav items for user:', user) // Debug log
+
+  if (user?.role === 'admin') {
+    console.log('User is admin, returning full menu')
+    return adminNavItems
+  }
   
   const items = [...userNavItems]
-  
-  // Log the process for debugging
-  console.log('Processing nav items for user:', user.username)
   
   adminNavItems.forEach(item => {
     if (item.children) {
       const accessibleChildren = item.children.filter(child => {
         const permPath = child.href.replace('/admin', '')
         const permission = checkPermission(permPath)
-        console.log('Checking path:', permPath, 'Permission:', permission)
+        console.log('Checking permission for:', {
+          path: permPath,
+          originalPath: child.href,
+          permission,
+          title: child.title
+        })
         return permission.canAccess
       })
       
       if (accessibleChildren.length > 0) {
-        console.log('Adding menu group:', item.title, 'with children:', accessibleChildren)
+        console.log('Adding menu group:', {
+          title: item.title,
+          children: accessibleChildren.map(c => c.title)
+        })
         items.push({ ...item, children: accessibleChildren })
       }
     }
   })
   
+  console.log('Final nav items:', items)
   return items
 }
 
