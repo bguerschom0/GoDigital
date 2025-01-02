@@ -20,25 +20,38 @@ export const usePageAccess = () => {
     }
 
     try {
-      // Admin has access to everything
+      // Admin has access to everything with all permissions
       if (user.role === 'admin') {
-        setPermissions({ '*': { canAccess: true } })
+        setPermissions({
+          '*': {
+            canAccess: true,
+            canExport: true,
+            canEdit: true,
+            canDelete: true,
+            isVisible: true
+          }
+        })
         setLoading(false)
         return
       }
 
-      // Fetch user's page permissions
+      // Fetch user's page permissions with page details
       const { data: permissionData, error } = await supabase
         .from('page_permissions')
         .select(`
-          pages!inner (
+          id,
+          can_view,
+          can_edit,
+          can_delete,
+          can_download,
+          pages (
+            id,
             path,
             name,
             category
           )
         `)
         .eq('user_id', user.id)
-        .eq('can_access', true)  // Only get pages they can access
 
       if (error) throw error
 
@@ -47,11 +60,26 @@ export const usePageAccess = () => {
       permissionData?.forEach(perm => {
         const path = perm.pages.path
         permMap[path] = {
-          canAccess: true,
+          canAccess: perm.can_view,
+          canExport: perm.can_download,
+          canEdit: perm.can_edit,
+          canDelete: perm.can_delete,
+          isVisible: perm.can_view,
           pageName: perm.pages.name,
           category: perm.pages.category
         }
       })
+
+      // Always allow access to user dashboard
+      permMap['/user/dashboard'] = {
+        canAccess: true,
+        canExport: false,
+        canEdit: false,
+        canDelete: false,
+        isVisible: true,
+        pageName: 'Dashboard',
+        category: 'dashboard'
+      }
 
       setPermissions(permMap)
     } catch (error) {
@@ -63,33 +91,42 @@ export const usePageAccess = () => {
   }
 
   const checkPermission = (path) => {
-    if (path === '/user/dashboard') {
-      return { canAccess: true, isVisible: true }
-    }
-
+    // Admin has full access
     if (user?.role === 'admin') {
-      return { canAccess: true, isVisible: true }
+      return {
+        canAccess: true,
+        canExport: true,
+        canEdit: true,
+        canDelete: true,
+        isVisible: true
+      }
     }
 
-    const hasPermission = permissions[path]
+    // User dashboard is always accessible to logged-in users
+    if (path === '/user/dashboard') {
+      return {
+        canAccess: true,
+        canExport: false,
+        canEdit: false,
+        canDelete: false,
+        isVisible: true
+      }
+    }
+
+    const permission = permissions[path] || {}
     return {
-      canAccess: !!hasPermission,
-      isVisible: !!hasPermission,
-      pageName: hasPermission?.pageName,
-      category: hasPermission?.category
+      canAccess: !!permission.canAccess,
+      canExport: !!permission.canExport,
+      canEdit: !!permission.canEdit,
+      canDelete: !!permission.canDelete,
+      isVisible: !!permission.isVisible
     }
-  }
-
-  const getAccessiblePaths = () => {
-    if (user?.role === 'admin') return ['*']
-    return Object.keys(permissions)
   }
 
   return {
     permissions,
     loading,
     checkPermission,
-    getAccessiblePaths,
     refreshPermissions: fetchUserPermissions
   }
 }
