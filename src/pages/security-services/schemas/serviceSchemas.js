@@ -158,12 +158,6 @@ const backofficeAppointmentSchema = z.object({
 });
 
 // Get the appropriate schema based on service type
-Claude can make mistakes. Please double-check responses.
-
-
-Service Request Validation Schemas (Continued)
-// src/schemas/serviceSchemas.js (continued)
-// Get the appropriate schema based on service type
 export const getServiceSchema = (serviceType) => {
   const schemas = {
     'request_serial_number': serialNumberSchema,
