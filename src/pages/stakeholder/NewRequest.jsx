@@ -16,6 +16,7 @@ import { supabase } from '@/config/supabase'
 import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { useAuth } from '@/context/AuthContext'
+import { usePageAccess } from '@/hooks/usePageAccess'
 
 
 const formatDate = (date) => {
@@ -40,6 +41,7 @@ const initialFormData = {
 const NewRequest = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+   const { checkPermission } = usePageAccess()
   
   const [pageLoading, setPageLoading] = useState(true)
   const [availableUsers, setAvailableUsers] = useState([])
@@ -52,6 +54,26 @@ const NewRequest = () => {
   const [senderOptions, setSenderOptions] = useState([])
   const [subjectOptions, setSubjectOptions] = useState([])
 
+
+  useEffect(() => {
+  const checkAccess = async () => {
+    const { canAccess } = checkPermission('/stakeholder/new')
+    console.log('Permission check for new request:', {
+      path: '/stakeholder/new',
+      canAccess,
+      user: user?.role
+    })
+    
+    if (!canAccess) {
+      navigate(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')
+      return
+    }
+    setPageLoading(false)
+  }
+  
+  checkAccess()
+}, [])
+  
   // Initialize data
   useEffect(() => {
     const initializePage = async () => {
