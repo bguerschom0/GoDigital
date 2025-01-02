@@ -199,6 +199,8 @@ const handleSubmit = async (formData) => {
 
     console.log('Current user ID:', user?.id);
   console.log('Auth UID:', (await supabase.auth.getUser()).data.user?.id);
+
+   const { data: { user: authUser } } = await supabase.auth.getUser();
   
   try {
     // Generate a reference number
@@ -216,7 +218,7 @@ const handleSubmit = async (formData) => {
         primary_contact: formData.primary_contact,
         secondary_contact: formData.secondary_contact || null,
         details: formData.details,
-        created_by: user?.id,
+        created_by: authUser.id
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }])
