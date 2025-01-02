@@ -58,42 +58,52 @@ const loadRequests = async () => {
       .from('service_requests')
       .select(`
         *,
-        created_by (fullname),
-        service_details:service_metadata (*)
+        created_by:users!service_requests_created_by_fkey(id, fullname),
+        request_phone_numbers(*),
+        request_imei_numbers(*),
+        request_call_history(*),
+        request_blocked_numbers(*),
+        request_momo_numbers(*),
+        request_refunds(*),
+        request_agent_commission(*),
+        request_momo_transactions(*),
+        request_internet_issues(*),
+        request_rib_followup(*),
+        request_backoffice_appointments(*)
       `)
       .eq('status', 'new')
       .order('created_at', { ascending: false });
 
-    if (availableError) {
-      console.error('Error loading available requests:', availableError);
-      throw availableError;
-    }
+    if (availableError) throw availableError;
 
     // Load my assigned requests
-    if (!user?.id) {
-      console.error('User ID is missing.');
-      return;
-    }
     const { data: assigned, error: assignedError } = await supabase
       .from('service_requests')
       .select(`
         *,
-        created_by (fullname),
-        service_details:service_metadata (*)
+        created_by:users!service_requests_created_by_fkey(id, fullname),
+        request_phone_numbers(*),
+        request_imei_numbers(*),
+        request_call_history(*),
+        request_blocked_numbers(*),
+        request_momo_numbers(*),
+        request_refunds(*),
+        request_agent_commission(*),
+        request_momo_transactions(*),
+        request_internet_issues(*),
+        request_rib_followup(*),
+        request_backoffice_appointments(*)
       `)
       .eq('assigned_to', user.id)
       .in('status', ['in_progress', 'pending_investigation'])
       .order('created_at', { ascending: false });
 
-    if (assignedError) {
-      console.error('Error loading assigned requests:', assignedError);
-      throw assignedError;
-    }
+    if (assignedError) throw assignedError;
 
     setAvailableRequests(available || []);
     setMyRequests(assigned || []);
   } catch (error) {
-    console.error('Error loading requests:', error.message || error);
+    console.error('Error loading requests:', error);
   } finally {
     setLoading(false);
   }
