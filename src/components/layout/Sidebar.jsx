@@ -265,6 +265,13 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   const navItems = getNavItems()
 
+    // Add this useEffect to debug
+  useEffect(() => {
+    console.log('Current user:', user)
+    console.log('Nav items:', navItems)
+    console.log('Current permissions:', permissions) // Add this line to your usePageAccess hook export
+  }, [user, navItems])
+
   return (
     <div 
       className={`fixed left-0 z-40 bg-white dark:bg-gray-800 shadow-lg transition-all duration-300 ease-in-out h-[calc(100vh-4rem)] top-16 ${
