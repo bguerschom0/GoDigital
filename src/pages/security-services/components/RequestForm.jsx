@@ -18,11 +18,13 @@ import {
   Loader2,
   Printer
 } from 'lucide-react';
-import { getServiceSchema } from '../schemas/serviceSchemas';
+import { getServiceSchema, getDefaultValues, transformFormData } from '../schemas/serviceSchemas';
 import ServiceSpecificFields from './ServiceSpecificFields';
 
 const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
   const schema = getServiceSchema(service.value);
+  const defaultValues = getDefaultValues(service.value);
+
   const { 
     register, 
     control,
@@ -32,102 +34,17 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
     formState: { errors } 
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: {
-      // Common fields
-      full_names: '',
-      id_passport: '',
-      primary_contact: '',
-      secondary_contact: '',
-      details: '',
-
-      // Phone Serial Number Requests
-      phoneRequests: [{ 
-        phone_number: '', 
-        phone_brand: '', 
-        start_date: '', 
-        end_date: '' 
-      }],
-
-      // IMEI Numbers
-      imeiNumbers: [{
-        imei: ''
-      }],
-
-      // Call History
-      callHistoryRequests: [{
-        phone_number: '',
-        email: '',
-        start_date: '',
-        end_date: ''
-      }],
-
-      // Blocked Numbers
-      phoneNumbers: [{
-        number: ''
-      }],
-
-      // MoMo Numbers
-      momoNumbers: [{
-        number: ''
-      }],
-
-      // Refund Requests
-      refundRequests: [{
-        phone_number: '',
-        amount: '',
-        transaction_date: ''
-      }],
-
-      // MoMo Transactions
-      momoTransactions: [{
-        phone_number: '',
-        email: '',
-        start_date: '',
-        end_date: ''
-      }],
-
-      // Agent Commission
-      agentRequests: [{
-        number: '',
-        franchisee: ''
-      }],
-
-      // Internet Issues
-      internetIssues: [{
-        number: ''
-      }],
-
-      // RIB Followup
-      rib_number: '',
-      rib_station: '',
-
-      // Backoffice Appointment
-      backoffice_user: ''
-    }
+    defaultValues
   });
+
 
   const handlePrint = () => {
     window.print();
   };
 
   const onFormSubmit = (data) => {
-    // Transform data before submitting if needed
-    let transformedData = { ...data };
-
-    // Add any service-specific transformations here if needed
-    switch (service.value) {
-      case 'request_serial_number':
-        // Data is already in correct format
-        break;
-      case 'check_stolen_phone':
-        // IMEI numbers are already in correct format
-        break;
-      case 'call_history':
-        // Call history data is already in correct format
-        break;
-      // Add other cases if needed
-    }
-
+    // Transform and clean data before submitting
+    const transformedData = transformFormData(data, service.value);
     onSubmit(transformedData);
   };
 
