@@ -124,7 +124,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [expandedMenus, setExpandedMenus] = useState(['stakeholder'])
   const location = useLocation()
   const { user } = useAuth()
-  const { checkPermission } = usePageAccess()
+  const { checkPermission, permissions } = usePageAccess()
   const isAdmin = user?.role === 'admin'
 
   const toggleMenu = (menu) => {
