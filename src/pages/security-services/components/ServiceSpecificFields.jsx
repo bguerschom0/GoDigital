@@ -417,18 +417,6 @@ useEffect(() => {
 
                   <div className="form-field">
                     <label className="block text-sm font-medium text-gray-700">
-                      Email
-                    </label>
-                    <Input
-                      {...register(`callHistoryRequests.${index}.email`)}
-                      type="email"
-                      placeholder="Enter email for report"
-                      error={errors?.callHistoryRequests?.[index]?.email?.message}
-                    />
-                  </div>
-
-                  <div className="form-field">
-                    <label className="block text-sm font-medium text-gray-700">
                       Start Date <span className="text-red-500">*</span>
                     </label>
                     <Input
@@ -716,18 +704,6 @@ useEffect(() => {
                       maxLength={10}
                       placeholder="Enter phone number"
                       error={errors?.momoTransactions?.[index]?.phone_number?.message}
-                    />
-                  </div>
-
-                  <div className="form-field">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Email
-                    </label>
-                    <Input
-                      {...register(`momoTransactions.${index}.email`)}
-                      type="email"
-                      placeholder="Enter email for report"
-                      error={errors?.momoTransactions?.[index]?.email?.message}
                     />
                   </div>
 
