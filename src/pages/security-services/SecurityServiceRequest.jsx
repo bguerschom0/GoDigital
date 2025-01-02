@@ -216,7 +216,7 @@ const handleSubmit = async (formData) => {
         primary_contact: formData.primary_contact,
         secondary_contact: formData.secondary_contact || null,
         details: formData.details,
-        created_by: user.id,
+        created_by: user?.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }])
