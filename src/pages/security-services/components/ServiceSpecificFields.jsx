@@ -401,7 +401,7 @@ useEffect(() => {
           <div className="space-y-4">
             {callHistoryArray.fields.map((field, index) => (
               <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="form-field">
                     <label className="block text-sm font-medium text-gray-700">
                       Phone Number <span className="text-red-500">*</span>
@@ -437,7 +437,6 @@ useEffect(() => {
                     />
                   </div>
                 </div>
-
                 {callHistoryArray.fields.length > 1 && (
                   <Button
                     type="button"
@@ -457,7 +456,6 @@ useEffect(() => {
               variant="outline"
               onClick={() => callHistoryArray.append({
                 phone_number: '',
-                email: '',
                 start_date: '',
                 end_date: ''
               })}
@@ -479,6 +477,10 @@ useEffect(() => {
               placeholder="Any additional information (optional)"
             />
           </div>
+
+          {renderImportantNote(
+            "Please ensure that you are requesting call history for numbers registered under your name. Call history can only be provided for numbers that belong to the requestor."
+          )}
         </div>
       );
 
@@ -687,13 +689,13 @@ useEffect(() => {
       );
 
       
-    case 'momo_transaction':
+   case 'momo_transaction':
       return (
         <div className="space-y-6">
           <div className="space-y-4">
             {momoTransactionArray.fields.map((field, index) => (
               <div key={field.id} className="relative border rounded-lg p-4 bg-gray-50">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="form-field">
                     <label className="block text-sm font-medium text-gray-700">
                       Phone Number <span className="text-red-500">*</span>
@@ -729,7 +731,6 @@ useEffect(() => {
                     />
                   </div>
                 </div>
-
                 {momoTransactionArray.fields.length > 1 && (
                   <Button
                     type="button"
@@ -749,7 +750,6 @@ useEffect(() => {
               variant="outline"
               onClick={() => momoTransactionArray.append({
                 phone_number: '',
-                email: '',
                 start_date: '',
                 end_date: ''
               })}
