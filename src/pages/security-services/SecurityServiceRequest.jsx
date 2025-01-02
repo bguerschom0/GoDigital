@@ -197,30 +197,56 @@ const SecurityServiceRequest = () => {
 const handleSubmit = async (formData) => {
   setIsLoading(true);
   
+  // Log the current user state
+  console.log('Current User Object:', user);
+  console.log('User Role:', user?.role);
+  
+  // Log the session information
+  const { data: { session } } = await supabase.auth.getSession();
+  console.log('Session Details:', session);
+  console.log('Session User:', session?.user);
+  
+  // Log the form data being submitted
+  console.log('Form Data:', formData);
+  console.log('Selected Service:', selectedService);
+  
   try {
-    // Generate a reference number
     const referenceNumber = `SR-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    console.log('Generated Reference Number:', referenceNumber);
+    
+    // Log the exact data being sent to Supabase
+    const insertData = {
+      reference_number: referenceNumber,
+      service_type: selectedService.value,
+      status: 'new',
+      priority: 'normal',
+      full_names: formData.full_names,
+      id_passport: formData.id_passport,
+      primary_contact: formData.primary_contact,
+      secondary_contact: formData.secondary_contact || null,
+      details: formData.details
+    };
+    console.log('Data being inserted:', insertData);
 
+    // Attempt the insert
     const { data, error } = await supabase
       .from('service_requests')
-      .insert([{
-        reference_number: referenceNumber,
-        service_type: selectedService.value,
-        status: 'new',
-        priority: 'normal',
-        full_names: formData.full_names,
-        id_passport: formData.id_passport,
-        primary_contact: formData.primary_contact,
-        secondary_contact: formData.secondary_contact || null,
-        details: formData.details,
-        created_by: user?.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }])
+      .insert([insertData])
       .select()
       .single();
+      
+    console.log('Supabase Response Data:', data);
+    console.log('Supabase Error if any:', error);
 
-    if (error) throw error;
+    if (error) {
+      console.log('Error Details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      throw error;
+    }
 
     // Save additional metadata if needed
     if (formData.metadata) {
