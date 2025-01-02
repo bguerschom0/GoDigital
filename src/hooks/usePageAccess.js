@@ -70,6 +70,7 @@ export const usePageAccess = () => {
         category: 'dashboard'
       }
 
+      console.log('Fetched permissions:', permMap) // Debug log
       setPermissions(permMap)
     } catch (error) {
       console.error('Error fetching permissions:', error)
@@ -81,9 +82,10 @@ export const usePageAccess = () => {
 
   const checkPermission = (path) => {
     console.log('Checking permission for path:', path) // Debug log
+
     // Admin has full access to everything
     if (user?.role === 'admin') {
-      console.log('User is admin, granting full access') // Debug log
+      console.log('User is admin - full access granted')
       return {
         canAccess: true,
         canExport: true
@@ -92,7 +94,7 @@ export const usePageAccess = () => {
 
     // User dashboard is always accessible to authenticated users
     if (path === '/user/dashboard') {
-      console.log('User dashboard path, granting access') 
+      console.log('User dashboard path - access granted')
       return {
         canAccess: true,
         canExport: false
@@ -101,7 +103,7 @@ export const usePageAccess = () => {
 
     // Check specific page permissions
     const permission = permissions[path] || {}
-    console.log('Permission found:', permission) // Debug log
+    console.log('Permission found for path:', path, permission) // Debug log
     return {
       canAccess: permission.canAccess || false,
       canExport: permission.canExport || false
@@ -129,58 +131,4 @@ export const usePageAccess = () => {
     hasExportPermission,
     refreshPermissions: fetchUserPermissions
   }
-}
-
-// Example usage in a protected route component:
-export const ProtectedRoute = ({ children, path }) => {
-  const { user } = useAuth()
-  const { checkPermission, loading } = usePageAccess()
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        navigate('/login')
-        return
-      }
-
-      const { canAccess } = checkPermission(path)
-      if (!canAccess) {
-        navigate(user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard')
-      }
-    }
-  }, [user, path, loading, navigate])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
-      </div>
-    )
-  }
-
-  return children
-}
-
-// Example usage in a component that needs export functionality
-export const ExampleComponent = () => {
-  const { checkPermission } = usePageAccess()
-  const currentPath = window.location.pathname
-  const { canAccess, canExport } = checkPermission(currentPath)
-
-  if (!canAccess) return null
-
-  return (
-    <div>
-      {/* Regular content */}
-      <h1>Content Title</h1>
-      
-      {/* Export button only shown if user has export permission */}
-      {canExport && (
-        <Button onClick={handleExport}>
-          Export Data
-        </Button>
-      )}
-    </div>
-  )
 }
