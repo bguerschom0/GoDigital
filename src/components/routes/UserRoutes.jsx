@@ -34,7 +34,7 @@ import AccessControlDashboard from '@/pages/access-control/index'
 import SecurityServiceRequest from '@/pages/security-services/SecurityServiceRequest'
 import TasksPage from '@/pages/security-services/TasksPage'
 
-
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 
 const UserRoutes = () => (
   <Routes>
