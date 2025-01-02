@@ -197,87 +197,230 @@ const SecurityServiceRequest = () => {
 const handleSubmit = async (formData) => {
   setIsLoading(true);
   try {
-    // Get current date in YYMMDD format
+    // Generate reference number
     const today = new Date();
     const dateStr = today.toISOString().slice(2,10).replace(/-/g,'');
-    
-    // Get the latest request number from the database
     const { data: lastRequest } = await supabase
       .from('service_requests')
       .select('reference_number')
       .order('created_at', { ascending: false })
       .limit(1);
     
-    // Extract and increment the sequence number
     const lastSeq = lastRequest?.[0] ? parseInt(lastRequest[0].reference_number.slice(-3)) : 0;
     const newSeq = (lastSeq + 1).toString().padStart(3, '0');
-    
     const referenceNumber = `SR${dateStr}${newSeq}`;
     
-    console.log('Generated Reference:', referenceNumber);
-    
-    // Log the exact data being sent to Supabase
-    const insertData = {
-      reference_number: referenceNumber,
-      service_type: selectedService.value,
-      status: 'new',
-      priority: 'normal',
-      full_names: formData.full_names,
-      id_passport: formData.id_passport,
-      primary_contact: formData.primary_contact,
-      secondary_contact: formData.secondary_contact || null,
-      details: formData.details,
-       created_by: user?.id
-    };
-    console.log('Data being inserted:', insertData);
-
-    // Attempt the insert
-    const { data, error } = await supabase
+    // Create main service request
+    const { data: requestData, error: requestError } = await supabase
       .from('service_requests')
-      .insert([insertData])
+      .insert({
+        reference_number: referenceNumber,
+        service_type: selectedService.value,
+        status: 'new',
+        priority: 'normal',
+        full_names: formData.full_names,
+        id_passport: formData.id_passport,
+        primary_contact: formData.primary_contact,
+        secondary_contact: formData.secondary_contact || null,
+        details: formData.details,
+        created_by: user?.id
+      })
       .select()
       .single();
-      
-    console.log('Supabase Response Data:', data);
-    console.log('Supabase Error if any:', error);
 
-    if (error) {
-      console.log('Error Details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
-      throw error;
-    }
+    if (requestError) throw requestError;
 
-    // Save additional metadata if needed
-    if (formData.metadata) {
-      await supabase
-        .from('service_request_metadata')
-        .insert([{
-          request_id: data.id,
-          metadata: formData.metadata
-        }]);
+    // Save service-specific data based on service type
+    switch (selectedService.value) {
+      case 'request_serial_number':
+        if (formData.phoneRequests?.length) {
+          const phoneRequests = formData.phoneRequests.map(request => ({
+            request_id: requestData.id,
+            phone_number: request.phone_number,
+            phone_brand: request.phone_brand,
+            start_date: request.start_date,
+            end_date: request.end_date
+          }));
+
+          const { error: phonesError } = await supabase
+            .from('request_phone_numbers')
+            .insert(phoneRequests);
+
+          if (phonesError) throw phonesError;
+        }
+        break;
+
+      case 'check_stolen_phone':
+        if (formData.imeiNumbers?.length) {
+          const imeiNumbers = formData.imeiNumbers.map(item => ({
+            request_id: requestData.id,
+            imei_number: item.imei
+          }));
+
+          const { error: imeiError } = await supabase
+            .from('request_imei_numbers')
+            .insert(imeiNumbers);
+
+          if (imeiError) throw imeiError;
+        }
+        break;
+
+      case 'call_history':
+        if (formData.callHistoryRequests?.length) {
+          const callHistoryRequests = formData.callHistoryRequests.map(request => ({
+            request_id: requestData.id,
+            phone_number: request.phone_number,
+            email: request.email || null,
+            start_date: request.start_date,
+            end_date: request.end_date
+          }));
+
+          const { error: callHistoryError } = await supabase
+            .from('request_call_history')
+            .insert(callHistoryRequests);
+
+          if (callHistoryError) throw callHistoryError;
+        }
+        break;
+
+      case 'unblock_call':
+        if (formData.phoneNumbers?.length) {
+          const blockedNumbers = formData.phoneNumbers.map(item => ({
+            request_id: requestData.id,
+            phone_number: item.number
+          }));
+
+          const { error: blockedError } = await supabase
+            .from('request_blocked_numbers')
+            .insert(blockedNumbers);
+
+          if (blockedError) throw blockedError;
+        }
+        break;
+
+      case 'unblock_momo':
+        if (formData.momoNumbers?.length) {
+          const momoNumbers = formData.momoNumbers.map(item => ({
+            request_id: requestData.id,
+            phone_number: item.number
+          }));
+
+          const { error: momoError } = await supabase
+            .from('request_momo_numbers')
+            .insert(momoNumbers);
+
+          if (momoError) throw momoError;
+        }
+        break;
+
+      case 'money_refund':
+        if (formData.refundRequests?.length) {
+          const refundRequests = formData.refundRequests.map(request => ({
+            request_id: requestData.id,
+            phone_number: request.phone_number,
+            amount: request.amount,
+            transaction_date: request.transaction_date
+          }));
+
+          const { error: refundError } = await supabase
+            .from('request_refunds')
+            .insert(refundRequests);
+
+          if (refundError) throw refundError;
+        }
+        break;
+
+      case 'momo_transaction':
+        if (formData.momoTransactions?.length) {
+          const momoTransactions = formData.momoTransactions.map(request => ({
+            request_id: requestData.id,
+            phone_number: request.phone_number,
+            email: request.email || null,
+            start_date: request.start_date,
+            end_date: request.end_date
+          }));
+
+          const { error: momoTransError } = await supabase
+            .from('request_momo_transactions')
+            .insert(momoTransactions);
+
+          if (momoTransError) throw momoTransError;
+        }
+        break;
+
+      case 'agent_commission':
+        if (formData.agentRequests?.length) {
+          const agentRequests = formData.agentRequests.map(request => ({
+            request_id: requestData.id,
+            phone_number: request.number,
+            franchisee: request.franchisee
+          }));
+
+          const { error: agentError } = await supabase
+            .from('request_agent_commission')
+            .insert(agentRequests);
+
+          if (agentError) throw agentError;
+        }
+        break;
+
+      case 'internet_issue':
+        if (formData.internetIssues?.length) {
+          const internetIssues = formData.internetIssues.map(issue => ({
+            request_id: requestData.id,
+            phone_number: issue.number
+          }));
+
+          const { error: internetError } = await supabase
+            .from('request_internet_issues')
+            .insert(internetIssues);
+
+          if (internetError) throw internetError;
+        }
+        break;
+
+      case 'rib_followup':
+        const { error: ribError } = await supabase
+          .from('request_rib_followup')
+          .insert({
+            request_id: requestData.id,
+            rib_number: formData.rib_number,
+            rib_station: formData.rib_station
+          });
+
+        if (ribError) throw ribError;
+        break;
+
+      case 'backoffice_appointment':
+        const { error: backofficeError } = await supabase
+          .from('request_backoffice_appointments')
+          .insert({
+            request_id: requestData.id,
+            backoffice_user_id: formData.backoffice_user
+          });
+
+        if (backofficeError) throw backofficeError;
+        break;
     }
 
     // Create initial history record
     await supabase
       .from('request_history')
-      .insert([{
-        request_id: data.id,
+      .insert({
+        request_id: requestData.id,
         action: 'created',
         status_from: null,
         status_to: 'new',
         performed_by: user.id,
         details: 'Request created'
-      }]);
+      });
 
     setMessage({
       type: 'success',
       text: `Service request submitted successfully! Reference: ${referenceNumber}`
     });
 
+    // Reset form and state
     setShowForm(false);
     setSelectedService(null);
 
