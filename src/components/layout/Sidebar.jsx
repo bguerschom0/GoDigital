@@ -1,5 +1,5 @@
 // src/components/layout/Sidebar.jsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { usePageAccess } from '@/hooks/usePageAccess'
@@ -19,38 +19,133 @@ import {
   BarChart2,
   Lock,
   GraduationCap,
-  Menu,
   Shield
 } from 'lucide-react'
+
+const adminOnlyNavItems = [
+  {
+    title: 'Users Management',
+    icon: <Users className="w-5 h-5" />,
+    href: '/admin/users'
+  },
+  {
+    title: 'Page Permissions',
+    icon: <Lock className="w-5 h-5" />,
+    href: '/admin/permissions'
+  }
+]
+
+const sharedNavItems = [
+  {
+    title: 'Stakeholder Requests',
+    icon: <FileStack className="w-5 h-5" />,
+    id: 'stakeholder',
+    children: [
+      {
+        title: 'New Request',
+        icon: <FileText className="w-5 h-5" />,
+        href: '/stakeholder/new'
+      },
+      {
+        title: 'Pending Requests',
+        icon: <Clock className="w-5 h-5" />,
+        href: '/stakeholder/pending'
+      },
+      {
+        title: 'Update Request',
+        icon: <Edit className="w-5 h-5" />,
+        href: '/stakeholder/update'
+      },
+      {
+        title: 'All Requests',
+        icon: <Clock className="w-5 h-5" />,
+        href: '/stakeholder/all'
+      }
+    ]
+  },
+  {
+    title: 'Background Checks',
+    icon: <UserCheck className="w-5 h-5" />,
+    id: 'background',
+    children: [
+      {
+        title: 'New Request',
+        icon: <FileText className="w-5 h-5" />,
+        href: '/background/new'
+      },
+      {
+        title: 'Pending Requests',
+        icon: <Clock className="w-5 h-5" />,
+        href: '/background/pending'
+      },
+      {
+        title: 'Update Request',
+        icon: <Edit className="w-5 h-5" />,
+        href: '/background/update'
+      },
+      {
+        title: 'Expired Documents',
+        icon: <AlertTriangle className="w-5 h-5" />,
+        href: '/background/expired'
+      },
+      {
+        title: 'Internship Overview',
+        icon: <GraduationCap className="w-5 h-5" />,
+        href: '/background/internship'
+      },
+      {
+        title: 'All Requests',
+        icon: <Files className="w-5 h-5" />,
+        href: '/background/all'
+      }
+    ]
+  },
+  {
+    title: 'Security Services',
+    icon: <Shield className="w-5 h-5" />,
+    id: 'security_services',
+    children: [
+      {
+        title: 'New Request',
+        icon: <FileText className="w-5 h-5" />,
+        href: '/security_services/new'
+      },
+      {
+        title: 'Tasks',
+        icon: <Clock className="w-5 h-5" />,
+        href: '/security_services/tasks'
+      }
+    ]
+  },
+  {
+    title: 'Reports',
+    icon: <BarChart className="w-5 h-5" />,
+    id: 'reports',
+    children: [
+      {
+        title: 'Stakeholder Analysis',
+        icon: <BarChart2 className="w-5 h-5" />,
+        href: '/reports/stakeholder'
+      },
+      {
+        title: 'Background Check Analytics',
+        icon: <BarChart2 className="w-5 h-5" />,
+        href: '/reports/background'
+      }
+    ]
+  }
+]
 
 const MenuGroup = ({ item, isOpen, isHovered, expandedMenus, toggleMenu, location, checkPermission }) => {
   if (!isOpen) return null
 
-  // Add debug logging
-  console.log('MenuGroup rendering:', {
-    title: item.title,
-    children: item.children?.map(c => ({
-      title: c.title,
-      href: c.href,
-      permission: checkPermission(c.href.replace('/admin', ''))
-    }))
-  })
-
   const accessibleChildren = item.children.filter(child => {
-    const permPath = child.href.replace('/admin', '')
-    const permission = checkPermission(permPath)
-    console.log('MenuGroup permission check:', {
-      path: permPath,
-      permission,
-      title: child.title
-    })
+    const permission = checkPermission(child.href)
     return permission.canAccess
   })
 
-  if (accessibleChildren.length === 0) {
-    console.log('No accessible children for:', item.title)
-    return null
-  }
+  if (accessibleChildren.length === 0) return null
+
   return (
     <>
       <div
@@ -124,8 +219,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [expandedMenus, setExpandedMenus] = useState(['stakeholder'])
   const location = useLocation()
   const { user } = useAuth()
-  const { checkPermission, permissions } = usePageAccess()
-  const isAdmin = user?.role === 'admin'
+  const { checkPermission } = usePageAccess()
 
   const toggleMenu = (menu) => {
     setExpandedMenus(prev => 
@@ -135,177 +229,35 @@ const Sidebar = ({ isOpen, onClose }) => {
     )
   }
 
-  const adminNavItems = [
-    {
-      title: 'Dashboard',
-      icon: <LayoutDashboard className="w-5 h-5" />,
-      href: '/admin/dashboard'
-    },
-    {
-      title: 'Users Management',
-      icon: <Users className="w-5 h-5" />,
-      href: '/admin/users'
-    },
-    {
-      title: 'Page Permissions',
-      icon: <Lock className="w-5 h-5" />,
-      href: '/admin/permissions'
-    },
-    {
-      title: 'Stakeholder Requests',
-      icon: <FileStack className="w-5 h-5" />,
-      id: 'stakeholder',
-      children: [
-        {
-          title: 'New Request',
-          icon: <FileText className="w-5 h-5" />,
-          href: '/admin/stakeholder/new'
-        },
-        {
-          title: 'Pending Requests',
-          icon: <Clock className="w-5 h-5" />,
-          href: '/admin/stakeholder/pending'
-        },
-        {
-          title: 'Update Request',
-          icon: <Edit className="w-5 h-5" />,
-          href: '/admin/stakeholder/update'
-        },
-                {
-          title: 'All Requests',
-          icon: <Clock className="w-5 h-5" />,
-          href: '/admin/stakeholder/all'
-        }
-      ]
-    },
-    {
-      title: 'Background Checks',
-      icon: <UserCheck className="w-5 h-5" />,
-      id: 'background',
-      children: [
-        {
-          title: 'New Request',
-          icon: <FileText className="w-5 h-5" />,
-          href: '/admin/background/new'
-        },
-        {
-          title: 'Pending Requests',
-          icon: <Clock className="w-5 h-5" />,
-          href: '/admin/background/pending'
-        },
-        {
-          title: 'Update Request',
-          icon: <Edit className="w-5 h-5" />,
-          href: '/admin/background/update'
-        },
-        {
-          title: 'Expired Documents',
-          icon: <AlertTriangle className="w-5 h-5" />,
-          href: '/admin/background/expired'
-        },
-        {
-          title: 'Internship Overview',
-          icon: <GraduationCap className="w-5 h-5" />,
-          href: '/admin/background/internship'
-        },
-        {
-          title: 'All Requests',
-          icon: <Files className="w-5 h-5" />,
-          href: '/admin/background/all'
-        }
-      ]
-    },
+  const getNavItems = () => {
+    const baseItems = [
       {
-    title: 'Security Services',
-    icon: <Shield className="h-4 w-4" />,
-    id: 'security_services',
-      children: [
-      {
-        title: 'New Request',
-        icon: <FileText className="w-5 h-5" />,
-        href: '/admin/security_services/security_service_request'
-      },
-              {
-        title: 'Tasks',
-        icon: <Clock className="w-5 h-5" />,
-        href: '/admin/security_services/task_page'
+        title: user?.role === 'admin' ? 'Admin Dashboard' : 'Dashboard',
+        icon: <LayoutDashboard className="w-5 h-5" />,
+        href: user?.role === 'admin' ? '/admin/dashboard' : '/dashboard'
       }
     ]
-  },
-    {
-      title: 'Reports',
-      icon: <BarChart className="w-5 h-5" />,
-      id: 'reports',
-      children: [
-        {
-          title: 'Stakeholder Analysis',
-          icon: <BarChart2 className="w-5 h-5" />,
-          href: '/admin/reports/stakeholder'
-        },
-        {
-          title: 'Background Check Analytics',
-          icon: <BarChart2 className="w-5 h-5" />,
-          href: '/admin/reports/background'
-        }
-      ]
+
+    // Add admin-only items for admin users
+    if (user?.role === 'admin') {
+      baseItems.push(...adminOnlyNavItems)
     }
-  ]
 
-  const userNavItems = [
-    {
-    title: 'Dashboard',
-    icon: <LayoutDashboard className="w-5 h-5" />,
-    href: '/user/dashboard'
-    }
-  ]
-
-  // Filter navigation items based on user role and permissions
-const getNavItems = () => {
-  console.log('Getting nav items for user:', user) // Debug log
-
-  if (user?.role === 'admin') {
-    console.log('User is admin, returning full menu')
-    return adminNavItems
-  }
-  
-  const items = [...userNavItems]
-  
-  adminNavItems.forEach(item => {
-    if (item.children) {
-      const accessibleChildren = item.children.filter(child => {
-        const permPath = child.href.replace('/admin', '')
-        const permission = checkPermission(permPath)
-        console.log('Checking permission for:', {
-          path: permPath,
-          originalPath: child.href,
-          permission,
-          title: child.title
-        })
-        return permission.canAccess
-      })
-      
-      if (accessibleChildren.length > 0) {
-        console.log('Adding menu group:', {
-          title: item.title,
-          children: accessibleChildren.map(c => c.title)
-        })
-        items.push({ ...item, children: accessibleChildren })
+    // Add shared items based on permissions
+    const accessibleSharedItems = sharedNavItems.map(item => {
+      if (item.children) {
+        const accessibleChildren = item.children.filter(child => 
+          checkPermission(child.href).canAccess
+        )
+        return accessibleChildren.length > 0 ? { ...item, children: accessibleChildren } : null
       }
-    }
-  })
-  
-  console.log('Final nav items:', items)
-  return items
-}
+      return checkPermission(item.href).canAccess ? item : null
+    }).filter(Boolean)
+
+    return [...baseItems, ...accessibleSharedItems]
+  }
 
   const navItems = getNavItems()
-
-    // Add this useEffect to debug
-  useEffect(() => {
-    console.log('Current user:', user)
-    console.log('Nav items:', navItems)
-    console.log('Current permissions:', permissions) // Add this line to your usePageAccess hook export
-  }, [user, navItems])
 
   return (
     <div 
@@ -315,7 +267,6 @@ const getNavItems = () => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-
       <nav className="mt-5 px-2">
         {navItems.map((item) => (
           <div key={item.href || item.id}>
