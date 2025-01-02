@@ -1,3 +1,4 @@
+// src/pages/security-services/components/RequestForm.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -39,7 +40,7 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
       secondary_contact: '',
       details: '',
 
-      // For request_serial_number
+      // Phone Serial Number Requests
       phoneRequests: [{ 
         phone_number: '', 
         phone_brand: '', 
@@ -47,152 +48,88 @@ const RequestForm = ({ service, onBack, onSubmit, isLoading }) => {
         end_date: '' 
       }],
 
-      // For call_history
+      // IMEI Numbers
+      imeiNumbers: [{
+        imei: ''
+      }],
+
+      // Call History
       callHistoryRequests: [{
         phone_number: '',
+        email: '',
         start_date: '',
         end_date: ''
       }],
 
-      // For momo_transaction
+      // Blocked Numbers
+      phoneNumbers: [{
+        number: ''
+      }],
+
+      // MoMo Numbers
+      momoNumbers: [{
+        number: ''
+      }],
+
+      // Refund Requests
+      refundRequests: [{
+        phone_number: '',
+        amount: '',
+        transaction_date: ''
+      }],
+
+      // MoMo Transactions
       momoTransactions: [{
         phone_number: '',
+        email: '',
         start_date: '',
         end_date: ''
       }],
 
-      // For agent_commission
+      // Agent Commission
       agentRequests: [{
         number: '',
         franchisee: ''
-      }]
+      }],
+
+      // Internet Issues
+      internetIssues: [{
+        number: ''
+      }],
+
+      // RIB Followup
+      rib_number: '',
+      rib_station: '',
+
+      // Backoffice Appointment
+      backoffice_user: ''
     }
   });
 
-const handlePrint = (formData) => {
-  if (!formData) {
-    console.error("Form data is required for printing.");
-    return;
-  }
+  const handlePrint = () => {
+    window.print();
+  };
 
-  if (!service || !service.label || !service.value) {
-    console.error("Service details are missing or incomplete.");
-    return;
-  }
+  const onFormSubmit = (data) => {
+    // Transform data before submitting if needed
+    let transformedData = { ...data };
 
-  const printDate = new Date().toLocaleDateString();
-  const requestType = service.label;
+    // Add any service-specific transformations here if needed
+    switch (service.value) {
+      case 'request_serial_number':
+        // Data is already in correct format
+        break;
+      case 'check_stolen_phone':
+        // IMEI numbers are already in correct format
+        break;
+      case 'call_history':
+        // Call history data is already in correct format
+        break;
+      // Add other cases if needed
+    }
 
-  // Generate print content
-  const printContent = generatePrintContent(service.value, formData, printDate);
-  if (!printContent) {
-    console.error("Failed to generate print content.");
-    return;
-  }
-
-  // Open a new window for printing
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    console.error("Unable to open a new window. Check for pop-up blockers.");
-    return;
-  }
-
-  // Prepare HTML content for the print window
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Service Request - ${requestType}</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            padding: 20px;
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #ccc;
-            padding-bottom: 20px;
-          }
-          .logo {
-            max-width: 150px;
-            margin-bottom: 10px;
-          }
-          .request-details {
-            margin-bottom: 30px;
-          }
-          .section {
-            margin-bottom: 20px;
-          }
-          .field {
-            margin-bottom: 10px;
-          }
-          .label {
-            font-weight: bold;
-            color: #666;
-          }
-          .footer {
-            margin-top: 50px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-          }
-          @media print {
-            @page {
-              margin: 20mm;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        ${printContent}
-      </body>
-    </html>
-  `;
-
-  // Write the content to the print window
-  printWindow.document.open();
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
-
-  // Trigger the print
-  printWindow.print();
-};
-
-  const generatePrintContent = (serviceType, formData, printDate) => {
-  return `
-    <div class="header">
-      <img src="/mtn-logo.png" alt="MTN Logo" class="logo" />
-      <h1>Service Request</h1>
-      <p>Date: ${printDate}</p>
-    </div>
-    <div class="section">
-      <h2>Personal Information</h2>
-      <div class="field">
-        <span class="label">Full Names:</span> ${formData.full_names}
-      </div>
-      <div class="field">
-        <span class="label">ID/Passport:</span> ${formData.id_passport}
-      </div>
-      <div class="field">
-        <span class="label">Primary Contact:</span> ${formData.primary_contact}
-      </div>
-      ${
-        formData.secondary_contact
-          ? `<div class="field">
-               <span class="label">Secondary Contact:</span> ${formData.secondary_contact}
-             </div>`
-          : ""
-      }
-    </div>
-    <div class="footer">
-      <p>Thank you for your request.</p>
-    </div>
-  `;
-};
-
-
+    onSubmit(transformedData);
+  };
 
   return (
     <Card className="max-w-4xl mx-auto">
@@ -214,10 +151,10 @@ const handlePrint = (formData) => {
         </div>
       </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-8">
         <CardContent className="space-y-6">
           {/* Common Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-field">
               <label className="block text-sm font-medium text-gray-700">
                 Full Names <span className="text-red-500">*</span>
@@ -227,6 +164,9 @@ const handlePrint = (formData) => {
                 placeholder="Enter full names"
                 error={errors.full_names?.message}
               />
+              {errors.full_names && (
+                <p className="mt-1 text-sm text-red-500">{errors.full_names.message}</p>
+              )}
             </div>
 
             <div className="form-field">
@@ -238,6 +178,9 @@ const handlePrint = (formData) => {
                 placeholder="Enter ID/Passport number"
                 error={errors.id_passport?.message}
               />
+              {errors.id_passport && (
+                <p className="mt-1 text-sm text-red-500">{errors.id_passport.message}</p>
+              )}
             </div>
 
             <div className="form-field">
@@ -251,6 +194,9 @@ const handlePrint = (formData) => {
                 placeholder="Enter primary contact"
                 error={errors.primary_contact?.message}
               />
+              {errors.primary_contact && (
+                <p className="mt-1 text-sm text-red-500">{errors.primary_contact.message}</p>
+              )}
             </div>
 
             <div className="form-field">
@@ -260,7 +206,7 @@ const handlePrint = (formData) => {
               <Input
                 {...register('secondary_contact')}
                 placeholder="Enter phone number or email address"
-                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                error={errors.secondary_contact?.message}
               />
               {errors.secondary_contact && (
                 <p className="mt-1 text-sm text-red-500">{errors.secondary_contact.message}</p>
@@ -278,7 +224,7 @@ const handlePrint = (formData) => {
           />
         </CardContent>
 
-        <CardFooter className="flex justify-between pt-6">
+        <CardFooter className="flex justify-between pt-6 border-t">
           <Button
             type="button"
             variant="outline"
@@ -304,7 +250,7 @@ const handlePrint = (formData) => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="min-w-[120px] bg-primary"
+              className="min-w-[120px] bg-primary hover:bg-primary/90"
             >
               {isLoading ? (
                 <>
