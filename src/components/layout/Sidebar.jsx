@@ -26,10 +26,14 @@ import {
 const MenuGroup = ({ item, isOpen, isHovered, expandedMenus, toggleMenu, location, checkPermission }) => {
   if (!isOpen) return null
 
-  // Filter out children based on access permission only
-  const accessibleChildren = item.children.filter(child => 
-    checkPermission(child.href.replace('/admin', '')).canAccess
-  )
+  // Important: Remove '/admin' from path when checking permissions
+  const accessibleChildren = item.children.filter(child => {
+    // Remove /admin prefix for permission check
+    const permissionPath = child.href.replace('/admin', '')
+    const permission = checkPermission(permissionPath)
+    console.log('Checking permission for:', permissionPath, permission) // Debug log
+    return permission.canAccess
+  })
 
   if (accessibleChildren.length === 0) return null
 
