@@ -196,23 +196,25 @@ const SecurityServiceRequest = () => {
 
 const handleSubmit = async (formData) => {
   setIsLoading(true);
-  
-  // Log the current user state
-  console.log('Current User Object:', user);
-  console.log('User Role:', user?.role);
-  
-  // Log the session information
-  const { data: { session } } = await supabase.auth.getSession();
-  console.log('Session Details:', session);
-  console.log('Session User:', session?.user);
-  
-  // Log the form data being submitted
-  console.log('Form Data:', formData);
-  console.log('Selected Service:', selectedService);
-  
   try {
-    const referenceNumber = `SR${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100)}`;
-    console.log('Generated Reference Number:', referenceNumber);
+    // Get current date in YYMMDD format
+    const today = new Date();
+    const dateStr = today.toISOString().slice(2,10).replace(/-/g,'');
+    
+    // Get the latest request number from the database
+    const { data: lastRequest } = await supabase
+      .from('service_requests')
+      .select('reference_number')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    // Extract and increment the sequence number
+    const lastSeq = lastRequest?.[0] ? parseInt(lastRequest[0].reference_number.slice(-3)) : 0;
+    const newSeq = (lastSeq + 1).toString().padStart(3, '0');
+    
+    const referenceNumber = `SR${dateStr}${newSeq}`;
+    
+    console.log('Generated Reference:', referenceNumber);
     
     // Log the exact data being sent to Supabase
     const insertData = {
