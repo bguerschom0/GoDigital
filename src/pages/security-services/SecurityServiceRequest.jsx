@@ -226,7 +226,8 @@ const handleSubmit = async (formData) => {
       id_passport: formData.id_passport,
       primary_contact: formData.primary_contact,
       secondary_contact: formData.secondary_contact || null,
-      details: formData.details
+      details: formData.details,
+       created_by: user?.id
     };
     console.log('Data being inserted:', insertData);
 
