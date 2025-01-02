@@ -196,6 +196,10 @@ const SecurityServiceRequest = () => {
 
 const handleSubmit = async (formData) => {
   setIsLoading(true);
+
+    console.log('Current user ID:', user?.id);
+  console.log('Auth UID:', (await supabase.auth.getUser()).data.user?.id);
+  
   try {
     // Generate a reference number
     const referenceNumber = `SR-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
