@@ -246,22 +246,32 @@ const Sidebar = ({ isOpen, onClose }) => {
   ]
 
   // Filter navigation items based on user role and permissions
-  const getNavItems = () => {
-    if (isAdmin) return adminNavItems
-    
-    const items = [...userNavItems]
-    adminNavItems.forEach(item => {
-      if (item.children) {
-        const accessibleChildren = item.children.filter(child => 
-          checkPermission(child.href.replace('/admin', '')).canAccess
-        )
-        if (accessibleChildren.length > 0) {
-          items.push({ ...item, children: accessibleChildren })
-        }
+const getNavItems = () => {
+  if (user?.role === 'admin') return adminNavItems
+  
+  const items = [...userNavItems]
+  
+  // Log the process for debugging
+  console.log('Processing nav items for user:', user.username)
+  
+  adminNavItems.forEach(item => {
+    if (item.children) {
+      const accessibleChildren = item.children.filter(child => {
+        const permPath = child.href.replace('/admin', '')
+        const permission = checkPermission(permPath)
+        console.log('Checking path:', permPath, 'Permission:', permission)
+        return permission.canAccess
+      })
+      
+      if (accessibleChildren.length > 0) {
+        console.log('Adding menu group:', item.title, 'with children:', accessibleChildren)
+        items.push({ ...item, children: accessibleChildren })
       }
-    })
-    return items
-  }
+    }
+  })
+  
+  return items
+}
 
   const navItems = getNavItems()
 
