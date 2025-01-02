@@ -80,8 +80,10 @@ export const usePageAccess = () => {
   }
 
   const checkPermission = (path) => {
+    console.log('Checking permission for path:', path) // Debug log
     // Admin has full access to everything
     if (user?.role === 'admin') {
+      console.log('User is admin, granting full access') // Debug log
       return {
         canAccess: true,
         canExport: true
@@ -90,6 +92,7 @@ export const usePageAccess = () => {
 
     // User dashboard is always accessible to authenticated users
     if (path === '/user/dashboard') {
+      console.log('User dashboard path, granting access') 
       return {
         canAccess: true,
         canExport: false
@@ -98,6 +101,7 @@ export const usePageAccess = () => {
 
     // Check specific page permissions
     const permission = permissions[path] || {}
+    console.log('Permission found:', permission) // Debug log
     return {
       canAccess: permission.canAccess || false,
       canExport: permission.canExport || false
